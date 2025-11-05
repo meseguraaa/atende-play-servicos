@@ -38,6 +38,7 @@ export const PeriodSection = ({ period }: PeriodSectionProps) => {
                                 <AppointmentCard
                                     key={index}
                                     appointment={appointment}
+                                    isFirstInSection={index === 0}
                                 />
                             )
                         )}
