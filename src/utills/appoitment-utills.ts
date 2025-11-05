@@ -4,6 +4,15 @@ import {
     AppointmentPeriodDay,
 } from '@/types/appointment';
 
+interface AppointmentPrisma {
+    id: string;
+    petName: string;
+    description: string;
+    tutorName: string;
+    phone: string;
+    scheduleAt: Date;
+}
+
 export const getPeriod = (hour: number): AppointmentPeriodDay => {
     if (hour >= 9 && hour < 12) return 'morning';
     if (hour >= 13 && hour < 18) return 'afternoon';
@@ -11,7 +20,7 @@ export const getPeriod = (hour: number): AppointmentPeriodDay => {
 };
 
 export function groupAppointmentByPeriod(
-    appointments: Appointment[]
+    appointments: AppointmentPrisma[]
 ): AppointmentPeriod[] {
     const transformedAppointments: Appointment[] = appointments?.map((apt) => ({
         ...apt,
