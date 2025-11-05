@@ -1,9 +1,17 @@
-import { Appointment as AppointmentPrisma } from '@/generated/prisma';
 import {
     Appointment,
     AppointmentPeriod,
     AppointmentPeriodDay,
 } from '@/types/appointment';
+
+interface AppointmentPrisma {
+    id: string;
+    petName: string;
+    description: string;
+    tutorName: string;
+    phone: string;
+    scheduleAt: Date;
+}
 import { PeriodSection } from '@/components/period-section/period-section';
 
 const appointments = [
