@@ -1,4 +1,4 @@
-import { AppointmentPeriod } from '@/types/appointment';
+import { AppointmentPeriod, Appointment } from '@/types/appointment';
 import { Cloudy, Moon, Sun } from 'lucide-react';
 
 type PeriodSectionProps = {
@@ -32,9 +32,11 @@ export const PeriodSection = ({ period }: PeriodSectionProps) => {
                             <div className="text-left">Horário</div>
                             <div className="text-right">Paciente</div>
                         </div>
-                        {period.appointments.map((appointment, index) => (
-                            <div key={index}>{appointment.petName}</div>
-                        ))}
+                        {period.appointments.map(
+                            (appointment: Appointment, index: number) => (
+                                <div key={index}>{appointment.petName}</div>
+                            )
+                        )}
                     </div>
                 </div>
             ) : (
