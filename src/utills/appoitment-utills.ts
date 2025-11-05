@@ -1,4 +1,3 @@
-import { Appointment as AppointmentPrisma } from '@/generated/prisma';
 import {
     Appointment,
     AppointmentPeriod,
@@ -12,7 +11,7 @@ export const getPeriod = (hour: number): AppointmentPeriodDay => {
 };
 
 export function groupAppointmentByPeriod(
-    appointments: AppointmentPrisma[]
+    appointments: Appointment[]
 ): AppointmentPeriod[] {
     const transformedAppointments: Appointment[] = appointments?.map((apt) => ({
         ...apt,
