@@ -3,11 +3,13 @@ import { APPOINTMENT_DATA } from '@/utills';
 import { groupAppointmentByPeriod } from '@/utills/appoitment-utills';
 
 export default function Home() {
+    //const appoint = await prisma.appointment.findMany();
+
     const periods = groupAppointmentByPeriod(APPOINTMENT_DATA);
 
     return (
         <div className="bg-background-primary p-6">
-            <div className="flex items-center justify-between md:m-8">
+            <div className="flex items-center justify-between mb-8">
                 <div>
                     <h1 className="text-title-size text-content-primary mb-2">
                         Sua Agenda
