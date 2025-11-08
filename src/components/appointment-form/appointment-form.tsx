@@ -20,7 +20,14 @@ import {
     FormLabel,
     FormMessage,
 } from '@/components/ui/form';
-import { Calendar1Icon, ChevronDownIcon, Dog, Phone, User } from 'lucide-react';
+import {
+    Calendar1Icon,
+    ChevronDownIcon,
+    Clock,
+    Dog,
+    Phone,
+    User,
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { IMaskInput } from 'react-imask';
@@ -29,6 +36,13 @@ import { PopoverTrigger } from '@radix-ui/react-popover';
 import { cn } from '@/lib/utils';
 import { format, setHours, setMinutes, startOfToday } from 'date-fns';
 import { Calendar } from '../ui/calendar';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '../ui/select';
 
 const appointmentFormSchema = z
     .object({
@@ -255,6 +269,42 @@ export const AppointmentForm = () => {
                                     </Popover>
                                     <FormControl>
                                         <Textarea placeholder="Descrição do serviço" />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="time"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-label-medium-size text-content-primary">
+                                        Horas
+                                    </FormLabel>
+                                    <FormControl>
+                                        <Select
+                                            onValueChange={field.onChange}
+                                            value={field.value}
+                                        >
+                                            <SelectTrigger>
+                                                <div className="flex items-center gap-2">
+                                                    <Clock className="h-4 w-4 text-content-brand" />
+                                                    <SelectValue placeholder="--:-- --" />
+                                                </div>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {timeOptions.map((time) => (
+                                                    <SelectItem
+                                                        key={time}
+                                                        value={time}
+                                                    >
+                                                        {time}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
