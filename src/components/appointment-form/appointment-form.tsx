@@ -20,38 +20,48 @@ import {
     FormLabel,
     FormMessage,
 } from '@/components/ui/form';
-import {
-    Calendar1Icon,
-    ChevronDown,
-    ChevronDownIcon,
-    Dog,
-    Phone,
-    User,
-} from 'lucide-react';
+import { Calendar1Icon, ChevronDownIcon, Dog, Phone, User } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { IMaskInput } from 'react-imask';
 import { Popover, PopoverContent } from '../ui/popover';
 import { PopoverTrigger } from '@radix-ui/react-popover';
 import { cn } from '@/lib/utils';
-import { format, startOfToday } from 'date-fns';
+import { format, setHours, setMinutes, startOfToday } from 'date-fns';
 import { Calendar } from '../ui/calendar';
 
-const appointmentFormSchema = z.object({
-    tutorName: z
-        .string()
-        .min(3, 'O nome do tutor deve ter no mínimo 3 caracteres'),
-    petName: z.string().min(3, 'O nome do pet deve ter no mínimo 3 caracteres'),
-    phone: z.string().min(11, 'O telefone deve ter no mínimo 10 caracteres'),
-    description: z
-        .string()
-        .min(3, 'A descrição deve ter no mínimo 3 caracteres'),
-    sheduleAt: z
-        .date({
-            error: 'Data é obrigatória',
-        })
-        .min(startOfToday(), { message: 'A data não pode ser no passado' }),
-});
+const appointmentFormSchema = z
+    .object({
+        tutorName: z
+            .string()
+            .min(3, 'O nome do tutor deve ter no mínimo 3 caracteres'),
+        petName: z
+            .string()
+            .min(3, 'O nome do pet deve ter no mínimo 3 caracteres'),
+        phone: z
+            .string()
+            .min(11, 'O telefone deve ter no mínimo 10 caracteres'),
+        description: z
+            .string()
+            .min(3, 'A descrição deve ter no mínimo 3 caracteres'),
+        sheduleAt: z
+            .date({
+                error: 'Data é obrigatória',
+            })
+            .min(startOfToday(), { message: 'A data não pode ser no passado' }),
+        time: z.string().min(5, 'O horário é obrigatório'),
+    })
+    .refine(
+        (data) => {
+            const [hour, minute] = data.time.split(':');
+            const scheduledDateTime = setMinutes(
+                setHours(data.sheduleAt!, Number(hour)),
+                Number(minute)
+            );
+            return scheduledDateTime >= new Date();
+        },
+        { path: ['time'], message: 'O horário deve ser no futuro' }
+    );
 
 type AppointmentFormValues = z.infer<typeof appointmentFormSchema>;
 
@@ -250,10 +260,28 @@ export const AppointmentForm = () => {
                                 </FormItem>
                             )}
                         />
-                        <Button type="submit">Agendar</Button>
+                        <Button variant="brand" type="submit">
+                            Agendar
+                        </Button>
                     </form>
                 </Form>
             </DialogContent>
         </Dialog>
     );
 };
+
+const generateTimeOptions = (): string[] => {
+    const times = [];
+    for (let hour = 9; hour <= 21; hour++) {
+        for (let minute = 0; minute <= 60; minute += 30) {
+            if (hour === 21 && minute > 0) break;
+            const timeString = `${hour.toString().padStart(2, '0')}:${minute
+                .toString()
+                .padStart(2, '0')}`;
+            times.push(timeString);
+        }
+    }
+    return times;
+};
+
+const timeOptions = generateTimeOptions();
