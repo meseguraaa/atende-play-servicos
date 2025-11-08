@@ -1,3 +1,4 @@
+import { AppointmentForm } from '@/components/appointment-form';
 import { PeriodSection } from '@/components/period-section/period-section';
 import { APPOINTMENT_DATA } from '@/utills';
 import { groupAppointmentByPeriod } from '@/utills/appoitment-utills';
@@ -25,6 +26,9 @@ export default function Home() {
                 {periods.map((period, index) => (
                     <PeriodSection period={period} key={index} />
                 ))}
+            </div>
+            <div>
+                <AppointmentForm />
             </div>
         </div>
     );
