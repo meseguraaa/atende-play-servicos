@@ -20,10 +20,22 @@ import {
     FormLabel,
     FormMessage,
 } from '@/components/ui/form';
-import { Dog, Phone, User } from 'lucide-react';
+import {
+    Calendar1Icon,
+    ChevronDown,
+    ChevronDownIcon,
+    Dog,
+    Phone,
+    User,
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { IMask, IMaskInput } from 'react-imask';
+import { IMaskInput } from 'react-imask';
+import { Popover, PopoverContent } from '../ui/popover';
+import { PopoverTrigger } from '@radix-ui/react-popover';
+import { cn } from '@/lib/utils';
+import { format, startOfToday } from 'date-fns';
+import { Calendar } from '../ui/calendar';
 
 const appointmentFormSchema = z.object({
     tutorName: z
@@ -34,6 +46,11 @@ const appointmentFormSchema = z.object({
     description: z
         .string()
         .min(3, 'A descrição deve ter no mínimo 3 caracteres'),
+    sheduleAt: z
+        .date({
+            error: 'Data é obrigatória',
+        })
+        .min(startOfToday(), { message: 'A data não pode ser no passado' }),
 });
 
 type AppointmentFormValues = z.infer<typeof appointmentFormSchema>;
@@ -46,6 +63,7 @@ export const AppointmentForm = () => {
             petName: '',
             phone: '',
             description: '',
+            sheduleAt: undefined,
         },
     });
 
@@ -168,6 +186,65 @@ export const AppointmentForm = () => {
                                             placeholder="Descrição do serviço"
                                             className="resize-none"
                                         />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="sheduleAt"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-col">
+                                    <FormLabel className="text-label-medium-size text-content-primary">
+                                        Data
+                                    </FormLabel>
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <FormControl>
+                                                <Button
+                                                    variant="outline"
+                                                    className={cn(
+                                                        'w-full justify-between text-left font-normal bg-background-tertiary border-border-primary text-content-primary hover:bg-background-tertiary hover:border-border-secondary hover:text-content-primary focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand focus:border-border-brand focus-visible:border-border-brand',
+                                                        !field.value &&
+                                                            'text-content-secondary'
+                                                    )}
+                                                >
+                                                    <div className="flex items-center gap-2">
+                                                        <Calendar1Icon
+                                                            className="text-content-brand"
+                                                            size={20}
+                                                        />
+                                                        {field.value ? (
+                                                            format(
+                                                                field.value,
+                                                                'dd/MM/yyyy'
+                                                            )
+                                                        ) : (
+                                                            <span>
+                                                                Selecione uma
+                                                                data
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <ChevronDownIcon className="opacity-50 h-4 w-4" />
+                                                </Button>
+                                            </FormControl>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0 align-start">
+                                            <Calendar
+                                                mode="single"
+                                                selected={field.value}
+                                                onSelect={field.onChange}
+                                                disabled={(date) =>
+                                                    date < startOfToday()
+                                                }
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+                                    <FormControl>
+                                        <Textarea placeholder="Descrição do serviço" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
