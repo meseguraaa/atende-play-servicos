@@ -61,7 +61,7 @@ const appointmentFormSchema = z
         description: z
             .string()
             .min(3, 'A descrição deve ter no mínimo 3 caracteres'),
-        sheduleAt: z
+        scheduleAt: z
             .date({
                 error: 'Data é obrigatória',
             })
@@ -72,7 +72,7 @@ const appointmentFormSchema = z
         (data) => {
             const [hour, minute] = data.time.split(':');
             const scheduleDateTime = setMinutes(
-                setHours(data.sheduleAt, Number(hour)),
+                setHours(data.scheduleAt, Number(hour)),
                 Number(minute)
             );
             return scheduleDateTime > new Date();
@@ -93,7 +93,7 @@ export const AppointmentForm = () => {
             petName: '',
             phone: '',
             description: '',
-            sheduleAt: undefined,
+            scheduleAt: undefined,
             time: '',
         },
     });
@@ -101,15 +101,22 @@ export const AppointmentForm = () => {
     const onSubmit = async (data: AppointmentFormValues) => {
         const [hour, minute] = data.time.split(':');
 
-        const scheduledAt = new Date(data.sheduleAt);
-        scheduledAt.setHours(Number(hour), Number(minute), 0, 0);
+        const scheduleAt = new Date(data.scheduleAt);
+        scheduleAt.setHours(Number(hour), Number(minute), 0, 0);
 
-        await createAppointment({
+        const result = await createAppointment({
             ...data,
-            scheduledAt,
+            scheduleAt,
         });
 
+        if (result?.error) {
+            toast.error(result.error);
+            return;
+        }
+
         toast.success(`Agendamento criado com sucesso`);
+
+        form.reset();
     };
 
     return (
@@ -237,7 +244,7 @@ export const AppointmentForm = () => {
                         <div className="space-y-4 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
                             <FormField
                                 control={form.control}
-                                name="sheduleAt"
+                                name="scheduleAt"
                                 render={({ field }) => (
                                     <FormItem className="flex flex-col">
                                         <FormLabel className="text-label-medium-size text-content-primary">
@@ -349,7 +356,7 @@ export const AppointmentForm = () => {
 const generateTimeOptions = (): string[] => {
     const times = [];
     for (let hour = 9; hour <= 21; hour++) {
-        for (let minute = 0; minute <= 60; minute += 30) {
+        for (let minute = 0; minute < 60; minute += 30) {
             if (hour === 21 && minute > 0) break;
             const timeString = `${hour.toString().padStart(2, '0')}:${minute
                 .toString()

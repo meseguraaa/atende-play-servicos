@@ -3,7 +3,7 @@
 import { prisma } from '@/lib/prisma';
 import z from 'zod';
 
-const appointmentFormSchema = z.object({
+const appointmentSchema = z.object({
     tutorName: z.string(),
     petName: z.string(),
     phone: z.string(),
@@ -11,11 +11,12 @@ const appointmentFormSchema = z.object({
     scheduleAt: z.date(),
 });
 
-type AppointmentFormValues = z.infer<typeof appointmentFormSchema>;
+type AppointmentData = z.infer<typeof appointmentSchema>;
 
-export async function createAppointment(data: any) {
+export async function createAppointment(data: AppointmentData) {
     try {
-        const parsedData = appointmentFormSchema.parse(data);
+        const parsedData = appointmentSchema.parse(data);
+
         const { scheduleAt } = parsedData;
         const hour = scheduleAt.getHours();
 
@@ -30,9 +31,7 @@ export async function createAppointment(data: any) {
         }
 
         const existingAppointments = await prisma.appointment.findFirst({
-            where: {
-                scheduleAt: parsedData.scheduleAt,
-            },
+            where: { scheduleAt },
         });
 
         if (existingAppointments) {
@@ -42,17 +41,9 @@ export async function createAppointment(data: any) {
         }
 
         await prisma.appointment.create({
-            data: {
-                ...parsedData,
-            },
+            data: { ...parsedData },
         });
-
-        return {
-            success: true,
-        };
     } catch (error) {
-        return {
-            error: 'Erro ao criar agendamento',
-        };
+        console.log(error);
     }
 }
