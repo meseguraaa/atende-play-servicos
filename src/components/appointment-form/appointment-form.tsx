@@ -44,6 +44,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from '../ui/select';
+import { toast } from 'sonner';
+import { createAppointment } from '@/app/actions';
 
 const appointmentFormSchema = z
     .object({
@@ -96,8 +98,18 @@ export const AppointmentForm = () => {
         },
     });
 
-    const onSubmit = (data: AppointmentFormValues) => {
-        console.log(data);
+    const onSubmit = async (data: AppointmentFormValues) => {
+        const [hour, minute] = data.time.split(':');
+
+        const scheduledAt = new Date(data.sheduleAt);
+        scheduledAt.setHours(Number(hour), Number(minute), 0, 0);
+
+        await createAppointment({
+            ...data,
+            scheduledAt,
+        });
+
+        toast.success(`Agendamento criado com sucesso`);
     };
 
     return (
@@ -214,6 +226,7 @@ export const AppointmentForm = () => {
                                         <Textarea
                                             placeholder="Descrição do serviço"
                                             className="resize-none"
+                                            {...field}
                                         />
                                     </FormControl>
                                     <FormMessage />
@@ -294,7 +307,7 @@ export const AppointmentForm = () => {
                                                 <SelectTrigger>
                                                     <div className="flex items-center gap-2">
                                                         <Clock className="h-4 w-4 text-content-brand" />
-                                                        <SelectValue placeholder="--:-- --" />
+                                                        <SelectValue placeholder="--:--" />
                                                     </div>
                                                 </SelectTrigger>
                                                 <SelectContent>
