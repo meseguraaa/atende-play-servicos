@@ -1,5 +1,30 @@
+'use client';
+
 import { cn } from '@/lib/utils';
 import { Appointment } from '@/types/appointment';
+import { AppointmentForm } from '../appointment-form';
+import { Button } from '../ui/button';
+import {
+    Pen as EditIcon,
+    Trash2 as DeleteIcon,
+    Loader2 as LoadingingIcon,
+} from 'lucide-react';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '../ui/alert-dialog';
+import { AlertDialogTrigger } from '@radix-ui/react-alert-dialog';
+import { set } from 'zod';
+import { useState } from 'react';
+import { deleteAppointment } from '@/app/actions';
+import { toast } from 'sonner';
+import { is } from 'date-fns/locale';
 
 type AppointmentCardProps = {
     appointment: Appointment;
@@ -10,6 +35,18 @@ export const AppointmentCard = ({
     appointment,
     isFirstInSection = false,
 }: AppointmentCardProps) => {
+    const [isDeleting, setIsDeleting] = useState(false);
+    const handleDelete = async () => {
+        setIsDeleting(true);
+        const result = await deleteAppointment(appointment.id);
+
+        if (result?.error) {
+            toast.error(result.error);
+            return;
+        }
+        toast.success('Agendamento excluído com sucesso');
+        setIsDeleting(false);
+    };
     return (
         <div
             className={cn(
@@ -41,6 +78,43 @@ export const AppointmentCard = ({
                 <span className="text-paragraph-small-size text-content-secondary">
                     {appointment.description}
                 </span>
+            </div>
+            <div className="text-right mt-2 md:mt-0 col-span-2 md:col-span-1 flex justify-end items-center gap-2">
+                <AppointmentForm appointment={appointment}>
+                    <Button variant="edit" size="icon">
+                        <EditIcon size={16}></EditIcon>
+                    </Button>
+                </AppointmentForm>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="remove" size="icon">
+                            <DeleteIcon size={16}></DeleteIcon>
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>
+                                Excluir agendamento
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Tem certeza que deseja excluir este agendamento?
+                                Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={handleDelete}
+                                disabled={isDeleting}
+                            >
+                                {isDeleting && (
+                                    <LoadingingIcon className="mr-2 h-4 w-4 animate-spin" />
+                                )}
+                                Confirmar exclusão
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </div>
     );

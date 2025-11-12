@@ -8,10 +8,7 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
-import { Button } from '../ui/button';
-import z from 'zod';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { Button } from '@/components/ui/button';
 import {
     Form,
     FormControl,
@@ -20,8 +17,13 @@ import {
     FormLabel,
     FormMessage,
 } from '@/components/ui/form';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import z from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
-    Calendar1Icon,
+    CalendarIcon,
     ChevronDownIcon,
     Clock,
     Dog,
@@ -29,13 +31,10 @@ import {
     Phone,
     User,
 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { IMaskInput } from 'react-imask';
-import { Popover, PopoverContent } from '../ui/popover';
-import { PopoverTrigger } from '@radix-ui/react-popover';
-import { cn } from '@/lib/utils';
 import { format, setHours, setMinutes, startOfToday } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { cn } from '@/lib/utils';
 import { Calendar } from '../ui/calendar';
 import {
     Select,
@@ -45,27 +44,23 @@ import {
     SelectValue,
 } from '../ui/select';
 import { toast } from 'sonner';
-import { createAppointment } from '@/app/actions';
+import { createAppointment, updateAppointment } from '@/app/actions';
+import { useEffect, useState } from 'react';
+import { Appointment } from '@/types/appointment';
 
 const appointmentFormSchema = z
     .object({
-        tutorName: z
-            .string()
-            .min(3, 'O nome do tutor deve ter no mínimo 3 caracteres'),
-        petName: z
-            .string()
-            .min(3, 'O nome do pet deve ter no mínimo 3 caracteres'),
-        phone: z
-            .string()
-            .min(11, 'O telefone deve ter no mínimo 10 caracteres'),
-        description: z
-            .string()
-            .min(3, 'A descrição deve ter no mínimo 3 caracteres'),
+        tutorName: z.string().min(3, 'O nome do tutor é obrigatório'),
+        petName: z.string().min(3, 'O nome do pet é obrigatório'),
+        phone: z.string().min(11, 'O telefone é obrigatório'),
+        description: z.string().min(3, 'A descrição é obrigatória'),
         scheduleAt: z
             .date({
-                error: 'Data é obrigatória',
+                error: 'A data é obrigatória',
             })
-            .min(startOfToday(), { message: 'A data não pode ser no passado' }),
+            .min(startOfToday(), {
+                message: 'A data não pode ser no passado',
+            }),
         time: z.string().min(1, 'A hora é obrigatória'),
     })
     .refine(
@@ -83,10 +78,20 @@ const appointmentFormSchema = z
         }
     );
 
-type AppointmentFormValues = z.infer<typeof appointmentFormSchema>;
+type AppointFormValues = z.infer<typeof appointmentFormSchema>;
 
-export const AppointmentForm = () => {
-    const form = useForm<AppointmentFormValues>({
+type AppointmentFormProps = {
+    appointment?: Appointment;
+    children?: React.ReactNode;
+};
+
+export const AppointmentForm = ({
+    appointment,
+    children,
+}: AppointmentFormProps) => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    const form = useForm<AppointFormValues>({
         resolver: zodResolver(appointmentFormSchema),
         defaultValues: {
             tutorName: '',
@@ -98,32 +103,44 @@ export const AppointmentForm = () => {
         },
     });
 
-    const onSubmit = async (data: AppointmentFormValues) => {
+    const onSubmit = async (data: AppointFormValues) => {
         const [hour, minute] = data.time.split(':');
 
         const scheduleAt = new Date(data.scheduleAt);
         scheduleAt.setHours(Number(hour), Number(minute), 0, 0);
 
-        const result = await createAppointment({
-            ...data,
-            scheduleAt,
-        });
+        const isEdit = !!appointment?.id;
+
+        const result = isEdit
+            ? await updateAppointment(appointment.id, {
+                  ...data,
+                  scheduleAt,
+              })
+            : await createAppointment({
+                  ...data,
+                  scheduleAt,
+              });
 
         if (result?.error) {
             toast.error(result.error);
             return;
         }
 
-        toast.success(`Agendamento criado com sucesso`);
+        toast.success(
+            `Agendamento ${isEdit ? 'atualizado' : 'criado'} com sucesso!`
+        );
 
+        setIsOpen(false);
         form.reset();
     };
 
+    useEffect(() => {
+        form.reset(appointment);
+    }, [appointment, form]);
+
     return (
-        <Dialog>
-            <DialogTrigger asChild>
-                <Button variant="brand">Agendar Consulta</Button>
-            </DialogTrigger>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            {children && <DialogTrigger asChild>{children}</DialogTrigger>}
 
             <DialogContent
                 variant="appointment"
@@ -131,12 +148,15 @@ export const AppointmentForm = () => {
                 showCloseButton
             >
                 <DialogHeader>
-                    <DialogTitle size="modal">Agendar Consulta</DialogTitle>
+                    <DialogTitle size="modal">
+                        Agende um atendimento
+                    </DialogTitle>
                     <DialogDescription size="modal">
-                        Preencha o formulário abaixo para agendar uma consulta
-                        para o seu pet.
+                        Preencha os dados do cliente para realizar o
+                        agendamento:
                     </DialogDescription>
                 </DialogHeader>
+
                 <Form {...form}>
                     <form
                         onSubmit={form.handleSubmit(onSubmit)}
@@ -209,9 +229,9 @@ export const AppointmentForm = () => {
                                                 size={20}
                                             />
                                             <IMaskInput
+                                                placeholder="(99) 99999-9999"
                                                 mask="(00) 00000-0000"
-                                                placeholder="(00) 00000-0000"
-                                                className="pl-12 flex h-12 w-full rounded-md border border-border-primary bg-background-tertiary px-3 py-2 text-sm text-content-primary ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-content-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-border-brand disabled:cursor-not-allowed disabled:opacity-50 hover:border-border-secondary focus:border-border-brand focus-visible:border-border-brand aria-invalid:ring-destructive/20 aria-invalid:border-destructive"
+                                                className="pl-10 flex h-12 w-full rounded-md border border-border-primary bg-background-tertiary px-3 py-2 text-sm text-content-primary ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-content-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-border-brand disabled:cursor-not-allowed disabled:opacity-50 hover:border-border-secondary focus:border-border-brand focus-visible:border-border-brand aria-invalid:ring-destructive/20 aria-invalid:border-destructive"
                                                 {...field}
                                             />
                                         </div>
@@ -256,14 +276,14 @@ export const AppointmentForm = () => {
                                                     <Button
                                                         variant="outline"
                                                         className={cn(
-                                                            'h-12 w-full justify-between text-left font-normal bg-background-tertiary border-border-primary text-content-primary hover:bg-background-tertiary hover:border-border-secondary hover:text-content-primary focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand focus:border-border-brand focus-visible:border-border-brand',
+                                                            'w-full justify-between text-left font-normal bg-background-tertiary border-border-primary text-content-primary hover:bg-background-tertiary hover:border-border-secondary hover:text-content-primary focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand focus:border-border-brand focus-visible:border-border-brand',
                                                             !field.value &&
                                                                 'text-content-secondary'
                                                         )}
                                                     >
                                                         <div className="flex items-center gap-2">
-                                                            <Calendar1Icon
-                                                                className="text-content-brand"
+                                                            <CalendarIcon
+                                                                className=" text-content-brand"
                                                                 size={20}
                                                             />
                                                             {field.value ? (
@@ -282,7 +302,10 @@ export const AppointmentForm = () => {
                                                     </Button>
                                                 </FormControl>
                                             </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0 align-start">
+                                            <PopoverContent
+                                                className="w-auto p-0"
+                                                align="start"
+                                            >
                                                 <Calendar
                                                     mode="single"
                                                     selected={field.value}
@@ -304,7 +327,7 @@ export const AppointmentForm = () => {
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="text-label-medium-size text-content-primary">
-                                            Horas
+                                            Hora
                                         </FormLabel>
                                         <FormControl>
                                             <Select
@@ -314,18 +337,20 @@ export const AppointmentForm = () => {
                                                 <SelectTrigger>
                                                     <div className="flex items-center gap-2">
                                                         <Clock className="h-4 w-4 text-content-brand" />
-                                                        <SelectValue placeholder="--:--" />
+                                                        <SelectValue placeholder="--:-- --" />
                                                     </div>
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    {timeOptions.map((time) => (
-                                                        <SelectItem
-                                                            key={time}
-                                                            value={time}
-                                                        >
-                                                            {time}
-                                                        </SelectItem>
-                                                    ))}
+                                                    {TIME_OPTIONS.map(
+                                                        (time) => (
+                                                            <SelectItem
+                                                                key={time}
+                                                                value={time}
+                                                            >
+                                                                {time}
+                                                            </SelectItem>
+                                                        )
+                                                    )}
                                                 </SelectContent>
                                             </Select>
                                         </FormControl>
@@ -334,10 +359,11 @@ export const AppointmentForm = () => {
                                 )}
                             />
                         </div>
+
                         <div className="flex justify-end">
                             <Button
-                                variant="brand"
                                 type="submit"
+                                variant="brand"
                                 disabled={form.formState.isSubmitting}
                             >
                                 {form.formState.isSubmitting && (
@@ -355,16 +381,16 @@ export const AppointmentForm = () => {
 
 const generateTimeOptions = (): string[] => {
     const times = [];
+
     for (let hour = 9; hour <= 21; hour++) {
         for (let minute = 0; minute < 60; minute += 30) {
             if (hour === 21 && minute > 0) break;
-            const timeString = `${hour.toString().padStart(2, '0')}:${minute
-                .toString()
-                .padStart(2, '0')}`;
+            const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
             times.push(timeString);
         }
     }
+
     return times;
 };
 
-const timeOptions = generateTimeOptions();
+const TIME_OPTIONS = generateTimeOptions();
