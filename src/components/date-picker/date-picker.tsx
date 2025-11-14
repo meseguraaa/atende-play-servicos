@@ -13,6 +13,7 @@ import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { addDays, format, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { NavigationButton } from './navigation-button';
 
 export const DatePicker = () => {
     const router = useRouter();
@@ -59,9 +60,12 @@ export const DatePicker = () => {
 
     return (
         <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => handleNavigateDay(-1)}>
+            <NavigationButton
+                tooltipText="Dia anterior"
+                onClick={() => handleNavigateDay(-1)}
+            >
                 <ChevronLeft className="h-4 w-4" />
-            </Button>
+            </NavigationButton>
 
             <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
                 <PopoverTrigger asChild>
@@ -91,9 +95,12 @@ export const DatePicker = () => {
                 </PopoverContent>
             </Popover>
 
-            <Button variant="outline" onClick={() => handleNavigateDay(1)}>
+            <NavigationButton
+                tooltipText="Próximo dia"
+                onClick={() => handleNavigateDay(1)}
+            >
                 <ChevronRight className="h-4 w-4" />
-            </Button>
+            </NavigationButton>
         </div>
     );
 };
