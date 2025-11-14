@@ -1,8 +1,14 @@
 'use client';
 
-import { Calendar, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+    Calendar as CalendarIcon,
+    ChevronDown,
+    ChevronLeft,
+    ChevronRight,
+} from 'lucide-react';
 import { Button } from '../ui/button';
-import { Popover, PopoverTrigger } from '../ui/popover';
+import { Calendar } from '../ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { addDays, format, isValid } from 'date-fns';
@@ -40,6 +46,13 @@ export const DatePicker = () => {
         updateURLWithDate(newDate);
     };
 
+    const handdleDateSelect = (selectedDate: Date | undefined) => {
+        if (selectedDate) {
+            updateURLWithDate(selectedDate);
+        }
+        setIsPopoverOpen(false);
+    };
+
     useEffect(() => {
         setDate(getInitialDate());
     }, [getInitialDate]);
@@ -57,9 +70,9 @@ export const DatePicker = () => {
                         className="w-min[180px] justify-between text-left font-normal bg-transparent border-border-primary text-content-primary hover:bg-background-tertiary hover:border-border-secondary hover:text-content-primary focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand focus:border-border-brand focus-visible:border-border-brand"
                     >
                         <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-content-brand" />
+                            <CalendarIcon className="h-4 w-4 text-content-brand" />
                             {date ? (
-                                format(date, 'PPP', { locale: ptBR })
+                                format(date, 'dd/MM/yyyy', { locale: ptBR })
                             ) : (
                                 <span>Selecione uma data</span>
                             )}
@@ -67,6 +80,15 @@ export const DatePicker = () => {
                         <ChevronDown className="h-4 w-4 opacity-50" />
                     </Button>
                 </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                    <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={handdleDateSelect}
+                        autoFocus
+                        locale={ptBR}
+                    />
+                </PopoverContent>
             </Popover>
 
             <Button variant="outline" onClick={() => handleNavigateDay(1)}>
