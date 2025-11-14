@@ -4,11 +4,44 @@ import { PeriodSection } from '@/components/period-section/period-section';
 import { Button } from '@/components/ui/button';
 import { prisma } from '@/lib/prisma';
 import { groupAppointmentByPeriod } from '@/utills/appoitment-utills';
-import { se } from 'date-fns/locale';
+import { endOfDay, startOfDay } from 'date-fns';
 
-export default async function Home() {
-    const appointments = await prisma.appointment.findMany();
-    console.log(appointments);
+// força essa página a ser dinâmica (sem cache estático)
+export const dynamic = 'force-dynamic';
+
+type HomeProps = {
+    searchParams: Promise<{
+        date?: string;
+    }>;
+};
+
+export default async function Home({ searchParams }: HomeProps) {
+    // 👉 searchParams agora é uma Promise, então precisamos dar await
+    const resolvedSearchParams = await searchParams;
+    const dateParam = resolvedSearchParams.date;
+
+    // Data base vinda da URL (?date=yyyy-MM-dd) ou hoje
+    const baseDate = (() => {
+        if (!dateParam) return new Date();
+
+        const [year, month, day] = dateParam.split('-').map(Number);
+        return new Date(year, month - 1, day);
+    })();
+
+    const dayStart = startOfDay(baseDate);
+    const dayEnd = endOfDay(baseDate);
+
+    const appointments = await prisma.appointment.findMany({
+        where: {
+            scheduleAt: {
+                gte: dayStart,
+                lte: dayEnd,
+            },
+        },
+        orderBy: {
+            scheduleAt: 'asc',
+        },
+    });
 
     const periods = groupAppointmentByPeriod(appointments);
 
@@ -28,6 +61,7 @@ export default async function Home() {
                     <DatePicker />
                 </div>
             </div>
+
             <div className="mt-3 mb-8 md:hidden">
                 <DatePicker />
             </div>
@@ -37,7 +71,8 @@ export default async function Home() {
                     <PeriodSection period={period} key={index} />
                 ))}
             </div>
-            <div className="fixed bottom-0 left-0 right-0 flex justify-center bg-[#23242d] py-[18px] px-6 md:bottom-6 md:right-6 md: md:left-auto md:top-auto md:w-auto md:bg-transparent md:p-0">
+
+            <div className="fixed bottom-0 left-0 right-0 flex justify-center bg-[#23242d] py-[18px] px-6 md:bottom-6 md:right-6 md:left-auto md:top-auto md:w-auto md:bg-transparent md:p-0">
                 <AppointmentForm>
                     <Button variant="brand">Agendar Consulta</Button>
                 </AppointmentForm>
