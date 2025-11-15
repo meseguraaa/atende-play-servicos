@@ -20,11 +20,10 @@ import {
     AlertDialogTitle,
 } from '../ui/alert-dialog';
 import { AlertDialogTrigger } from '@radix-ui/react-alert-dialog';
-import { set } from 'zod';
 import { useState } from 'react';
 import { deleteAppointment } from '@/app/actions';
 import { toast } from 'sonner';
-import { is } from 'date-fns/locale';
+import { formatTimeSaoPaulo } from '@/utills/datetime';
 
 type AppointmentCardProps = {
     appointment: Appointment;
@@ -36,17 +35,21 @@ export const AppointmentCard = ({
     isFirstInSection = false,
 }: AppointmentCardProps) => {
     const [isDeleting, setIsDeleting] = useState(false);
+
     const handleDelete = async () => {
         setIsDeleting(true);
         const result = await deleteAppointment(appointment.id);
 
         if (result?.error) {
             toast.error(result.error);
+            setIsDeleting(false);
             return;
         }
+
         toast.success('Agendamento excluído com sucesso');
         setIsDeleting(false);
     };
+
     return (
         <div
             className={cn(
@@ -56,7 +59,8 @@ export const AppointmentCard = ({
         >
             <div className="text-left pr-4 md:pr-0">
                 <span className="text-label-small text-content-primary font-semibold">
-                    {appointment.time}
+                    {/* sempre formata no fuso de São Paulo */}
+                    {formatTimeSaoPaulo(appointment.scheduleAt)}
                 </span>
             </div>
 
@@ -79,16 +83,17 @@ export const AppointmentCard = ({
                     {appointment.description}
                 </span>
             </div>
+
             <div className="text-right mt-2 md:mt-0 col-span-2 md:col-span-1 flex justify-end items-center gap-2">
                 <AppointmentForm appointment={appointment}>
                     <Button variant="edit" size="icon">
-                        <EditIcon size={16}></EditIcon>
+                        <EditIcon size={16} />
                     </Button>
                 </AppointmentForm>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="remove" size="icon">
-                            <DeleteIcon size={16}></DeleteIcon>
+                            <DeleteIcon size={16} />
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
