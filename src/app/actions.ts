@@ -18,6 +18,28 @@ const appointmentSchema = z.object({
 export type AppointmentData = z.infer<typeof appointmentSchema>;
 
 /* ---------------------------------------------------------
+ * Helper: hora em São Paulo (America/Sao_Paulo)
+ * ---------------------------------------------------------*/
+function getSaoPauloHour(date: Date): number {
+    const formatter = new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        hour: 'numeric',
+        hour12: false,
+    });
+
+    const parts = formatter.formatToParts(date);
+    const hourPart = parts.find((p) => p.type === 'hour');
+
+    // fallback só por segurança
+    if (!hourPart) {
+        // São Paulo normalmente é UTC-3 (sem horário de verão hoje em dia)
+        return (date.getUTCHours() + 21) % 24; // getUTCHours() - 3, mas em módulo 24
+    }
+
+    return Number(hourPart.value);
+}
+
+/* ---------------------------------------------------------
  * Tabela de janelas de horários (manhã, tarde, noite)
  * ---------------------------------------------------------*/
 const SCHEDULE_WINDOWS = [
@@ -30,7 +52,8 @@ const SCHEDULE_WINDOWS = [
  * Validação de horário permitido (manhã/tarde/noite)
  * ---------------------------------------------------------*/
 function validateScheduleWindow(scheduleAt: Date): string | null {
-    const hour = scheduleAt.getHours();
+    // Usa a HORA de São Paulo, não a hora local do servidor
+    const hour = getSaoPauloHour(scheduleAt);
 
     const isValid = SCHEDULE_WINDOWS.some(
         (window) => hour >= window.start && hour < window.end
@@ -41,7 +64,7 @@ function validateScheduleWindow(scheduleAt: Date): string | null {
             (w) => `${w.start}h-${w.end}h`
         ).join(', ');
 
-        return `Agendamentos só podem ser feitos entre ${allowed}`;
+        return `Agendamentos só podem ser feitos entre ${allowed} (horário de São Paulo)`;
     }
 
     return null;
@@ -49,6 +72,7 @@ function validateScheduleWindow(scheduleAt: Date): string | null {
 
 /* ---------------------------------------------------------
  * Checar se existe outro agendamento no mesmo horário
+ * (usa o instante exato em UTC, o que é correto)
  * ---------------------------------------------------------*/
 async function ensureAvailability(
     scheduleAt: Date,
