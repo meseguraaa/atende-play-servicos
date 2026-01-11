@@ -6,13 +6,19 @@ import {
     ChevronLeft,
     ChevronRight,
 } from 'lucide-react';
-import { Button } from '../ui/button';
-import { Calendar } from '../ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { usePathname, useSearchParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { addDays, format, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+
 import { NavigationButton } from './navigation-button';
 
 export const DatePicker = () => {
@@ -84,6 +90,7 @@ export const DatePicker = () => {
                         <ChevronDown className="h-4 w-4 opacity-50" />
                     </Button>
                 </PopoverTrigger>
+
                 <PopoverContent className="w-auto p-0">
                     <Calendar
                         mode="single"
