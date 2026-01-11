@@ -3,7 +3,6 @@
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 import {
@@ -23,7 +22,17 @@ import {
     DialogFooter,
 } from '@/components/ui/dialog';
 
-import { Clock } from 'lucide-react';
+import { Calendar as UICalendar } from '@/components/ui/calendar';
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover';
+
+import { format, isValid } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+import { Calendar as CalendarIcon, ChevronDown, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 const WEEKDAY_SHORT = [
@@ -149,6 +158,14 @@ function todayISO() {
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+}
+
+function parseISODateToDate(dateISO: string): Date | null {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateISO)) return null;
+    const [y, m, d] = dateISO.split('-').map(Number);
+    if (!y || !m || !d) return null;
+    const parsed = new Date(y, m - 1, d);
+    return isValid(parsed) ? parsed : null;
 }
 
 function formatDateBR(iso: string) {
@@ -357,6 +374,8 @@ export function UnitAvailabilityCard({
     const [exceptionOpen, setExceptionOpen] = React.useState(false);
     const [exceptionSaving, setExceptionSaving] = React.useState(false);
 
+    const [datePopoverOpen, setDatePopoverOpen] = React.useState(false);
+
     const [exceptionForm, setExceptionForm] = React.useState<{
         date: string;
         mode: ExceptionMode;
@@ -367,12 +386,17 @@ export function UnitAvailabilityCard({
         intervals: [{ startTime: '12:00', endTime: '14:00' }],
     });
 
+    const selectedDate = React.useMemo(() => {
+        return parseISODateToDate(exceptionForm.date) ?? new Date();
+    }, [exceptionForm.date]);
+
     function resetExceptionForm() {
         setExceptionForm({
             date: todayISO(),
             mode: 'INTERVALS',
             intervals: [{ startTime: '12:00', endTime: '14:00' }],
         });
+        setDatePopoverOpen(false);
     }
 
     function openExceptionModal() {
@@ -383,6 +407,7 @@ export function UnitAvailabilityCard({
     function closeExceptionModal() {
         if (exceptionSaving) return;
         setExceptionOpen(false);
+        setDatePopoverOpen(false);
     }
 
     function addInterval() {
@@ -548,11 +573,21 @@ export function UnitAvailabilityCard({
             {/* =========================
              * MODAL: CRIAR EXCEÇÃO
              * ========================= */}
-            <Dialog open={exceptionOpen} onOpenChange={setExceptionOpen}>
-                <DialogContent className="sm:max-w-[560px]">
+            <Dialog
+                open={exceptionOpen}
+                onOpenChange={(v) =>
+                    v ? setExceptionOpen(true) : closeExceptionModal()
+                }
+            >
+                <DialogContent
+                    variant="appointment"
+                    overlayVariant="blurred"
+                    showCloseButton
+                    className="sm:max-w-[720px]"
+                >
                     <DialogHeader>
-                        <DialogTitle>Criar exceção</DialogTitle>
-                        <DialogDescription>
+                        <DialogTitle size="modal">Criar exceção</DialogTitle>
+                        <DialogDescription size="modal">
                             Bloqueie o dia inteiro (com base no padrão semanal)
                             ou crie pausas por intervalos.
                         </DialogDescription>
@@ -562,235 +597,353 @@ export function UnitAvailabilityCard({
                         onSubmit={handleCreateException}
                         className="space-y-4"
                     >
-                        <div className="grid gap-3">
-                            <div className="space-y-1">
-                                <p className="text-[11px] text-content-secondary">
+                        {/* DATA + TIPO */}
+                        <div className="grid gap-4 md:grid-cols-2">
+                            {/* DATA (DatePicker style ✅) */}
+                            <div className="space-y-2">
+                                <label className="text-label-medium-size text-content-primary">
                                     Data
+                                </label>
+
+                                <Popover
+                                    open={datePopoverOpen}
+                                    onOpenChange={setDatePopoverOpen}
+                                >
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="w-full justify-between text-left font-normal bg-transparent border-border-primary text-content-primary hover:bg-background-tertiary hover:border-border-secondary hover:text-content-primary focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand focus:border-border-brand focus-visible:border-border-brand"
+                                            disabled={exceptionSaving}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <CalendarIcon className="h-4 w-4 text-content-brand" />
+                                                {selectedDate ? (
+                                                    format(
+                                                        selectedDate,
+                                                        'dd/MM/yyyy',
+                                                        {
+                                                            locale: ptBR,
+                                                        }
+                                                    )
+                                                ) : (
+                                                    <span>
+                                                        Selecione uma data
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <ChevronDown className="h-4 w-4 opacity-50" />
+                                        </Button>
+                                    </PopoverTrigger>
+
+                                    <PopoverContent className="w-auto p-0">
+                                        <UICalendar
+                                            mode="single"
+                                            selected={selectedDate}
+                                            onSelect={(d) => {
+                                                if (!d) return;
+                                                setExceptionForm((p) => ({
+                                                    ...p,
+                                                    date: format(
+                                                        d,
+                                                        'yyyy-MM-dd'
+                                                    ),
+                                                }));
+                                                setDatePopoverOpen(false);
+                                            }}
+                                            autoFocus
+                                            locale={ptBR}
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+
+                                <p className="text-[11px] text-content-secondary/70">
+                                    Selecione uma data para criar o bloqueio.
                                 </p>
-                                <Input
-                                    type="date"
-                                    value={exceptionForm.date}
-                                    onChange={(e) =>
-                                        setExceptionForm((p) => ({
-                                            ...p,
-                                            date: e.target.value,
-                                        }))
-                                    }
-                                    className="bg-background-secondary border-border-primary text-content-primary"
-                                />
                             </div>
 
-                            <div className="space-y-1">
-                                <p className="text-[11px] text-content-secondary">
+                            {/* TIPO */}
+                            <div className="space-y-2">
+                                <label className="text-label-medium-size text-content-primary">
                                     Tipo de bloqueio
-                                </p>
+                                </label>
 
-                                {/* Select simples (sem depender de outro componente) */}
-                                <select
+                                <Select
                                     value={exceptionForm.mode}
-                                    onChange={(e) => {
-                                        const v = e.target
-                                            .value as ExceptionMode;
+                                    onValueChange={(v) =>
                                         setExceptionForm((p) => ({
                                             ...p,
-                                            mode: v,
-                                        }));
-                                    }}
-                                    className="h-10 w-full rounded-md border border-border-primary bg-background-secondary px-3 text-sm text-content-primary outline-none focus:ring-2 focus:ring-brand-primary/30"
+                                            mode: v as ExceptionMode,
+                                        }))
+                                    }
+                                    disabled={exceptionSaving}
                                 >
-                                    <option value="FULL_DAY">
-                                        Dia inteiro
-                                    </option>
-                                    <option value="INTERVALS">
-                                        Intervalos
-                                    </option>
-                                </select>
+                                    <SelectTrigger className="h-10 w-full justify-between text-left font-normal bg-background-tertiary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0">
+                                        <div className="flex items-center gap-2">
+                                            <Clock className="h-4 w-4 text-content-brand" />
+                                            <SelectValue placeholder="Selecione" />
+                                        </div>
+                                    </SelectTrigger>
 
-                                <p className="text-[11px] text-content-secondary/80">
+                                    <SelectContent>
+                                        <SelectItem value="FULL_DAY">
+                                            Dia inteiro
+                                        </SelectItem>
+                                        <SelectItem value="INTERVALS">
+                                            Intervalos
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                <p className="text-[11px] text-content-secondary/70">
                                     {exceptionForm.mode === 'FULL_DAY'
                                         ? 'Vai bloquear o período de atendimento do dia, baseado no padrão semanal.'
                                         : 'Você pode adicionar vários intervalos de pausa/bloqueio.'}
                                 </p>
                             </div>
-
-                            {exceptionForm.mode === 'FULL_DAY' ? (
-                                <div className="rounded-xl border border-border-primary bg-background-tertiary p-3">
-                                    {(() => {
-                                        const wd = weekdayFromISODate(
-                                            exceptionForm.date
-                                        );
-                                        const name =
-                                            wd !== null
-                                                ? (WEEKDAY_FULL[wd] ??
-                                                  `Dia ${wd}`)
-                                                : '—';
-                                        const range = resolveFullDayRange(
-                                            exceptionForm.date
-                                        );
-
-                                        return (
-                                            <>
-                                                <p className="text-[11px] text-content-secondary">
-                                                    Dia selecionado:{' '}
-                                                    <span className="text-content-primary font-medium">
-                                                        {name}
-                                                    </span>
-                                                </p>
-
-                                                {range ? (
-                                                    <p className="mt-1 text-[11px] text-content-secondary">
-                                                        Horário do padrão
-                                                        semanal:{' '}
-                                                        <span className="text-content-primary">
-                                                            {range.startTime} às{' '}
-                                                            {range.endTime}
-                                                        </span>
-                                                    </p>
-                                                ) : (
-                                                    <p className="mt-1 text-[11px] text-destructive">
-                                                        Esse dia não tem horário
-                                                        válido no padrão semanal
-                                                        (ou está desativado).
-                                                    </p>
-                                                )}
-
-                                                <p className="mt-2 text-[11px] text-content-secondary/80">
-                                                    Dica: ajuste o padrão
-                                                    semanal se quiser que “dia
-                                                    inteiro” funcione nesse dia.
-                                                </p>
-                                            </>
-                                        );
-                                    })()}
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between gap-2">
-                                        <p className="text-[11px] text-content-secondary">
-                                            Intervalos
-                                        </p>
-
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={addInterval}
-                                        >
-                                            + Adicionar intervalo
-                                        </Button>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        {exceptionForm.intervals.map(
-                                            (it, idx) => (
-                                                <div
-                                                    key={`${idx}-${it.startTime}-${it.endTime}`}
-                                                    className="rounded-xl border border-border-primary bg-background-tertiary p-3"
-                                                >
-                                                    <div className="flex items-start justify-between gap-2">
-                                                        <p className="text-[11px] text-content-secondary">
-                                                            Intervalo #{idx + 1}
-                                                        </p>
-
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() =>
-                                                                removeInterval(
-                                                                    idx
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                exceptionForm
-                                                                    .intervals
-                                                                    .length <= 1
-                                                            }
-                                                        >
-                                                            Remover
-                                                        </Button>
-                                                    </div>
-
-                                                    <div className="mt-2 grid gap-3 sm:grid-cols-2">
-                                                        <div className="space-y-1">
-                                                            <p className="text-[11px] text-content-secondary">
-                                                                Início
-                                                            </p>
-                                                            <Input
-                                                                type="time"
-                                                                value={
-                                                                    it.startTime
-                                                                }
-                                                                onChange={(e) =>
-                                                                    updateInterval(
-                                                                        idx,
-                                                                        {
-                                                                            startTime:
-                                                                                e
-                                                                                    .target
-                                                                                    .value,
-                                                                        }
-                                                                    )
-                                                                }
-                                                                className="bg-background-secondary border-border-primary text-content-primary"
-                                                            />
-                                                        </div>
-
-                                                        <div className="space-y-1">
-                                                            <p className="text-[11px] text-content-secondary">
-                                                                Fim
-                                                            </p>
-                                                            <Input
-                                                                type="time"
-                                                                value={
-                                                                    it.endTime
-                                                                }
-                                                                onChange={(e) =>
-                                                                    updateInterval(
-                                                                        idx,
-                                                                        {
-                                                                            endTime:
-                                                                                e
-                                                                                    .target
-                                                                                    .value,
-                                                                        }
-                                                                    )
-                                                                }
-                                                                className="bg-background-secondary border-border-primary text-content-primary"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            )
-                                        )}
-                                    </div>
-
-                                    <div className="rounded-xl border border-border-primary bg-background-tertiary p-3">
-                                        <p className="text-[11px] text-content-secondary">
-                                            Exemplo: <strong>12:00</strong> até{' '}
-                                            <strong>14:00</strong> para a pausa
-                                            do almoço. 🥪
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
                         </div>
 
-                        <DialogFooter className="gap-2 sm:gap-0">
+                        {/* FULL DAY */}
+                        {exceptionForm.mode === 'FULL_DAY' ? (
+                            <div className="rounded-xl border border-border-primary bg-background-tertiary p-4 space-y-2">
+                                {(() => {
+                                    const wd = weekdayFromISODate(
+                                        exceptionForm.date
+                                    );
+                                    const name =
+                                        wd !== null
+                                            ? (WEEKDAY_FULL[wd] ?? `Dia ${wd}`)
+                                            : '—';
+                                    const range = resolveFullDayRange(
+                                        exceptionForm.date
+                                    );
+
+                                    return (
+                                        <>
+                                            <p className="text-[11px] text-content-secondary">
+                                                Dia selecionado:{' '}
+                                                <span className="text-content-primary font-medium">
+                                                    {name}
+                                                </span>
+                                            </p>
+
+                                            {range ? (
+                                                <p className="text-[11px] text-content-secondary">
+                                                    Horário do padrão semanal:{' '}
+                                                    <span className="text-content-primary">
+                                                        {range.startTime} às{' '}
+                                                        {range.endTime}
+                                                    </span>
+                                                </p>
+                                            ) : (
+                                                <p className="text-[11px] text-destructive">
+                                                    Esse dia não tem horário
+                                                    válido no padrão semanal (ou
+                                                    está desativado).
+                                                </p>
+                                            )}
+
+                                            <p className="text-[11px] text-content-secondary/70">
+                                                Dica: ajuste o padrão semanal se
+                                                quiser que “dia inteiro”
+                                                funcione nesse dia.
+                                            </p>
+                                        </>
+                                    );
+                                })()}
+                            </div>
+                        ) : (
+                            /* INTERVALS */
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div>
+                                        <p className="text-label-medium-size text-content-primary">
+                                            Intervalos
+                                        </p>
+                                        <p className="text-[11px] text-content-secondary/70">
+                                            Adicione pausas/bloqueios no dia
+                                            selecionado.
+                                        </p>
+                                    </div>
+
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={addInterval}
+                                        disabled={exceptionSaving}
+                                    >
+                                        + Adicionar intervalo
+                                    </Button>
+                                </div>
+
+                                <div className="space-y-2">
+                                    {exceptionForm.intervals.map((it, idx) => (
+                                        <div
+                                            key={`${idx}-${it.startTime}-${it.endTime}`}
+                                            className="rounded-xl border border-border-primary bg-background-tertiary p-4 space-y-3"
+                                        >
+                                            <div className="flex items-center justify-between gap-2">
+                                                <p className="text-[11px] text-content-secondary">
+                                                    Intervalo #{idx + 1}
+                                                </p>
+
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() =>
+                                                        removeInterval(idx)
+                                                    }
+                                                    disabled={
+                                                        exceptionSaving ||
+                                                        exceptionForm.intervals
+                                                            .length <= 1
+                                                    }
+                                                >
+                                                    Remover
+                                                </Button>
+                                            </div>
+
+                                            <div className="grid gap-4 md:grid-cols-2">
+                                                {/* INÍCIO */}
+                                                <div className="space-y-2">
+                                                    <label className="text-label-medium-size text-content-primary">
+                                                        Início
+                                                    </label>
+
+                                                    <Select
+                                                        value={
+                                                            it.startTime || ''
+                                                        }
+                                                        onValueChange={(
+                                                            value
+                                                        ) =>
+                                                            updateInterval(
+                                                                idx,
+                                                                {
+                                                                    startTime:
+                                                                        value,
+                                                                }
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            exceptionSaving
+                                                        }
+                                                    >
+                                                        <SelectTrigger
+                                                            className={cn(
+                                                                'h-10 w-full justify-between text-left font-normal bg-background-tertiary border-border-primary text-content-primary focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand focus:border-border-brand focus-visible:border-border-brand'
+                                                            )}
+                                                        >
+                                                            <div className="flex items-center gap-2">
+                                                                <Clock className="h-4 w-4 text-content-brand" />
+                                                                <SelectValue placeholder="00:00" />
+                                                            </div>
+                                                        </SelectTrigger>
+
+                                                        <SelectContent>
+                                                            {TIME_OPTIONS.map(
+                                                                (time) => (
+                                                                    <SelectItem
+                                                                        key={
+                                                                            time
+                                                                        }
+                                                                        value={
+                                                                            time
+                                                                        }
+                                                                    >
+                                                                        {time}
+                                                                    </SelectItem>
+                                                                )
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+
+                                                {/* FIM */}
+                                                <div className="space-y-2">
+                                                    <label className="text-label-medium-size text-content-primary">
+                                                        Fim
+                                                    </label>
+
+                                                    <Select
+                                                        value={it.endTime || ''}
+                                                        onValueChange={(
+                                                            value
+                                                        ) =>
+                                                            updateInterval(
+                                                                idx,
+                                                                {
+                                                                    endTime:
+                                                                        value,
+                                                                }
+                                                            )
+                                                        }
+                                                        disabled={
+                                                            exceptionSaving
+                                                        }
+                                                    >
+                                                        <SelectTrigger
+                                                            className={cn(
+                                                                'h-10 w-full justify-between text-left font-normal bg-background-tertiary border-border-primary text-content-primary focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand focus:border-border-brand focus-visible:border-border-brand'
+                                                            )}
+                                                        >
+                                                            <div className="flex items-center gap-2">
+                                                                <Clock className="h-4 w-4 text-content-brand" />
+                                                                <SelectValue placeholder="00:00" />
+                                                            </div>
+                                                        </SelectTrigger>
+
+                                                        <SelectContent>
+                                                            {TIME_OPTIONS.map(
+                                                                (time) => (
+                                                                    <SelectItem
+                                                                        key={
+                                                                            time
+                                                                        }
+                                                                        value={
+                                                                            time
+                                                                        }
+                                                                    >
+                                                                        {time}
+                                                                    </SelectItem>
+                                                                )
+                                                            )}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                            </div>
+
+                                            <p className="text-[11px] text-content-secondary/70">
+                                                Exemplo: <strong>12:00</strong>{' '}
+                                                até <strong>14:00</strong> para
+                                                a pausa do almoço. 🥪
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <DialogFooter className="gap-2 sm:gap-3">
+                            <Button
+                                type="submit"
+                                variant="edit2"
+                                size="sm"
+                                disabled={exceptionSaving}
+                            >
+                                {exceptionSaving ? 'Criando…' : 'Criar exceção'}
+                            </Button>
+
                             <Button
                                 type="button"
                                 variant="outline"
+                                size="sm"
                                 onClick={closeExceptionModal}
                                 disabled={exceptionSaving}
                             >
                                 Cancelar
-                            </Button>
-                            <Button
-                                type="submit"
-                                variant="destructive"
-                                disabled={exceptionSaving}
-                            >
-                                {exceptionSaving ? 'Criando…' : 'Criar exceção'}
                             </Button>
                         </DialogFooter>
                     </form>

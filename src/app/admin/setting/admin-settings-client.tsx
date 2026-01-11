@@ -417,7 +417,7 @@ function PermissionBox(props: {
             <span className="text-[11px] text-content-secondary">{label}</span>
             <span
                 className={`text-[11px] font-medium ${
-                    value ? 'text-emerald-500' : 'text-destructive'
+                    value ? 'text-emerald-500' : 'text-content-secondary'
                 }`}
             >
                 {value ? 'Liberado' : 'Bloqueado'}
@@ -1756,12 +1756,7 @@ export default function AdminSettingsClient() {
                                     <p className="text-[11px] text-destructive">
                                         {editCepError}
                                     </p>
-                                ) : (
-                                    <p className="text-[11px] text-content-secondary/70">
-                                        Digite 8 dígitos para preencher o
-                                        endereço.
-                                    </p>
-                                )}
+                                ) : null}
                             </div>
                         </div>
 
@@ -1996,7 +1991,8 @@ export default function AdminSettingsClient() {
                 {/* CREATE */}
                 <div className="rounded-xl border border-border-primary bg-background-tertiary p-4 space-y-3">
                     <form onSubmit={handleCreateUnit} className="space-y-3">
-                        <div className="grid gap-3">
+                        {/* NOME + TELEFONE + CEP na mesma linha */}
+                        <div className="grid gap-3 md:grid-cols-3">
                             <IconInput
                                 icon={Building2}
                                 placeholder="Nome"
@@ -2009,9 +2005,7 @@ export default function AdminSettingsClient() {
                                 }
                                 className="bg-background-secondary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0"
                             />
-                        </div>
 
-                        <div className="grid gap-3 md:grid-cols-2">
                             <IconInput
                                 icon={Phone}
                                 placeholder="Telefone (00) 00000-0000"
@@ -2059,15 +2053,11 @@ export default function AdminSettingsClient() {
                                     <p className="text-[11px] text-destructive">
                                         {cepError}
                                     </p>
-                                ) : (
-                                    <p className="text-[11px] text-content-secondary/70">
-                                        Digite 8 dígitos para preencher o
-                                        endereço.
-                                    </p>
-                                )}
+                                ) : null}
                             </div>
                         </div>
 
+                        {/* ENDEREÇO */}
                         <div className="grid gap-3 md:grid-cols-3">
                             <IconInput
                                 icon={MapPin}
@@ -2314,14 +2304,13 @@ export default function AdminSettingsClient() {
 
                             <IconInput
                                 icon={Phone}
-                                placeholder="Telefone"
+                                placeholder="Telefone (00) 00000-0000"
+                                inputMode="tel"
                                 value={newAdmin.phone}
-                                onChange={(e) =>
-                                    setNewAdmin((p) => ({
-                                        ...p,
-                                        phone: e.target.value,
-                                    }))
-                                }
+                                onChange={(e) => {
+                                    const next = formatPhoneBR(e.target.value);
+                                    setNewAdmin((p) => ({ ...p, phone: next }));
+                                }}
                                 className="bg-background-secondary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0"
                             />
 
