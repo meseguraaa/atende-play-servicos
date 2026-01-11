@@ -31,6 +31,9 @@ import {
     Hash,
     Loader2,
     ToggleRight,
+    User,
+    Mail,
+    KeyRound,
 } from 'lucide-react';
 
 import { toast } from 'sonner';
@@ -420,6 +423,47 @@ function PermissionBox(props: {
                 {value ? 'Liberado' : 'Bloqueado'}
             </span>
         </button>
+    );
+}
+
+function IconInput(
+    props: {
+        icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+        iconClassName?: string;
+        inputClassName?: string;
+        wrapperClassName?: string;
+        disabledIcon?: boolean;
+    } & React.ComponentProps<typeof Input>
+) {
+    const {
+        icon: Icon,
+        iconClassName,
+        inputClassName,
+        wrapperClassName,
+        disabledIcon,
+        className,
+        ...rest
+    } = props;
+
+    return (
+        <div className={`relative ${wrapperClassName ?? ''}`}>
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 -mt-px pointer-events-none">
+                <Icon
+                    width={20}
+                    height={20}
+                    className={`${
+                        disabledIcon
+                            ? 'text-content-secondary/50'
+                            : 'text-content-brand'
+                    } ${iconClassName ?? ''}`}
+                />
+            </div>
+
+            <Input
+                {...rest}
+                className={`pl-10 ${inputClassName ?? ''} ${className ?? ''}`}
+            />
+        </div>
     );
 }
 
@@ -1891,7 +1935,8 @@ export default function AdminSettingsClient() {
                                 className="space-y-3"
                             >
                                 <div className="space-y-1">
-                                    <Input
+                                    <IconInput
+                                        icon={Building2}
                                         name="companyName"
                                         value={company.name}
                                         onChange={(e) => {
@@ -1901,7 +1946,8 @@ export default function AdminSettingsClient() {
                                                 name: e.target.value,
                                             }));
                                         }}
-                                        className="bg-background-secondary border-border-primary text-content-primary"
+                                        placeholder="Nome da empresa"
+                                        className="bg-background-secondary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0"
                                     />
                                 </div>
 
@@ -1951,7 +1997,8 @@ export default function AdminSettingsClient() {
                 <div className="rounded-xl border border-border-primary bg-background-tertiary p-4 space-y-3">
                     <form onSubmit={handleCreateUnit} className="space-y-3">
                         <div className="grid gap-3">
-                            <Input
+                            <IconInput
+                                icon={Building2}
                                 placeholder="Nome"
                                 value={newUnit.name}
                                 onChange={(e) =>
@@ -1960,12 +2007,13 @@ export default function AdminSettingsClient() {
                                         name: e.target.value,
                                     }))
                                 }
-                                className="bg-background-secondary border-border-primary text-content-primary"
+                                className="bg-background-secondary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0"
                             />
                         </div>
 
                         <div className="grid gap-3 md:grid-cols-2">
-                            <Input
+                            <IconInput
+                                icon={Phone}
                                 placeholder="Telefone (00) 00000-0000"
                                 inputMode="tel"
                                 value={newUnit.phone}
@@ -1973,11 +2021,12 @@ export default function AdminSettingsClient() {
                                     const next = formatPhoneBR(e.target.value);
                                     setNewUnit((p) => ({ ...p, phone: next }));
                                 }}
-                                className="bg-background-secondary border-border-primary text-content-primary"
+                                className="bg-background-secondary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0"
                             />
 
                             <div className="space-y-1">
-                                <Input
+                                <IconInput
+                                    icon={MapPin}
                                     placeholder="CEP"
                                     inputMode="numeric"
                                     value={cepMasked}
@@ -1998,10 +2047,12 @@ export default function AdminSettingsClient() {
                                             cep: cepDigits,
                                         }));
                                     }}
-                                    className="bg-background-secondary border-border-primary text-content-primary"
+                                    className="bg-background-secondary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0"
                                 />
+
                                 {cepStatus === 'loading' ? (
-                                    <p className="text-[11px] text-content-secondary">
+                                    <p className="text-[11px] text-content-secondary flex items-center gap-2">
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                         Buscando endereço…
                                     </p>
                                 ) : cepError ? (
@@ -2018,14 +2069,17 @@ export default function AdminSettingsClient() {
                         </div>
 
                         <div className="grid gap-3 md:grid-cols-3">
-                            <Input
+                            <IconInput
+                                icon={MapPin}
                                 placeholder="Endereço"
                                 value={newUnit.street}
                                 disabled
+                                disabledIcon
                                 className="bg-background-secondary border-border-primary text-content-primary md:col-span-2 disabled:opacity-70"
                             />
 
-                            <Input
+                            <IconInput
+                                icon={Hash}
                                 placeholder="Número"
                                 value={newUnit.number}
                                 onChange={(e) =>
@@ -2034,10 +2088,11 @@ export default function AdminSettingsClient() {
                                         number: e.target.value,
                                     }))
                                 }
-                                className="bg-background-secondary border-border-primary text-content-primary"
+                                className="bg-background-secondary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0"
                             />
 
-                            <Input
+                            <IconInput
+                                icon={ToggleRight}
                                 placeholder="Complemento"
                                 value={newUnit.complement}
                                 onChange={(e) =>
@@ -2046,27 +2101,33 @@ export default function AdminSettingsClient() {
                                         complement: e.target.value,
                                     }))
                                 }
-                                className="bg-background-secondary border-border-primary text-content-primary"
+                                className="bg-background-secondary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0"
                             />
 
-                            <Input
+                            <IconInput
+                                icon={MapPin}
                                 placeholder="Bairro"
                                 value={newUnit.neighborhood}
                                 disabled
+                                disabledIcon
                                 className="bg-background-secondary border-border-primary text-content-primary md:col-span-2 disabled:opacity-70"
                             />
 
-                            <Input
+                            <IconInput
+                                icon={MapPin}
                                 placeholder="Cidade"
                                 value={newUnit.city}
                                 disabled
+                                disabledIcon
                                 className="bg-background-secondary border-border-primary text-content-primary md:col-span-2 disabled:opacity-70"
                             />
 
-                            <Input
+                            <IconInput
+                                icon={MapPin}
                                 placeholder="Estado"
                                 value={newUnit.state}
                                 disabled
+                                disabledIcon
                                 className="bg-background-secondary border-border-primary text-content-primary disabled:opacity-70"
                             />
                         </div>
@@ -2225,7 +2286,8 @@ export default function AdminSettingsClient() {
                 <div className="rounded-xl border border-border-primary bg-background-tertiary p-4 space-y-3">
                     <form onSubmit={handleCreateAdmin} className="space-y-3">
                         <div className="grid gap-3 md:grid-cols-4">
-                            <Input
+                            <IconInput
+                                icon={User}
                                 placeholder="Nome"
                                 value={newAdmin.name}
                                 onChange={(e) =>
@@ -2234,10 +2296,11 @@ export default function AdminSettingsClient() {
                                         name: e.target.value,
                                     }))
                                 }
-                                className="bg-background-secondary border-border-primary text-content-primary"
+                                className="bg-background-secondary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0"
                             />
 
-                            <Input
+                            <IconInput
+                                icon={Mail}
                                 placeholder="E-mail"
                                 value={newAdmin.email}
                                 onChange={(e) =>
@@ -2246,10 +2309,11 @@ export default function AdminSettingsClient() {
                                         email: e.target.value,
                                     }))
                                 }
-                                className="bg-background-secondary border-border-primary text-content-primary"
+                                className="bg-background-secondary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0"
                             />
 
-                            <Input
+                            <IconInput
+                                icon={Phone}
                                 placeholder="Telefone"
                                 value={newAdmin.phone}
                                 onChange={(e) =>
@@ -2258,10 +2322,11 @@ export default function AdminSettingsClient() {
                                         phone: e.target.value,
                                     }))
                                 }
-                                className="bg-background-secondary border-border-primary text-content-primary"
+                                className="bg-background-secondary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0"
                             />
 
-                            <Input
+                            <IconInput
+                                icon={KeyRound}
                                 placeholder="Senha"
                                 type="password"
                                 value={newAdmin.password}
@@ -2271,7 +2336,7 @@ export default function AdminSettingsClient() {
                                         password: e.target.value,
                                     }))
                                 }
-                                className="bg-background-secondary border-border-primary text-content-primary"
+                                className="bg-background-secondary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0"
                             />
                         </div>
 
