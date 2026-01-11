@@ -4,11 +4,11 @@ import type { Metadata } from 'next';
 import { requireAdminForModule } from '@/lib/admin-permissions';
 
 import { DatePicker } from '@/components/date-picker';
-import { DashboardDailySummary } from '@/components/admin/dashboard-daily-summary';
-import { DashboardMonthlySummary } from '@/components/admin/dashboard-monthly-summary';
-import { DashboardRevenueChart } from '@/components/admin/dashboard-charts/dashboard-revenue-chart';
-import { DashboardRatingsDistributionChart } from '@/components/admin/dashboard-charts/dashboard-ratings-distribution-chart';
-import { DashboardProductsVsServicesChart } from '@/components/admin/dashboard-charts/dashboard-products-vs-services-chart/dashboard-products-vs-services-chart';
+import { DashboardDailySummary } from '@/components/admin/dashboard/dashboard-daily-summary';
+import { DashboardMonthlySummary } from '@/components/admin/dashboard/dashboard-monthly-summary';
+import { DashboardRevenueChart } from '@/components/admin/dashboard/dashboard-charts/dashboard-revenue-chart';
+import { DashboardRatingsDistributionChart } from '@/components/admin/dashboard/dashboard-charts/dashboard-ratings-distribution-chart';
+import { DashboardProductsVsServicesChart } from '@/components/admin/dashboard/dashboard-charts/dashboard-products-vs-services-chart/dashboard-products-vs-services-chart';
 
 export const dynamic = 'force-dynamic';
 
