@@ -94,16 +94,5 @@ export default async function AdminAppointmentsPage({
         activeUnit?.name ??
         (canSeeAllUnits ? 'todas as unidades' : 'unidade selecionada');
 
-    // ✅ Se só tem 1 unidade disponível, não tem por que trocar
-    // Obs.: como o unit-picker agora vive no menu, isso tende a ser sempre "true" pra tela.
-    const unitPickerDisabled = units.length <= 1;
-
-    return (
-        <AdminAppointmentsClient
-            scopeLabel={scopeLabel}
-            units={units}
-            canSeeAllUnits={canSeeAllUnits}
-            unitPickerDisabled={unitPickerDisabled}
-        />
-    );
+    return <AdminAppointmentsClient scopeLabel={scopeLabel} />;
 }
