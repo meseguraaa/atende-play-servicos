@@ -1,6 +1,14 @@
+'use client';
+
+import React from 'react';
 import { TooltipProvider } from '@radix-ui/react-tooltip';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
-import { Button } from '../ui/button';
+
+import { Button } from '@/components/ui/button';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 type NavigationButtonProps = {
     tooltipText: string;
@@ -26,6 +34,7 @@ export const NavigationButton = ({
                         {children}
                     </Button>
                 </TooltipTrigger>
+
                 <TooltipContent className="bg-background-tertiary">
                     <p>{tooltipText}</p>
                 </TooltipContent>
