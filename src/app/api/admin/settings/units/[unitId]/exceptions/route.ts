@@ -65,17 +65,11 @@ function dateToYYYYMMDD(d: Date) {
 
 /**
  * Next 15/14: ctx.params pode vir como Promise (sync-dynamic-apis)
+ * Tipagem compatível com os tipos gerados pelo Next em .next/dev/types
  */
-type Ctx =
-    | { params: { unitId: string } }
-    | { params: Promise<{ unitId: string }> };
-
-async function getParams(ctx: Ctx) {
-    const p = (ctx as any).params;
-    return typeof p?.then === 'function'
-        ? ((await p) as { unitId: string })
-        : (p as { unitId: string });
-}
+type Ctx = {
+    params: Promise<{ unitId: string }>;
+};
 
 function normalizeIntervalsFromBody(body: any): IntervalPayload[] | null {
     // 1) novo formato: intervals[]
@@ -158,7 +152,7 @@ export async function GET(_req: Request, ctx: Ctx) {
     try {
         const admin = await requireAdminForModule('SETTINGS');
 
-        const { unitId: rawUnitId } = await getParams(ctx);
+        const { unitId: rawUnitId } = await ctx.params;
         const unitId = String(rawUnitId ?? '').trim();
         if (!unitId) return jsonErr('unit_id_required', 400);
 
@@ -237,7 +231,7 @@ export async function POST(req: Request, ctx: Ctx) {
             return jsonErr('forbidden_owner_only', 403);
         }
 
-        const { unitId: rawUnitId } = await getParams(ctx);
+        const { unitId: rawUnitId } = await ctx.params;
         const unitId = String(rawUnitId ?? '').trim();
         if (!unitId) return jsonErr('unit_id_required', 400);
 
