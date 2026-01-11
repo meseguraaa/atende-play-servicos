@@ -3,7 +3,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
     LayoutDashboard,
@@ -17,10 +17,20 @@ import {
     Tag,
     Settings,
     BarChart3,
+    Building2,
+    Medal,
 } from 'lucide-react';
 
 import { canAccess } from '@/lib/admin-access-map';
 import { ADMIN_MENU } from '@/lib/admin-menu';
+
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 type AdminAccessLike = Partial<
     Record<
@@ -40,9 +50,20 @@ type AdminAccessLike = Partial<
     >
 >;
 
+export type UnitOption = {
+    id: string; // unitId
+    name: string;
+};
+
 export type AdminNavProps = {
     className?: string;
     adminAccess?: AdminAccessLike | null;
+
+    /**
+     * Se informado, o unit-picker aparece no topo do menu e o `unit` é preservado nos links.
+     * ✅ Nosso padrão agora: unit vem via cookie (admin_unit_context), não via querystring.
+     */
+    unitOptions?: UnitOption[];
 };
 
 const ICON_BY_KEY: Record<
@@ -58,18 +79,133 @@ const ICON_BY_KEY: Record<
     reviews: Tag,
     products: Package,
     clients: Users,
-    clientLevels: Users,
+
+    // ✅ “Nível do cliente” com medalha bonita
+    clientLevels: Medal,
+
     finance: Wallet,
     settings: Settings,
 };
 
-export function AdminNav({ className, adminAccess }: AdminNavProps) {
-    const pathname = usePathname();
+const UNIT_COOKIE_NAME = 'admin_unit_context';
+const UNIT_ALL_VALUE = 'all';
 
-    // ✅ Fail-closed (permissão) + ✅ enabled/disabled (feature flag temporária)
+function getCookie(name: string): string | null {
+    if (typeof document === 'undefined') return null;
+    const match = document.cookie.match(
+        new RegExp(
+            `(?:^|; )${name.replace(/[$()*+.?[\\\]^{|}-]/g, '\\$&')}=([^;]*)`
+        )
+    );
+    return match ? decodeURIComponent(match[1]) : null;
+}
+
+function setCookie(name: string, value: string) {
+    if (typeof document === 'undefined') return;
+
+    const maxAge = 60 * 60 * 24 * 365; // 1 ano
+    document.cookie = `${encodeURIComponent(name)}=${encodeURIComponent(
+        value
+    )}; Path=/; Max-Age=${maxAge}; SameSite=Lax`;
+}
+
+function withPreservedSearchParams(
+    href: string,
+    sp: URLSearchParams,
+    keepKeys?: string[]
+) {
+    const next = new URLSearchParams();
+
+    if (keepKeys?.length) {
+        for (const k of keepKeys) {
+            const v = sp.get(k);
+            if (v) next.set(k, v);
+        }
+    } else {
+        sp.forEach((value, key) => next.set(key, value));
+    }
+
+    const qs = next.toString();
+    return qs ? `${href}?${qs}` : href;
+}
+
+function mapAdminHref(link: (typeof ADMIN_MENU)[number]) {
+    // ✅ clients -> client (singular)
+    if (link.menuKey === 'clients')
+        return link.href.replace('/clients', '/client');
+
+    // ✅ client-levels -> client-level (singular)
+    if (link.menuKey === 'clientLevels')
+        return link.href.replace('/client-levels', '/client-level');
+
+    return link.href;
+}
+
+function isPathActive(pathname: string | null, href: string) {
+    if (!pathname) return false;
+
+    // match exato
+    if (pathname === href) return true;
+
+    // match por “segmento” (evita /client ativar /client-level)
+    const withSlash = href.endsWith('/') ? href : `${href}/`;
+    return pathname.startsWith(withSlash);
+}
+
+export function AdminNav({
+    className,
+    adminAccess,
+    unitOptions,
+}: AdminNavProps) {
+    const pathname = usePathname();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+
     const visibleLinks = ADMIN_MENU.filter(
         (link) => link.enabled && canAccess(adminAccess as any, link.menuKey)
     );
+
+    const shouldShowUnitPicker = !!unitOptions?.length;
+
+    const [currentUnit, setCurrentUnit] = React.useState<string>('');
+
+    const didNormalizeRef = React.useRef(false);
+
+    React.useEffect(() => {
+        if (!shouldShowUnitPicker) return;
+        if (didNormalizeRef.current) return;
+
+        const options = unitOptions ?? [];
+        if (options.length === 0) return;
+
+        const cookieValue = getCookie(UNIT_COOKIE_NAME) ?? '';
+        const isValid =
+            !!cookieValue && options.some((u) => u.id === cookieValue);
+
+        if (isValid) {
+            setCurrentUnit(cookieValue);
+            didNormalizeRef.current = true;
+            return;
+        }
+
+        const fallback = options[0]?.id;
+        if (!fallback) return;
+
+        setCookie(UNIT_COOKIE_NAME, fallback);
+        setCurrentUnit(fallback);
+        didNormalizeRef.current = true;
+
+        router.refresh();
+    }, [router, shouldShowUnitPicker, unitOptions]);
+
+    function setUnitOnCurrentRoute(nextUnit: string) {
+        const value = nextUnit || UNIT_ALL_VALUE;
+
+        setCookie(UNIT_COOKIE_NAME, value);
+        setCurrentUnit(value);
+
+        router.refresh();
+    }
 
     return (
         <nav
@@ -81,15 +217,68 @@ export function AdminNav({ className, adminAccess }: AdminNavProps) {
                 className
             )}
         >
+            {shouldShowUnitPicker && (
+                <div className="px-2 pb-3">
+                    <div className="flex items-center justify-center py-2">
+                        <Building2 className="h-4 w-4 text-content-secondary group-hover:hidden" />
+                    </div>
+
+                    <div
+                        className={cn(
+                            'hidden group-hover:block',
+                            'rounded-xl border border-border-primary bg-background-secondary/40 p-2'
+                        )}
+                    >
+                        <div className="flex items-center gap-2 px-2 pb-2">
+                            <Building2 className="h-4 w-4 text-content-brand" />
+                            <span className="text-label-small text-content-secondary">
+                                Unidade
+                            </span>
+                        </div>
+
+                        <Select
+                            value={currentUnit || undefined}
+                            onValueChange={(v) => setUnitOnCurrentRoute(v)}
+                        >
+                            <SelectTrigger
+                                className={cn(
+                                    'h-9 w-full',
+                                    'bg-background-secondary border-border-primary',
+                                    'text-content-primary hover:border-border-secondary',
+                                    'focus:border-border-brand focus:ring-0'
+                                )}
+                            >
+                                <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+
+                            <SelectContent className="border-border-primary bg-background-primary">
+                                {unitOptions!.map((u) => (
+                                    <SelectItem key={u.id} value={u.id}>
+                                        {u.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+            )}
+
             <div className="flex-1 space-y-1 px-2 pb-4">
                 {visibleLinks.map((link) => {
-                    const isActive = pathname?.startsWith(link.href);
+                    const rawHref = mapAdminHref(link);
+
+                    const isActive = isPathActive(pathname, rawHref);
                     const Icon = ICON_BY_KEY[link.menuKey];
+
+                    const href = withPreservedSearchParams(
+                        rawHref,
+                        new URLSearchParams(searchParams?.toString() ?? '')
+                    );
 
                     return (
                         <Link
                             key={link.href}
-                            href={link.href}
+                            href={href}
                             className={cn(
                                 'flex items-center gap-2 px-3 py-2 rounded-lg text-label-small transition-colors',
                                 'text-content-secondary hover:bg-background-tertiary/50',

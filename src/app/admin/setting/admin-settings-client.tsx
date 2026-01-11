@@ -40,7 +40,7 @@ import { toast } from 'sonner';
 import {
     UnitAvailabilityCard,
     type WeeklyDayUI,
-} from '@/components/admin/unit-availability-card/unit-availability-card';
+} from '@/components/admin/setting/unit-availability-card/unit-availability-card';
 
 type UnitUI = {
     id: string;

@@ -2,7 +2,7 @@
 import { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 
-import { AdminNav } from '@/components/admin/admin-nav';
+import { AdminNav, type UnitOption } from '@/components/admin/admin-nav';
 import { prisma } from '@/lib/prisma';
 import { getCurrentPainelUser } from '@/lib/painel-session';
 import AdminPermissionToast from './admin-permission-toast';
@@ -139,12 +139,58 @@ export default async function AdminLayout({
         }
     }
 
+    /**
+     * ✅ Unit options para o unit-picker no AdminNav
+     * - OWNER: todas as unidades ativas da empresa
+     * - Sub-admin: apenas unidades associadas via AdminUnitAccess
+     *
+     * Obs.: não adicionamos "all" agora, pra não deixar usuário selecionar algo
+     * que as páginas ainda não tratam.
+     */
+    const units = await prisma.unit.findMany({
+        where: {
+            companyId,
+            isActive: true,
+        },
+        select: {
+            id: true,
+            name: true,
+        },
+        orderBy: {
+            name: 'asc',
+        },
+    });
+
+    let unitOptions: UnitOption[] = [];
+
+    if (isOwner) {
+        unitOptions = units.map((u) => ({ id: u.id, name: u.name }));
+    } else {
+        const allowed = await prisma.adminUnitAccess.findMany({
+            where: {
+                companyId,
+                userId,
+            },
+            select: {
+                unitId: true,
+            },
+        });
+
+        const allowedIds = new Set(allowed.map((a) => a.unitId));
+        unitOptions = units
+            .filter((u) => allowedIds.has(u.id))
+            .map((u) => ({ id: u.id, name: u.name }));
+    }
+
     return (
         <div className="min-h-screen bg-background-primary">
             {/* Toast global (client) */}
             <AdminPermissionToast />
 
-            <AdminNav adminAccess={adminAccess ?? undefined} />
+            <AdminNav
+                adminAccess={adminAccess ?? undefined}
+                unitOptions={unitOptions}
+            />
 
             <main className="pl-14">
                 <div className="w-full max-w-7xl mx-auto px-4 py-6">

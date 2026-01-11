@@ -67,7 +67,8 @@ export const ADMIN_MENU: AdminMenuItem[] = [
         enabled: isEnabled('checkout'),
     },
     {
-        href: '/admin/professional',
+        // ✅ FIX: rota correta (plural)
+        href: '/admin/professionals',
         label: 'Profissionais',
         menuKey: 'professionals',
         enabled: isEnabled('professionals'),

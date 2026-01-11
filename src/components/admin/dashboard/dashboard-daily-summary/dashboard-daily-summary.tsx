@@ -1,4 +1,4 @@
-import { DashboardStatCard } from '@/components/admin/dashboard-stat-card';
+import { DashboardStatCard } from '@/components/admin/dashboard/dashboard-stat-card';
 
 type DashboardDailySummaryProps = {
     totalGrossDay: string;

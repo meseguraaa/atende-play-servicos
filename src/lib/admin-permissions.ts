@@ -193,20 +193,32 @@ function redirectToLoginByReason(reason: AdminContextFailureReason): never {
 
 type ModuleRoute = { module: AdminModule; href: string };
 
-// Ordem de “melhor destino” quando falta permissão (evita loop no dashboard)
+/**
+ * ✅ Ordem de “melhor destino” quando falta permissão.
+ *
+ * IMPORTANTE:
+ * - NÃO colocamos DASHBOARD em primeiro, porque se o usuário tiver dashboard liberado,
+ *   qualquer falta de permissão jogaria sempre pra lá e pareceria que "todo link vai pro dashboard".
+ * - Dashboard vira fallback "final" (se for a única coisa liberada).
+ */
 const FALLBACK_ROUTES: ModuleRoute[] = [
-    { module: 'DASHBOARD', href: '/admin/dashboard' },
     { module: 'APPOINTMENTS', href: '/admin/appointments' },
     { module: 'CHECKOUT', href: '/admin/checkout' },
+    { module: 'FINANCE', href: '/admin/finance' },
     { module: 'CLIENTS', href: '/admin/clients' },
     { module: 'CLIENT_LEVELS', href: '/admin/client-levels' },
     { module: 'PRODUCTS', href: '/admin/products' },
     { module: 'SERVICES', href: '/admin/services' },
-    { module: 'PROFESSIONALS', href: '/admin/professional' },
+    {
+        module: 'PROFESSIONALS',
+        // ✅ FIX: rota correta (plural)
+        href: '/admin/professionals',
+    },
     { module: 'REVIEWS', href: '/admin/review-tags' },
-    { module: 'FINANCE', href: '/admin/finance' },
     { module: 'REPORTS', href: '/admin/reports' },
     { module: 'SETTINGS', href: '/admin/setting' },
+    // deixa dashboard por último
+    { module: 'DASHBOARD', href: '/admin/dashboard' },
 ];
 
 function pickFirstAllowedHref(
@@ -292,7 +304,6 @@ export async function requireAdminForModule(
         throw new Error('unreachable');
     }
 
-    // ✅ aqui o TS sabe que accessField é AdminAccessFlag (não-null)
     const allowed = Boolean(access[accessField]);
     if (!allowed) {
         await redirectToFirstAllowedOrLogin({
