@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import '@/styles/globals.css';
 import { Toaster } from 'sonner';
-import { Header } from '@/components/header';
 
 const inter = Inter({
     variable: '--font-inter',
@@ -17,7 +16,7 @@ const interTight = Inter({
 });
 
 export const metadata: Metadata = {
-    title: 'Mundo Pet',
+    title: 'Atende Play',
     description:
         'Aqui você pode ver todos os cliente e serviços agendados para hoje',
 };
@@ -32,9 +31,8 @@ export default function RootLayout({
             <body
                 className={`${inter.variable} ${interTight.variable} antialiased`}
             >
-                <Header />
-                <div className="max-w-3xl mx-auto">
-                    <main className="flex-1 flex flex-col mt-12">
+                <div className="max-w-7xl mx-auto">
+                    <main className="flex-1 flex flex-col">
                         {children}
                         <Toaster position="top-right" />
                     </main>
