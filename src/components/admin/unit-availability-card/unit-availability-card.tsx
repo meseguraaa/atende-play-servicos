@@ -4,6 +4,15 @@ import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
+
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 import {
     Dialog,
@@ -14,6 +23,7 @@ import {
     DialogFooter,
 } from '@/components/ui/dialog';
 
+import { Clock } from 'lucide-react';
 import { toast } from 'sonner';
 
 const WEEKDAY_SHORT = [
@@ -77,6 +87,19 @@ type IntervalUI = {
     startTime: string;
     endTime: string;
 };
+
+// ✅ 00:00 → 23:30 (30 em 30)
+const TIME_OPTIONS = (() => {
+    const times: string[] = [];
+    for (let hour = 0; hour <= 23; hour++) {
+        for (let minute = 0; minute < 60; minute += 30) {
+            times.push(
+                `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
+            );
+        }
+    }
+    return times; // inclui 23:30
+})();
 
 function safeApiError(json: unknown): string {
     if (
@@ -209,6 +232,16 @@ export function UnitAvailabilityCard({
             };
         });
     }, [weekly]);
+
+    const hasAnyWeeklyError = React.useMemo(() => {
+        return days.some((d) => {
+            if (!d.isActive) return false;
+            const s = String(d.startTime || '').trim();
+            const e = String(d.endTime || '').trim();
+            if (!isValidHHmm(s) || !isValidHHmm(e)) return false; // mantém compat: vazio não “quebra”
+            return timeToMinutes(s) >= timeToMinutes(e);
+        });
+    }, [days]);
 
     // =========================
     // EXCEÇÕES (LISTAR)
@@ -780,7 +813,17 @@ export function UnitAvailabilityCard({
                     </div>
 
                     <div className="flex items-center justify-end gap-2">
-                        <Button type="submit" variant="edit2" size="sm">
+                        <Button
+                            type="submit"
+                            variant="edit2"
+                            size="sm"
+                            disabled={hasAnyWeeklyError}
+                            title={
+                                hasAnyWeeklyError
+                                    ? 'Corrija os horários inválidos antes de salvar.'
+                                    : undefined
+                            }
+                        >
                             Salvar padrão semanal
                         </Button>
 
@@ -795,72 +838,43 @@ export function UnitAvailabilityCard({
                     </div>
                 </div>
 
-                <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
-                    {days.map((d) => (
-                        <div
-                            key={d.weekday}
-                            className="rounded-xl border border-border-primary bg-background-tertiary p-4 space-y-4"
-                        >
-                            <div className="flex items-start justify-between gap-2">
-                                <div className="min-w-0">
-                                    <p className="text-xs text-content-secondary">
-                                        {d.short}
-                                    </p>
-                                    <p className="text-paragraph-small text-content-primary font-medium">
-                                        {d.full}
-                                    </p>
-                                </div>
+                {/* ✅ MESMO PADRÃO VISUAL do outro componente */}
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
+                    {days.map((d) => {
+                        const startOk = isValidHHmm(String(d.startTime || ''));
+                        const endOk = isValidHHmm(String(d.endTime || ''));
+                        const hasError =
+                            d.isActive &&
+                            startOk &&
+                            endOk &&
+                            timeToMinutes(d.startTime) >=
+                                timeToMinutes(d.endTime);
 
-                                <span
-                                    className={`shrink-0 rounded-full border px-3 py-1 text-[11px] ${
-                                        d.isActive
-                                            ? 'border-brand-primary/60 text-brand-primary'
-                                            : 'border-border-primary text-content-secondary'
-                                    }`}
-                                >
-                                    {d.isActive ? 'Sim' : 'Não'}
-                                </span>
-                            </div>
+                        return (
+                            <div
+                                key={d.weekday}
+                                className={cn(
+                                    'flex flex-col rounded-xl border px-3 py-3 text-paragraph-small-size transition-colors',
+                                    d.isActive
+                                        ? 'border-border-brand bg-background-tertiary/80'
+                                        : 'border-border-secondary bg-background-tertiary'
+                                )}
+                            >
+                                {/* Cabeçalho do dia */}
+                                <div className="mb-2 flex items-center justify-between gap-2">
+                                    <div className="flex flex-col">
+                                        <span className="text-content-primary font-medium">
+                                            {d.short}
+                                        </span>
+                                        <span className="text-[11px] text-content-primary">
+                                            {d.full}
+                                        </span>
+                                    </div>
 
-                            <label className="flex items-center justify-between gap-2 text-[11px] text-content-secondary">
-                                <span>Atende</span>
-                                <input
-                                    type="checkbox"
-                                    checked={d.isActive}
-                                    onChange={(e) => {
-                                        const checked = e.target.checked;
-
-                                        setWeeklyByUnitId((prev) => ({
-                                            ...prev,
-                                            [unitId]: {
-                                                ...(prev[unitId] || {}),
-                                                [d.weekday]: {
-                                                    ...(prev[unitId]?.[
-                                                        d.weekday
-                                                    ] || {
-                                                        isActive: false,
-                                                        startTime: '',
-                                                        endTime: '',
-                                                    }),
-                                                    isActive: checked,
-                                                },
-                                            },
-                                        }));
-                                    }}
-                                    className="accent-brand-primary"
-                                />
-                            </label>
-
-                            <div className="space-y-2">
-                                <div className="space-y-1">
-                                    <p className="text-[11px] text-content-secondary">
-                                        Das
-                                    </p>
-                                    <Input
-                                        type="time"
-                                        value={d.startTime}
-                                        onChange={(e) => {
-                                            const value = e.target.value;
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const nextActive = !d.isActive;
 
                                             setWeeklyByUnitId((prev) => ({
                                                 ...prev,
@@ -874,53 +888,148 @@ export function UnitAvailabilityCard({
                                                             startTime: '',
                                                             endTime: '',
                                                         }),
-                                                        startTime: value,
+                                                        isActive: nextActive,
                                                     },
                                                 },
                                             }));
                                         }}
-                                        className="bg-background-secondary border-border-primary text-content-primary"
-                                    />
+                                        className={cn(
+                                            'inline-flex items-center rounded-full px-3 py-1 text-[11px] font-medium transition-colors',
+                                            d.isActive
+                                                ? 'bg-background-brand text-content-on-brand'
+                                                : 'bg-background-primary text-content-secondary border border-border-secondary'
+                                        )}
+                                    >
+                                        {d.isActive ? 'Sim' : 'Não'}
+                                    </button>
                                 </div>
 
-                                <div className="space-y-1">
-                                    <p className="text-[11px] text-content-secondary">
-                                        Até
+                                {/* Inputs de horário (dropdowns) */}
+                                <div className="mt-auto space-y-2">
+                                    {/* Das */}
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-[11px] text-content-primary">
+                                            Das
+                                        </span>
+
+                                        <Select
+                                            value={d.startTime || ''}
+                                            onValueChange={(value) => {
+                                                setWeeklyByUnitId((prev) => ({
+                                                    ...prev,
+                                                    [unitId]: {
+                                                        ...(prev[unitId] || {}),
+                                                        [d.weekday]: {
+                                                            ...(prev[unitId]?.[
+                                                                d.weekday
+                                                            ] || {
+                                                                isActive: false,
+                                                                startTime: '',
+                                                                endTime: '',
+                                                            }),
+                                                            startTime: value,
+                                                        },
+                                                    },
+                                                }));
+                                            }}
+                                            disabled={!d.isActive}
+                                        >
+                                            <SelectTrigger
+                                                className={cn(
+                                                    'h-9 w-full justify-between text-left font-normal bg-background-tertiary border-border-primary text-content-primary focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand focus:border-border-brand focus-visible:border-border-brand',
+                                                    hasError &&
+                                                        'border-destructive focus-visible:ring-destructive/40'
+                                                )}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <Clock className="h-4 w-4 text-content-brand" />
+                                                    <SelectValue placeholder="00:00" />
+                                                </div>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {TIME_OPTIONS.map((time) => (
+                                                    <SelectItem
+                                                        key={time}
+                                                        value={time}
+                                                    >
+                                                        {time}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Até */}
+                                    <div className="flex flex-col gap-1">
+                                        <span className="text-[11px] text-content-primary">
+                                            Até
+                                        </span>
+
+                                        <Select
+                                            value={d.endTime || ''}
+                                            onValueChange={(value) => {
+                                                setWeeklyByUnitId((prev) => ({
+                                                    ...prev,
+                                                    [unitId]: {
+                                                        ...(prev[unitId] || {}),
+                                                        [d.weekday]: {
+                                                            ...(prev[unitId]?.[
+                                                                d.weekday
+                                                            ] || {
+                                                                isActive: false,
+                                                                startTime: '',
+                                                                endTime: '',
+                                                            }),
+                                                            endTime: value,
+                                                        },
+                                                    },
+                                                }));
+                                            }}
+                                            disabled={!d.isActive}
+                                        >
+                                            <SelectTrigger
+                                                className={cn(
+                                                    'h-9 w-full justify-between text-left font-normal bg-background-tertiary border-border-primary text-content-primary focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand focus:border-border-brand focus-visible:border-border-brand',
+                                                    hasError &&
+                                                        'border-destructive focus-visible:ring-destructive/40'
+                                                )}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <Clock className="h-4 w-4 text-content-brand" />
+                                                    <SelectValue placeholder="00:00" />
+                                                </div>
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {TIME_OPTIONS.map((time) => (
+                                                    <SelectItem
+                                                        key={time}
+                                                        value={time}
+                                                    >
+                                                        {time}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                {hasError && (
+                                    <p className="mt-2 text-[11px] text-destructive">
+                                        Em dias ativos, o horário inicial deve
+                                        ser menor que o final.
                                     </p>
-                                    <Input
-                                        type="time"
-                                        value={d.endTime}
-                                        onChange={(e) => {
-                                            const value = e.target.value;
-
-                                            setWeeklyByUnitId((prev) => ({
-                                                ...prev,
-                                                [unitId]: {
-                                                    ...(prev[unitId] || {}),
-                                                    [d.weekday]: {
-                                                        ...(prev[unitId]?.[
-                                                            d.weekday
-                                                        ] || {
-                                                            isActive: false,
-                                                            startTime: '',
-                                                            endTime: '',
-                                                        }),
-                                                        endTime: value,
-                                                    },
-                                                },
-                                            }));
-                                        }}
-                                        className="bg-background-secondary border-border-primary text-content-primary"
-                                    />
-                                </div>
+                                )}
                             </div>
-
-                            <p className="text-[11px] text-content-secondary/80">
-                                Campos em branco não são salvos.
-                            </p>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
+
+                {hasAnyWeeklyError && (
+                    <p className="text-[11px] text-destructive">
+                        Existem dias ativos com horário inválido (início
+                        maior/igual ao fim).
+                    </p>
+                )}
 
                 <div className="pt-4 space-y-2">
                     <div className="flex items-center justify-between gap-3">
