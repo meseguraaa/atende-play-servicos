@@ -3,8 +3,22 @@
 
 import * as React from 'react';
 
+export type UnitPickerOption = {
+    id: string;
+    name: string;
+};
+
 type AdminAppointmentsClientProps = {
     scopeLabel: string;
+
+    /**
+     * ✅ Mantemos essas props opcionais por compatibilidade
+     * enquanto o filtro por unidade fica centralizado no admin-nav.
+     * (O page.tsx pode estar passando isso ainda.)
+     */
+    units?: UnitPickerOption[];
+    canSeeAllUnits?: boolean;
+    unitPickerDisabled?: boolean;
 };
 
 export default function AdminAppointmentsClient({

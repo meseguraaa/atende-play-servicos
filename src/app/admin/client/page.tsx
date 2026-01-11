@@ -762,7 +762,7 @@ export default async function AdminClientsPage({
                                     Filtrar
                                 </Button>
                                 <Button asChild variant="outline" size="sm">
-                                    <Link href="/admin/clients">Limpar</Link>
+                                    <Link href="/admin/client">Limpar</Link>
                                 </Button>
                             </div>
                         </div>
