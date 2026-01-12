@@ -564,7 +564,15 @@ model Product {
   companyId              String
   unitId                 String
   name                   String
+
+  // ✅ URL pública usada pelo app (produção ou dev)
   imageUrl               String
+
+  // ✅ Metadados para ajudar no DEV agora e no storage depois (S3/R2)
+  imageKey               String?
+  imageMime              String?
+  imageSize              Int?
+
   description            String
   price                  Decimal                  @db.Decimal(10, 2)
   professionalPercentage Int

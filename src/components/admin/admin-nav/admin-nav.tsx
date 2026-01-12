@@ -138,6 +138,11 @@ function mapAdminHref(link: (typeof ADMIN_MENU)[number]) {
     if (link.menuKey === 'clientLevels')
         return link.href.replace('/client-levels', '/client-level');
 
+    // ✅ review-tags -> review-tag (singular)
+    // (caso o ADMIN_MENU use /admin/review-tags)
+    if (link.menuKey === 'reviews')
+        return link.href.replace('/review-tags', '/review-tag');
+
     return link.href;
 }
 
