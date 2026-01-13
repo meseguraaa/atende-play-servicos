@@ -86,6 +86,8 @@ type UploadResponse =
               mime: string;
               size: number;
               originalName: string;
+              module?: 'PRODUCTS' | 'PROFESSIONALS';
+              category?: 'products' | 'professionals';
           };
       }
     | { ok: false; error?: string };
@@ -278,6 +280,7 @@ export function ProductEditDialog({ product }: { product: ProductForRow }) {
         try {
             const fd = new FormData();
             fd.append('file', file);
+            fd.append('module', 'PRODUCTS');
 
             const res = await fetch('/api/admin/uploads', {
                 method: 'POST',
@@ -453,13 +456,8 @@ export function ProductEditDialog({ product }: { product: ProductForRow }) {
                             icon={Building2}
                             value={unitLabel}
                             disabled
-                            className={cn(INPUT_BASE, 'opacity-90')}
+                            className={cn(INPUT_BASE)}
                         />
-
-                        <p className="text-[11px] text-content-secondary/70">
-                            Este produto pertence ao estoque desta unidade. A
-                            reserva e o checkout seguem essa unidade.
-                        </p>
                     </div>
 
                     <div className="space-y-2 rounded-xl border border-border-primary bg-background-tertiary p-3">
@@ -503,7 +501,7 @@ export function ProductEditDialog({ product }: { product: ProductForRow }) {
                         />
                     </div>
 
-                    {/* IMAGEM (UPLOAD) - igual ao create */}
+                    {/* IMAGEM (UPLOAD) */}
                     <div className="space-y-2">
                         <label className="text-label-small text-content-secondary">
                             Foto do produto{' '}
@@ -533,7 +531,7 @@ export function ProductEditDialog({ product }: { product: ProductForRow }) {
                                     <Input
                                         value={previewUrl ?? ''}
                                         readOnly
-                                        placeholder="Envie uma imagem para gerar a URL"
+                                        placeholder="Escolha seu arquivo clicando em Upload."
                                         className={cn(
                                             'pl-10 pr-10',
                                             INPUT_BASE
@@ -559,15 +557,6 @@ export function ProductEditDialog({ product }: { product: ProductForRow }) {
                                         </button>
                                     ) : null}
                                 </div>
-
-                                <p className="text-[11px] text-content-secondary/70">
-                                    Em dev, salvamos em{' '}
-                                    <span className="text-content-primary">
-                                        /public/uploads
-                                    </span>
-                                    . Em produção, trocamos para Storage
-                                    mantendo a mesma interface.
-                                </p>
                             </div>
 
                             <Button
@@ -597,21 +586,6 @@ export function ProductEditDialog({ product }: { product: ProductForRow }) {
                                 />
                             </div>
                         ) : null}
-
-                        {/* fallback opcional: colar URL */}
-                        <div className="space-y-2">
-                            <p className="text-[11px] text-content-secondary/70">
-                                Ou cole uma URL (opcional)
-                            </p>
-                            <IconInput
-                                icon={ImageIcon}
-                                value={imageUrl}
-                                onChange={(e) => setImageUrl(e.target.value)}
-                                disabled={isPending || uploadingImage}
-                                placeholder="https://..."
-                                className={INPUT_BASE}
-                            />
-                        </div>
                     </div>
 
                     <div className="space-y-2">

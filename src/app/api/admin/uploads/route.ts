@@ -12,6 +12,14 @@ export const runtime = 'nodejs'; // precisamos de fs (salvar em /public)
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
 
+type UploadModule = 'PRODUCTS' | 'PROFESSIONALS';
+type UploadCategory = 'products' | 'professionals';
+
+const MODULE_TO_CATEGORY: Record<UploadModule, UploadCategory> = {
+    PRODUCTS: 'products',
+    PROFESSIONALS: 'professionals',
+};
+
 function jsonOk<T>(data: T, init?: ResponseInit) {
     return NextResponse.json({ ok: true, data } as const, init);
 }
@@ -54,17 +62,40 @@ function safeExtFrom(fileName: string, mime: string) {
     return '';
 }
 
+function parseModule(v: unknown): UploadModule | null {
+    const raw = normalizeString(v).toUpperCase();
+    if (raw === 'PRODUCTS') return 'PRODUCTS';
+    if (raw === 'PROFESSIONALS') return 'PROFESSIONALS';
+    return null;
+}
+
 /**
  * POST /api/admin/uploads
  * multipart/form-data:
  * - file: File (obrigatório)
+ * - module: "PRODUCTS" | "PROFESSIONALS" (obrigatório)
+ *
+ * Salva em:
+ * /public/uploads/<companyId>/<category>/<uuid>.<ext>
  *
  * Retorna:
- * { ok: true, data: { url, key, mime, size, originalName } }
+ * { ok: true, data: { url, key, mime, size, originalName, module, category } }
  */
 export async function POST(request: Request) {
     try {
-        const session = await requireAdminForModule('PRODUCTS');
+        const form = await request.formData().catch(() => null);
+        if (!form) return jsonErr('FormData inválido.', 400);
+
+        const module = parseModule(form.get('module'));
+        if (!module) {
+            return jsonErr(
+                'Campo "module" é obrigatório e deve ser "PRODUCTS" ou "PROFESSIONALS".',
+                400
+            );
+        }
+
+        // 🔒 Permissão conforme o módulo (Caminho A)
+        const session = await requireAdminForModule(module);
 
         const companyId = normalizeString((session as any)?.companyId);
         if (!companyId) {
@@ -73,9 +104,6 @@ export async function POST(request: Request) {
                 401
             );
         }
-
-        const form = await request.formData().catch(() => null);
-        if (!form) return jsonErr('FormData inválido.', 400);
 
         const file = form.get('file');
         if (!file || !(file instanceof File)) {
@@ -111,20 +139,22 @@ export async function POST(request: Request) {
             );
         }
 
+        const category = MODULE_TO_CATEGORY[module];
+
         const key = crypto.randomUUID();
         const fileName = `${key}${ext}`;
 
-        // organiza por empresa (evita colisão e mistura de tenants)
-        const companyDir = path.join(UPLOADS_DIR, companyId);
-        await mkdir(companyDir, { recursive: true });
+        // organiza por empresa + categoria (evita colisão e separa por domínio)
+        const targetDir = path.join(UPLOADS_DIR, companyId, category);
+        await mkdir(targetDir, { recursive: true });
 
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
 
-        const absPath = path.join(companyDir, fileName);
+        const absPath = path.join(targetDir, fileName);
         await writeFile(absPath, buffer);
 
-        const url = `/uploads/${companyId}/${fileName}`;
+        const url = `/uploads/${companyId}/${category}/${fileName}`;
 
         return jsonOk(
             {
@@ -133,6 +163,8 @@ export async function POST(request: Request) {
                 mime,
                 size,
                 originalName,
+                module,
+                category,
             },
             { status: 201 }
         );
