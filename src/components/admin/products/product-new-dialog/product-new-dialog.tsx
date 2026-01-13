@@ -66,6 +66,8 @@ type UploadResponse =
               mime: string;
               size: number;
               originalName: string;
+              module?: 'PRODUCTS' | 'PROFESSIONALS';
+              category?: 'products' | 'professionals';
           };
       }
     | { ok: false; error?: string };
@@ -137,7 +139,7 @@ export function ProductNewDialog({
     const [isFeatured, setIsFeatured] = React.useState(false);
 
     const [name, setName] = React.useState('');
-    const [imageUrl, setImageUrl] = React.useState(''); // preenchido pelo upload (ou fallback url)
+    const [imageUrl, setImageUrl] = React.useState(''); // preenchido pelo upload
     const [description, setDescription] = React.useState('');
 
     const [price, setPrice] = React.useState('');
@@ -214,6 +216,7 @@ export function ProductNewDialog({
         try {
             const fd = new FormData();
             fd.append('file', file);
+            fd.append('module', 'PRODUCTS');
 
             const res = await fetch('/api/admin/uploads', {
                 method: 'POST',
@@ -399,11 +402,6 @@ export function ProductNewDialog({
                                 ))}
                             </SelectContent>
                         </Select>
-
-                        <p className="text-[11px] text-content-secondary/70">
-                            O estoque não é central. Reservas e checkout
-                            seguirão a unidade escolhida.
-                        </p>
                     </div>
 
                     <div className="space-y-2 rounded-xl border border-border-primary bg-background-tertiary p-3">
@@ -477,7 +475,7 @@ export function ProductNewDialog({
                                     <Input
                                         value={previewUrl ?? ''}
                                         readOnly
-                                        placeholder="Envie uma imagem para gerar a URL"
+                                        placeholder="Escolha seu arquivo clicando em Upload."
                                         className={cn(
                                             'pl-10 pr-10',
                                             INPUT_BASE
@@ -503,15 +501,6 @@ export function ProductNewDialog({
                                         </button>
                                     ) : null}
                                 </div>
-
-                                <p className="text-[11px] text-content-secondary/70">
-                                    Em dev, salvamos em{' '}
-                                    <span className="text-content-primary">
-                                        /public/uploads
-                                    </span>
-                                    . Em produção, trocamos para Storage
-                                    mantendo a mesma interface.
-                                </p>
                             </div>
 
                             <Button
@@ -541,21 +530,6 @@ export function ProductNewDialog({
                                 />
                             </div>
                         ) : null}
-
-                        {/* fallback opcional: colar URL */}
-                        <div className="space-y-2">
-                            <p className="text-[11px] text-content-secondary/70">
-                                Ou cole uma URL (opcional)
-                            </p>
-                            <IconInput
-                                icon={ImageIcon}
-                                value={imageUrl}
-                                onChange={(e) => setImageUrl(e.target.value)}
-                                disabled={isPending || uploadingImage}
-                                placeholder="https://..."
-                                className={INPUT_BASE}
-                            />
-                        </div>
                     </div>
 
                     <div className="space-y-2">
@@ -722,7 +696,7 @@ export function ProductNewDialog({
 
                     <div className="space-y-2">
                         <label className="text-label-small text-content-secondary">
-                            Porcentagem do barbeiro (%){' '}
+                            Porcentagem do profissional (%){' '}
                             <span className="text-red-500">*</span>
                         </label>
                         <IconInput

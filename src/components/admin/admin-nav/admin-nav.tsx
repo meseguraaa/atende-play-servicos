@@ -134,6 +134,10 @@ function mapAdminHref(link: (typeof ADMIN_MENU)[number]) {
     if (link.menuKey === 'clients')
         return link.href.replace('/clients', '/client');
 
+    // ✅ professionals -> professional (singular)
+    if (link.menuKey === 'professionals')
+        return link.href.replace('/professionals', '/professional');
+
     // ✅ client-levels -> client-level (singular)
     if (link.menuKey === 'clientLevels')
         return link.href.replace('/client-levels', '/client-level');
