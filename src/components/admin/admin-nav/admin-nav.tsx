@@ -138,6 +138,10 @@ function mapAdminHref(link: (typeof ADMIN_MENU)[number]) {
     if (link.menuKey === 'professionals')
         return link.href.replace('/professionals', '/professional');
 
+    // ✅ services -> service (singular)
+    if (link.menuKey === 'services')
+        return link.href.replace('/services', '/service');
+
     // ✅ client-levels -> client-level (singular)
     if (link.menuKey === 'clientLevels')
         return link.href.replace('/client-levels', '/client-level');
@@ -219,25 +223,16 @@ export function AdminNav({
     return (
         <nav
             className={cn(
-                'group fixed left-0 top-0 z-40 flex h-screen flex-col',
+                'fixed left-0 top-0 z-40 flex h-screen flex-col',
                 'border-r border-border-primary bg-background-primary',
-                'w-14 hover:w-55 transition-[width] duration-200 ease-in-out',
+                'w-55',
                 'pt-5 overflow-hidden',
                 className
             )}
         >
             {shouldShowUnitPicker && (
                 <div className="px-2 pb-3">
-                    <div className="flex items-center justify-center py-2">
-                        <Building2 className="h-4 w-4 text-content-secondary group-hover:hidden" />
-                    </div>
-
-                    <div
-                        className={cn(
-                            'hidden group-hover:block',
-                            'rounded-xl border border-border-primary bg-background-secondary/40 p-2'
-                        )}
-                    >
+                    <div className={cn('rounded-xl p-2')}>
                         <div className="flex items-center gap-2 px-2 pb-2">
                             <Building2 className="h-4 w-4 text-content-brand" />
                             <span className="text-label-small text-content-secondary">
@@ -303,14 +298,7 @@ export function AdminNav({
                                         : 'text-content-secondary'
                                 )}
                             />
-                            <span
-                                className={cn(
-                                    'whitespace-nowrap',
-                                    'opacity-0 -translate-x-1',
-                                    'transition-all duration-200',
-                                    'group-hover:opacity-100 group-hover:translate-x-0'
-                                )}
-                            >
+                            <span className={cn('whitespace-nowrap')}>
                                 {link.label}
                             </span>
                         </Link>
