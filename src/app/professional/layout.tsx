@@ -1,10 +1,15 @@
-// src/app/admin/layout.tsx
+// src/app/professional/layout.tsx
 import { ReactNode } from 'react';
+
 import { ProfessionalNav } from '@/components/professional/professional-nav';
 
 export const dynamic = 'force-dynamic';
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default function ProfessionalLayout({
+    children,
+}: {
+    children: ReactNode;
+}) {
     return (
         <div className="min-h-screen bg-background-primary">
             <ProfessionalNav />
