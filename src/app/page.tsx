@@ -5,9 +5,9 @@ import { endOfDay, startOfDay } from 'date-fns';
 export const dynamic = 'force-dynamic';
 
 type HomeProps = {
-    searchParams?: {
+    searchParams?: Promise<{
         date?: string;
-    };
+    }>;
 };
 
 function parseDateParam(dateParam?: string): Date {
@@ -20,7 +20,9 @@ function parseDateParam(dateParam?: string): Date {
 }
 
 export default async function Home({ searchParams }: HomeProps) {
-    const baseDate = parseDateParam(searchParams?.date);
+    const resolvedSearchParams = await searchParams;
+
+    const baseDate = parseDateParam(resolvedSearchParams?.date);
 
     const dayStart = startOfDay(baseDate);
     const dayEnd = endOfDay(baseDate);
