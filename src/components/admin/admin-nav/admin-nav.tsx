@@ -223,9 +223,9 @@ export function AdminNav({
     return (
         <nav
             className={cn(
-                'fixed left-0 top-0 z-40 flex h-screen flex-col',
+                'group fixed left-0 top-0 z-40 flex h-screen flex-col',
                 'border-r border-border-primary bg-background-primary',
-                'w-55',
+                'w-14 hover:w-55 transition-[width] duration-200 ease-in-out',
                 'pt-5 overflow-hidden',
                 className
             )}
@@ -233,36 +233,53 @@ export function AdminNav({
             {shouldShowUnitPicker && (
                 <div className="px-2 pb-3">
                     <div className={cn('rounded-xl p-2')}>
+                        {/* Cabeçalho (ícone sempre visível, texto só no hover) */}
                         <div className="flex items-center gap-2 px-2 pb-2">
-                            <Building2 className="h-4 w-4 text-content-brand" />
-                            <span className="text-label-small text-content-secondary">
+                            <Building2 className="h-4 w-4 shrink-0 text-content-brand" />
+                            <span
+                                className={cn(
+                                    'text-label-small text-content-secondary whitespace-nowrap',
+                                    'opacity-0 -translate-x-1',
+                                    'transition-all duration-200',
+                                    'group-hover:opacity-100 group-hover:translate-x-0'
+                                )}
+                            >
                                 Unidade
                             </span>
                         </div>
 
-                        <Select
-                            value={currentUnit || undefined}
-                            onValueChange={(v) => setUnitOnCurrentRoute(v)}
+                        {/* Select só aparece quando o menu abre */}
+                        <div
+                            className={cn(
+                                'opacity-0 -translate-x-1 pointer-events-none',
+                                'transition-all duration-200',
+                                'group-hover:opacity-100 group-hover:translate-x-0 group-hover:pointer-events-auto'
+                            )}
                         >
-                            <SelectTrigger
-                                className={cn(
-                                    'h-9 w-full',
-                                    'bg-background-secondary border-border-primary',
-                                    'text-content-primary hover:border-border-secondary',
-                                    'focus:border-border-brand focus:ring-0'
-                                )}
+                            <Select
+                                value={currentUnit || undefined}
+                                onValueChange={(v) => setUnitOnCurrentRoute(v)}
                             >
-                                <SelectValue placeholder="Selecione" />
-                            </SelectTrigger>
+                                <SelectTrigger
+                                    className={cn(
+                                        'h-9 w-full',
+                                        'bg-background-secondary border-border-primary',
+                                        'text-content-primary hover:border-border-secondary',
+                                        'focus:border-border-brand focus:ring-0'
+                                    )}
+                                >
+                                    <SelectValue placeholder="Selecione" />
+                                </SelectTrigger>
 
-                            <SelectContent className="border-border-primary bg-background-primary">
-                                {unitOptions!.map((u) => (
-                                    <SelectItem key={u.id} value={u.id}>
-                                        {u.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                                <SelectContent className="border-border-primary bg-background-primary">
+                                    {unitOptions!.map((u) => (
+                                        <SelectItem key={u.id} value={u.id}>
+                                            {u.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                 </div>
             )}
@@ -298,7 +315,14 @@ export function AdminNav({
                                         : 'text-content-secondary'
                                 )}
                             />
-                            <span className={cn('whitespace-nowrap')}>
+                            <span
+                                className={cn(
+                                    'whitespace-nowrap',
+                                    'opacity-0 -translate-x-1',
+                                    'transition-all duration-200',
+                                    'group-hover:opacity-100 group-hover:translate-x-0'
+                                )}
+                            >
                                 {link.label}
                             </span>
                         </Link>

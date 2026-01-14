@@ -5,7 +5,13 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, CalendarCheck, Wallet, Star } from 'lucide-react';
+import {
+    LayoutDashboard,
+    CalendarCheck,
+    Wallet,
+    Star,
+    Building2,
+} from 'lucide-react';
 
 type ProfessionalLink = {
     href: string;
@@ -25,23 +31,107 @@ const professionalLinks: ProfessionalLink[] = [
         icon: CalendarCheck,
     },
     {
-        href: '/professional/earnings',
+        href: '/professional/earning',
         label: 'Ganhos',
         icon: Wallet,
     },
     {
-        href: '/professional/reviews',
+        href: '/professional/review',
         label: 'Avaliações',
         icon: Star,
     },
 ];
 
-export type ProfessionalNavProps = {
-    className?: string;
+type UnitForNav = {
+    id: string;
+    name: string;
 };
 
-export function ProfessionalNav({ className }: ProfessionalNavProps) {
+export type ProfessionalNavProps = {
+    className?: string;
+
+    /**
+     * ✅ Opcional: se você já tiver a unidade carregada no server (DB),
+     * pode passar aqui e o componente não precisa buscar via API.
+     */
+    unit?: UnitForNav | null;
+};
+
+/**
+ * Tenta buscar a unidade do profissional via API (quando `unit` não vier por props).
+ * Espera um payload flexível, aceitando variações comuns:
+ * - { ok: true, data: { id, name } }
+ * - { ok: true, data: { unit: { id, name } } }
+ * - { id, name }
+ */
+async function fetchProfessionalUnit(
+    signal?: AbortSignal
+): Promise<UnitForNav | null> {
+    const candidates = [
+        '/api/professional/unit',
+        '/api/professional/me',
+        '/api/professional/profile',
+    ];
+
+    for (const url of candidates) {
+        try {
+            const res = await fetch(url, {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                signal,
+            });
+
+            if (!res.ok) continue;
+
+            const json: any = await res.json().catch(() => null);
+            if (!json) continue;
+
+            // Formatos suportados:
+            const direct = json?.id && json?.name ? json : null;
+            const data = json?.data ?? null;
+            const dataDirect = data?.id && data?.name ? data : null;
+            const nested =
+                data?.unit?.id && data?.unit?.name ? data.unit : null;
+            const altNested =
+                json?.unit?.id && json?.unit?.name ? json.unit : null;
+
+            const unit = (direct ??
+                dataDirect ??
+                nested ??
+                altNested) as UnitForNav | null;
+            if (unit?.id && unit?.name) return unit;
+
+            // caso a API retorne array ou outra estrutura, ignoramos e tentamos próxima
+        } catch {
+            // silencioso, tenta próxima rota
+        }
+    }
+
+    return null;
+}
+
+export function ProfessionalNav({ className, unit }: ProfessionalNavProps) {
     const pathname = usePathname();
+
+    const [unitState, setUnitState] = React.useState<UnitForNav | null>(
+        unit ?? null
+    );
+
+    React.useEffect(() => {
+        if (unit) {
+            setUnitState(unit);
+            return;
+        }
+
+        const ctrl = new AbortController();
+
+        fetchProfessionalUnit(ctrl.signal).then((u) => {
+            if (u) setUnitState(u);
+        });
+
+        return () => ctrl.abort();
+    }, [unit]);
 
     return (
         <nav
@@ -53,6 +143,48 @@ export function ProfessionalNav({ className }: ProfessionalNavProps) {
                 className
             )}
         >
+            {/* UNIDADE (do profissional) */}
+            {unitState?.name ? (
+                <div className="px-2 pb-3">
+                    <div className={cn('rounded-xl p-2')}>
+                        <div className="flex items-center gap-2 px-2 pb-2">
+                            <Building2 className="h-4 w-4 shrink-0 text-content-brand" />
+                            <span
+                                className={cn(
+                                    'text-label-small text-content-secondary whitespace-nowrap',
+                                    'opacity-0 -translate-x-1',
+                                    'transition-all duration-200',
+                                    'group-hover:opacity-100 group-hover:translate-x-0'
+                                )}
+                            >
+                                Unidade
+                            </span>
+                        </div>
+
+                        <div
+                            className={cn(
+                                'opacity-0 -translate-x-1 pointer-events-none',
+                                'transition-all duration-200',
+                                'group-hover:opacity-100 group-hover:translate-x-0 group-hover:pointer-events-auto'
+                            )}
+                        >
+                            <div
+                                className={cn(
+                                    'h-9 w-full flex items-center px-3 rounded-lg',
+                                    'bg-background-secondary border border-border-primary',
+                                    'text-content-primary'
+                                )}
+                                title={unitState.name}
+                            >
+                                <span className="truncate text-label-small">
+                                    {unitState.name}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+
             {/* LINKS */}
             <div className="flex-1 space-y-1 px-2 pb-4">
                 {professionalLinks.map((link) => {
