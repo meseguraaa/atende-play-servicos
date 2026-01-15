@@ -98,6 +98,13 @@ export const DatePicker = ({
     const updateURLWithDate = (selectedDate: Date) => {
         const newParams = new URLSearchParams(searchParams.toString());
 
+        // ✅ evita parâmetros “brigando” entre telas
+        if (mode === 'month') {
+            newParams.delete('date');
+        } else {
+            newParams.delete('month');
+        }
+
         if (mode === 'month') {
             // normaliza sempre para o 1º dia do mês
             const monthDate = new Date(
@@ -110,7 +117,8 @@ export const DatePicker = ({
             newParams.set('date', formatDateParam(selectedDate));
         }
 
-        router.push(`${pathname}?${newParams.toString()}`);
+        const qs = newParams.toString();
+        router.push(qs ? `${pathname}?${qs}` : pathname);
     };
 
     const handleNavigate = (delta: number) => {

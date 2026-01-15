@@ -140,15 +140,16 @@ export function DailyExceptionModal({
 
         setIsSaving(true);
 
+        // ✅ Sempre envia a “data do calendário” como yyyy-MM-dd (sem hora / sem timezone)
         const payload =
             mode === 'FULL_DAY'
                 ? {
-                      dateISO: date!.toISOString(),
+                      dateISO: format(date!, 'yyyy-MM-dd'),
                       mode: 'FULL_DAY' as const,
                       intervals: [] as { startTime: string; endTime: string }[],
                   }
                 : {
-                      dateISO: date!.toISOString(),
+                      dateISO: format(date!, 'yyyy-MM-dd'),
                       mode: 'PARTIAL' as const,
                       intervals: intervals.map((i) => ({
                           startTime: i.startTime,
@@ -186,10 +187,10 @@ export function DailyExceptionModal({
             resetState();
             setIsOpen(false);
 
-            // ✅ avisa a lista pra recarregar na hora (sem depender só do refresh)
+            // ✅ avisa a lista pra recarregar na hora
             window.dispatchEvent(new Event(EXCEPTIONS_CHANGED_EVENT));
 
-            // ✅ garante atualização do server + client (boa prática)
+            // ✅ atualiza server components/caches
             router.refresh();
         } catch {
             toast.error('Falha ao salvar exceção. Tente novamente.');
@@ -304,7 +305,7 @@ export function DailyExceptionModal({
                                     Dia inteiro indisponível
                                 </SelectItem>
                                 <SelectItem value="PARTIAL">
-                                    Indisponível em horários específicos
+                                    Disponível em horários específicos
                                 </SelectItem>
                             </SelectContent>
                         </Select>
@@ -315,7 +316,7 @@ export function DailyExceptionModal({
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <span className="text-label-medium-size text-content-primary">
-                                    Horários indisponíveis
+                                    Horários disponíveis
                                 </span>
                                 <Button
                                     type="button"

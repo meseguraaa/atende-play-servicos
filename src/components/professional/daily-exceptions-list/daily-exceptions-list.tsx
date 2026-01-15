@@ -21,7 +21,18 @@ type ExceptionInterval = {
 
 type ExceptionItem = {
     id: string;
+
+    /**
+     * ✅ dateKey é a “data do calendário” (yyyy-MM-dd)
+     * e é o que usamos para DELETE e para evitar drift de fuso.
+     */
+    dateKey: string;
+
+    /**
+     * ✅ Date criado a partir do dateKey em horário local (sem timezone shift)
+     */
     date: Date;
+
     type: 'DAY_OFF' | 'CUSTOM';
     intervals: ExceptionInterval[];
 };
@@ -32,7 +43,7 @@ type ApiGetResponse =
           data: {
               exceptions: {
                   id: string;
-                  dateISO: string;
+                  dateISO: string; // yyyy-MM-dd
                   type: 'DAY_OFF' | 'CUSTOM';
                   intervals: {
                       id: string;
@@ -45,6 +56,15 @@ type ApiGetResponse =
     | { ok: false; error?: string };
 
 const EXCEPTIONS_CHANGED_EVENT = 'professional-exceptions:changed';
+
+function toDateKey(dateISO: string): string {
+    return String(dateISO ?? '').slice(0, 10);
+}
+
+function dateFromKey(dateKey: string): Date {
+    const [y, m, d] = dateKey.split('-').map((n) => Number(n));
+    return new Date(y, (m ?? 1) - 1, d ?? 1);
+}
 
 export function DailyExceptionsList({
     professionalId,
@@ -78,16 +98,34 @@ export function DailyExceptionsList({
                 return;
             }
 
-            const list = (json.data?.exceptions ?? []).map((ex) => ({
-                id: ex.id,
-                date: new Date(ex.dateISO),
-                type: ex.type,
-                intervals: (ex.intervals ?? []).map((i) => ({
-                    id: i.id,
-                    startTime: i.startTime,
-                    endTime: i.endTime,
-                })),
-            }));
+            const list = (json.data?.exceptions ?? []).map((ex) => {
+                const dateKey = toDateKey(ex.dateISO);
+                const date = dateFromKey(dateKey);
+
+                // 🧪 DEBUG CRÍTICO (remover depois)
+                console.group('🗓️ DEBUG EXCEPTION');
+                console.log('RAW dateISO (API):', ex.dateISO);
+                console.log('dateKey (yyyy-MM-dd):', dateKey);
+                console.log('Date local:', date);
+                console.log(
+                    'Date local formatted:',
+                    format(date, 'yyyy-MM-dd')
+                );
+                console.log('Timezone offset (min):', date.getTimezoneOffset());
+                console.groupEnd();
+
+                return {
+                    id: ex.id,
+                    dateKey,
+                    date,
+                    type: ex.type,
+                    intervals: (ex.intervals ?? []).map((i) => ({
+                        id: i.id,
+                        startTime: i.startTime,
+                        endTime: i.endTime,
+                    })),
+                } satisfies ExceptionItem;
+            });
 
             setExceptions(list);
         } catch {
@@ -99,24 +137,18 @@ export function DailyExceptionsList({
     }
 
     useEffect(() => {
-        // A API usa sessão no server; professionalId aqui é escopo/UI.
-        // Mantemos na dependência caso o escopo mude.
         void professionalId;
         void load();
-
-        // ✅ Quando o modal criar/atualizar uma exceção, a lista recarrega sem depender do router.refresh
-        const onChanged = () => {
-            void load();
-        };
-
-        window.addEventListener(EXCEPTIONS_CHANGED_EVENT, onChanged);
-
-        return () => {
-            window.removeEventListener(EXCEPTIONS_CHANGED_EVENT, onChanged);
-        };
-
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [professionalId]);
+
+    useEffect(() => {
+        const handler = () => void load();
+        window.addEventListener(EXCEPTIONS_CHANGED_EVENT, handler);
+        return () =>
+            window.removeEventListener(EXCEPTIONS_CHANGED_EVENT, handler);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const sorted = useMemo(() => {
         return [...exceptions].sort(
@@ -124,17 +156,14 @@ export function DailyExceptionsList({
         );
     }, [exceptions]);
 
-    async function deleteByDateISO(dateISO: string) {
-        // UI: remove otimisticamente
+    async function deleteByDateKey(dateKey: string) {
         const prev = exceptions;
-        setExceptions((cur) =>
-            cur.filter((ex) => ex.date.toISOString() !== dateISO)
-        );
+        setExceptions((cur) => cur.filter((ex) => ex.dateKey !== dateKey));
 
         try {
             const res = await fetch(
                 `/api/professional/availability/exceptions?dateISO=${encodeURIComponent(
-                    dateISO
+                    dateKey
                 )}`,
                 {
                     method: 'DELETE',
@@ -147,17 +176,11 @@ export function DailyExceptionsList({
             if (!res.ok || !json?.ok) {
                 const msg = json?.error ?? 'Erro ao remover exceção.';
                 toast.error(msg);
-                // rollback
                 setExceptions(prev);
                 return;
             }
 
             toast.success('Exceção removida com sucesso.');
-
-            // ✅ avisa outros componentes (e garante reload da lista também)
-            window.dispatchEvent(new Event(EXCEPTIONS_CHANGED_EVENT));
-
-            // ✅ e ainda atualiza server components (boa prática)
             router.refresh();
         } catch {
             toast.error('Falha ao remover exceção. Tente novamente.');
@@ -193,9 +216,7 @@ export function DailyExceptionsList({
                         const dateLabel = format(
                             ex.date,
                             "EEEE, dd 'de' MMMM",
-                            {
-                                locale: ptBR,
-                            }
+                            { locale: ptBR }
                         );
 
                         const isDayOff = ex.type === 'DAY_OFF';
@@ -247,9 +268,9 @@ export function DailyExceptionsList({
 
                                 <DailyExceptionDeleteButton
                                     professionalId={professionalId}
-                                    dateISO={ex.date.toISOString()}
+                                    dateISO={ex.dateKey}
                                     onDelete={({ dateISO }) =>
-                                        deleteByDateISO(dateISO)
+                                        deleteByDateKey(dateISO)
                                     }
                                 />
                             </div>
