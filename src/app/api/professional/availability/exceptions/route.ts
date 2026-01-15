@@ -1,6 +1,7 @@
 // src/app/api/professional/availability/exceptions/route.ts
 import { NextResponse, type NextRequest } from 'next/server';
 import { revalidatePath } from 'next/cache';
+import { format } from 'date-fns';
 
 import { prisma } from '@/lib/prisma';
 import { requireProfessionalSession } from '@/lib/professional-permissions';
@@ -14,11 +15,24 @@ function jsonErr(error: string, status = 400) {
     return NextResponse.json({ ok: false, error }, { status });
 }
 
-function normalizeDateToUTCStart(dateISO: string) {
-    const d = new Date(dateISO);
-    if (Number.isNaN(d.getTime())) return null;
-    d.setUTCHours(0, 0, 0, 0);
-    return d;
+/**
+ * ✅ Converte yyyy-MM-dd para Date fixo em UTC (12:00Z) SEM depender do parse do JS.
+ * Isso elimina drift entre ambientes e impede “dia anterior/próximo” na UI/DB.
+ */
+function dateKeyToUTCMidday(dateKey: string) {
+    const key = String(dateKey ?? '').slice(0, 10);
+    const [yy, mm, dd] = key.split('-');
+
+    const y = Number(yy);
+    const m = Number(mm);
+    const d = Number(dd);
+
+    if (!Number.isInteger(y) || !Number.isInteger(m) || !Number.isInteger(d)) {
+        return null;
+    }
+    if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+
+    return new Date(Date.UTC(y, m - 1, d, 12, 0, 0, 0));
 }
 
 async function getProfessionalScopeOrThrow() {
@@ -32,7 +46,6 @@ async function getProfessionalScopeOrThrow() {
     if (!professionalId) throw new Error('missing_professional');
     if (!unitId) throw new Error('missing_active_unit');
 
-    // 🔒 Hard lock: garante vínculo e unidade ativos dentro da mesma company
     const active = await prisma.professionalUnit.findFirst({
         where: {
             companyId,
@@ -66,7 +79,10 @@ export async function GET() {
         return jsonOk({
             exceptions: exceptions.map((ex) => ({
                 id: ex.id,
-                dateISO: ex.date.toISOString(),
+
+                // ✅ Sempre devolve yyyy-MM-dd (sem hora)
+                dateISO: format(ex.date, 'yyyy-MM-dd'),
+
                 type:
                     ex.type === ProfessionalDailyAvailabilityType.DAY_OFF
                         ? 'DAY_OFF'
@@ -97,7 +113,7 @@ export async function POST(req: NextRequest) {
         const scope = await getProfessionalScopeOrThrow();
 
         const body = (await req.json()) as {
-            dateISO?: string;
+            dateISO?: string; // yyyy-MM-dd
             mode?: 'FULL_DAY' | 'PARTIAL';
             intervals?: { startTime: string; endTime: string }[];
         };
@@ -110,8 +126,8 @@ export async function POST(req: NextRequest) {
             return jsonErr('mode inválido. Use FULL_DAY ou PARTIAL.', 400);
         }
 
-        const date = normalizeDateToUTCStart(dateISO);
-        if (!date) return jsonErr('dateISO inválido.', 400);
+        const date = dateKeyToUTCMidday(dateISO);
+        if (!date) return jsonErr('dateISO inválido. Use yyyy-MM-dd.', 400);
 
         const intervalsInput = Array.isArray(body?.intervals)
             ? body.intervals
@@ -199,8 +215,8 @@ export async function DELETE(req: NextRequest) {
 
         if (!dateISO) return jsonErr('dateISO é obrigatório.', 400);
 
-        const date = normalizeDateToUTCStart(dateISO);
-        if (!date) return jsonErr('dateISO inválido.', 400);
+        const date = dateKeyToUTCMidday(dateISO);
+        if (!date) return jsonErr('dateISO inválido. Use yyyy-MM-dd.', 400);
 
         await prisma.professionalDailyAvailability.delete({
             where: {
@@ -216,9 +232,13 @@ export async function DELETE(req: NextRequest) {
 
         return jsonOk({ deleted: true });
     } catch (e: any) {
-        // idempotência
+        const code = String(e?.code ?? '');
         const msg = String(e?.message ?? '');
-        if (msg.includes('Record to delete does not exist')) {
+
+        if (
+            code === 'P2025' ||
+            msg.includes('Record to delete does not exist')
+        ) {
             return jsonOk({ deleted: true });
         }
 
