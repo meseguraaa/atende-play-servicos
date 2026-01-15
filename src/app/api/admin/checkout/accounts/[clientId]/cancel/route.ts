@@ -133,8 +133,11 @@ export async function PATCH(
         let skippedCount = 0;
 
         if (!canSeeAllUnits) {
+            // ✅ FIX: `isActive` não existe em AdminUnitAccessWhereInput
+            // Consideramos "ativo" como "registro existente".
+            // Se seu schema tiver algo como revokedAt/deletedAt, depois a gente ajusta aqui.
             const accesses = await prisma.adminUnitAccess.findMany({
-                where: { companyId, userId, isActive: true },
+                where: { companyId, userId },
                 select: { unitId: true },
             });
 
