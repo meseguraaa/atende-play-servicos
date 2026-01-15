@@ -67,6 +67,18 @@ function toNonNegativeInt(value: unknown, fallback = 0) {
     return Math.max(0, n);
 }
 
+/**
+ * ✅ TS FIX:
+ * Em alguns setups, o tipo `FormData` no ambiente server não expõe `.get()`
+ * (normalmente por falta da lib "dom" no tsconfig).
+ * Aqui chamamos `.get()` via `any` para destravar build, mantendo runtime correto.
+ */
+function formGet(formData: unknown, key: string): unknown {
+    const anyForm = formData as any;
+    if (anyForm && typeof anyForm.get === 'function') return anyForm.get(key);
+    return undefined;
+}
+
 async function getUnitContext(params: { requestedUnitId?: string | null }) {
     const session = await requireAdminForModule('CLIENT_LEVELS');
 
@@ -223,8 +235,8 @@ export async function POST(req: Request) {
     try {
         const formData = await req.formData();
 
-        const intent = String(formData.get('intent') ?? '').trim(); // create | update | delete
-        const unitId = String(formData.get('unitId') ?? '').trim();
+        const intent = String(formGet(formData, 'intent') ?? '').trim(); // create | update | delete
+        const unitId = String(formGet(formData, 'unitId') ?? '').trim();
 
         const ctx = await getUnitContext({ requestedUnitId: unitId });
         if (!ctx.ok) return jsonErr(ctx.error, ctx.status);
@@ -243,9 +255,12 @@ export async function POST(req: Request) {
                 );
             }
 
-            const type = safeRuleType(formData.get('type'));
-            const targetLevel = safeLevel(formData.get('targetLevel'));
-            const priority = toNonNegativeInt(formData.get('priority'), 100);
+            const type = safeRuleType(formGet(formData, 'type'));
+            const targetLevel = safeLevel(formGet(formData, 'targetLevel'));
+            const priority = toNonNegativeInt(
+                formGet(formData, 'priority'),
+                100
+            );
 
             const created = await prisma.customerLevelRule.create({
                 data: {
@@ -267,12 +282,15 @@ export async function POST(req: Request) {
         }
 
         if (intent === 'update') {
-            const ruleId = String(formData.get('ruleId') ?? '').trim();
+            const ruleId = String(formGet(formData, 'ruleId') ?? '').trim();
             if (!ruleId) return jsonErr('ruleId é obrigatório.', 400);
 
-            const type = safeRuleType(formData.get('type'));
-            const targetLevel = safeLevel(formData.get('targetLevel'));
-            const priority = toNonNegativeInt(formData.get('priority'), 100);
+            const type = safeRuleType(formGet(formData, 'type'));
+            const targetLevel = safeLevel(formGet(formData, 'targetLevel'));
+            const priority = toNonNegativeInt(
+                formGet(formData, 'priority'),
+                100
+            );
 
             // ✅ garante escopo (companyId + unitId)
             await prisma.customerLevelRule.updateMany({
@@ -292,7 +310,7 @@ export async function POST(req: Request) {
         }
 
         if (intent === 'delete') {
-            const ruleId = String(formData.get('ruleId') ?? '').trim();
+            const ruleId = String(formGet(formData, 'ruleId') ?? '').trim();
             if (!ruleId) return jsonErr('ruleId é obrigatório.', 400);
 
             await prisma.customerLevelRule.deleteMany({

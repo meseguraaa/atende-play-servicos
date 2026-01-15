@@ -33,6 +33,18 @@ function normalizeString(raw: unknown) {
     return s.length ? s : '';
 }
 
+/**
+ * ✅ TS FIX:
+ * Em alguns setups, o tipo `FormData` no ambiente server não expõe `.get()`
+ * (normalmente por falta da lib "dom" no tsconfig).
+ * Aqui chamamos `.get()` via `any` para destravar build, mantendo runtime correto.
+ */
+function formGet(formData: unknown, key: string): unknown {
+    const anyForm = formData as any;
+    if (anyForm && typeof anyForm.get === 'function') return anyForm.get(key);
+    return undefined;
+}
+
 function safeExtFrom(fileName: string, mime: string) {
     const byName = path.extname(fileName || '').toLowerCase();
 
@@ -86,7 +98,7 @@ export async function POST(request: Request) {
         const form = await request.formData().catch(() => null);
         if (!form) return jsonErr('FormData inválido.', 400);
 
-        const module = parseModule(form.get('module'));
+        const module = parseModule(formGet(form, 'module'));
         if (!module) {
             return jsonErr(
                 'Campo "module" é obrigatório e deve ser "PRODUCTS" ou "PROFESSIONALS".',
@@ -105,7 +117,7 @@ export async function POST(request: Request) {
             );
         }
 
-        const file = form.get('file');
+        const file = formGet(form, 'file');
         if (!file || !(file instanceof File)) {
             return jsonErr('Campo "file" é obrigatório.', 400);
         }

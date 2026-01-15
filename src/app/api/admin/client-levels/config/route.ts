@@ -53,6 +53,18 @@ function toNonNegativeInt(value: unknown, fallback = 0) {
     return Math.max(0, n);
 }
 
+/**
+ * ✅ TS FIX:
+ * Em alguns setups, o tipo `FormData` no ambiente server não expõe `.get()`
+ * (normalmente por falta da lib "dom" no tsconfig).
+ * Aqui chamamos `.get()` via `any` para destravar build, mantendo runtime correto.
+ */
+function formGet(formData: unknown, key: string): unknown {
+    const anyForm = formData as any;
+    if (anyForm && typeof anyForm.get === 'function') return anyForm.get(key);
+    return undefined;
+}
+
 async function getUnitContext(params: { requestedUnitId?: string | null }) {
     const session = await requireAdminForModule('CLIENT_LEVELS');
 
@@ -227,7 +239,7 @@ export async function POST(req: Request) {
     try {
         const formData = await req.formData();
 
-        const unitId = String(formData.get('unitId') ?? '').trim();
+        const unitId = String(formGet(formData, 'unitId') ?? '').trim();
 
         const ctx = await getUnitContext({ requestedUnitId: unitId });
         if (!ctx.ok) return jsonErr(ctx.error, ctx.status);
@@ -238,11 +250,11 @@ export async function POST(req: Request) {
         // monta payload por nível
         const rows = LEVELS.map((lvl) => {
             const done = toNonNegativeInt(
-                formData.get(`minAppointmentsDone_${lvl}`),
+                formGet(formData, `minAppointmentsDone_${lvl}`),
                 0
             );
             const completed = toNonNegativeInt(
-                formData.get(`minOrdersCompleted_${lvl}`),
+                formGet(formData, `minOrdersCompleted_${lvl}`),
                 0
             );
 
