@@ -1,5 +1,5 @@
 // src/app/api/admin/checkout/orders/[orderId]/assign-product-item-professional/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 
 import { prisma } from '@/lib/prisma';
@@ -19,10 +19,16 @@ type AssignProductItemProfessionalResponse =
       }
     | { ok: false; error: string };
 
+/**
+ * ✅ IMPORTANTE:
+ * O validator do Next (especialmente nas versões mais novas) pode inferir
+ * `context.params` como `Promise<{}>` dependendo de como ele resolve a rota.
+ *
+ * Então aqui tipamos como `any` para ficar compatível com `Promise<{}>` e
+ * também com `Promise<{ orderId: string }>` quando ele detectar corretamente.
+ */
 type Ctx = {
-    params: Promise<{
-        orderId: string;
-    }>;
+    params: Promise<any>;
 };
 
 type AssignBody = {
@@ -65,7 +71,7 @@ function jsonOk(
  * - profissional precisa estar ativo na unidade do pedido (via ProfessionalUnit)
  */
 export async function PATCH(
-    request: Request,
+    request: NextRequest,
     ctx: Ctx
 ): Promise<NextResponse<AssignProductItemProfessionalResponse>> {
     try {
@@ -80,8 +86,8 @@ export async function PATCH(
 
         const canSeeAllUnits = session.canSeeAllUnits;
 
-        const { orderId: orderIdRaw } = await ctx.params;
-        const orderId = normalizeString(orderIdRaw);
+        const params = await ctx.params;
+        const orderId = normalizeString(params?.orderId);
         if (!orderId) return jsonErr('orderId é obrigatório.', 400);
 
         const body = (await request
