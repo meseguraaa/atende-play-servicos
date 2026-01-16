@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 
 import { MonthPicker } from '@/components/month-picker';
@@ -21,11 +21,31 @@ export type ServiceOrderUI = {
     status: OrderStatus;
 };
 
+export type ProductOrderItemUI = {
+    itemId: string;
+    productId: string;
+    name: string;
+    qty: number;
+    totalLabel: string;
+
+    // ✅ novo (best-effort, pode vir ou não do backend)
+    professionalId?: string | null;
+    professionalName?: string | null;
+};
+
 export type ProductOrderUI = {
     id: string;
     createdAtLabel: string;
+
+    // compat (ainda pode vir)
     itemsLabel: string;
+
+    // ✅ novo: itens de produto com itemId (para cancelar 1 por 1)
+    items?: ProductOrderItemUI[];
+
+    // subtotal apenas de produtos deste pedido
     totalLabel: string;
+
     status: OrderStatus;
 };
 
@@ -107,6 +127,84 @@ type CancelAccountResponse =
               alreadyCanceledCount: number;
               skippedCount: number;
               canceledAt: string;
+          };
+      }
+    | { ok: false; error: string };
+
+type ProductsListResponse =
+    | {
+          ok: true;
+          data: {
+              products: Array<{
+                  id: string;
+                  name: string;
+                  priceLabel: string;
+                  stockQuantity: number;
+                  unitId: string;
+              }>;
+          };
+      }
+    | { ok: false; error: string };
+
+type ProfessionalsListResponse =
+    | {
+          ok: true;
+          data: {
+              professionals: Array<{
+                  id: string;
+                  name: string;
+                  isActive: boolean;
+                  unitId: string | null;
+              }>;
+              count: number;
+              unitScope: 'filtered' | 'all';
+          };
+      }
+    | { ok: false; error: string };
+
+type AddProductResponse =
+    | {
+          ok: true;
+          data: {
+              clientId: string;
+              orderId: string;
+              orderStatus: 'PENDING' | 'PENDING_CHECKIN';
+              itemId: string;
+              productId: string;
+              quantity: number;
+              unitId: string;
+              unitPrice: string;
+              totalPrice: string;
+              orderTotalAmount: string;
+              orderWasCreated: boolean;
+          };
+      }
+    | { ok: false; error: string };
+
+type RemoveProductItemResponse =
+    | {
+          ok: true;
+          data: {
+              orderId: string;
+              orderStatus: 'PENDING' | 'PENDING_CHECKIN' | 'CANCELED';
+              removedItemId: string;
+              removedQuantity: number;
+              inventoryRevertedAt: string | null;
+              orderTotalAmount: string; // decimal string
+              remainingProductItemsCount: number;
+              orderWasCanceled: boolean;
+          };
+      }
+    | { ok: false; error: string };
+
+type AssignProductItemProfessionalResponse =
+    | {
+          ok: true;
+          data: {
+              orderId: string;
+              orderStatus: 'PENDING' | 'PENDING_CHECKIN';
+              itemId: string;
+              professionalId: string;
           };
       }
     | { ok: false; error: string };
@@ -512,6 +610,22 @@ function shortId(id: string) {
     return String(id ?? '').slice(0, 8);
 }
 
+function toIntSafe(v: unknown, fallback: number) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.max(1, Math.trunc(n));
+}
+
+// compat: quebra "1x A, 1x B" em linhas separadas (caso o backend ainda não mande items[])
+function splitItemsLabel(label?: string | null): string[] {
+    const raw = String(label ?? '').trim();
+    if (!raw || raw === '—') return [];
+    return raw
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+}
+
 export default function AdminCheckoutClient({
     canSeeAllUnits,
     monthLabel,
@@ -519,6 +633,7 @@ export default function AdminCheckoutClient({
     monthGroups,
 }: AdminCheckoutClientProps) {
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     const [payingClientId, setPayingClientId] = React.useState<string | null>(
         null
@@ -532,6 +647,60 @@ export default function AdminCheckoutClient({
     const [cancelingClientId, setCancelingClientId] = React.useState<
         string | null
     >(null);
+
+    // ====== Produtos (para adicionar no checkout) ======
+    const [products, setProducts] = React.useState<
+        Array<{
+            id: string;
+            name: string;
+            priceLabel: string;
+            stockQuantity: number;
+            unitId: string;
+        }>
+    >([]);
+
+    const [productsLoading, setProductsLoading] = React.useState(false);
+
+    // ====== Profissionais (para vincular venda) ======
+    const [professionals, setProfessionals] = React.useState<
+        Array<{
+            id: string;
+            name: string;
+            isActive: boolean;
+            unitId: string | null;
+        }>
+    >([]);
+    const [professionalsLoading, setProfessionalsLoading] =
+        React.useState(false);
+
+    // state por cliente (seleção + qty)
+    const [selectedProductByClient, setSelectedProductByClient] =
+        React.useState<Record<string, string>>({});
+
+    const [qtyByClient, setQtyByClient] = React.useState<
+        Record<string, number>
+    >({});
+
+    const [addingProductForClientId, setAddingProductForClientId] =
+        React.useState<string | null>(null);
+
+    // ✅ trava por item (cancelar produto por produto)
+    const [removingItemIds, setRemovingItemIds] = React.useState<Set<string>>(
+        () => new Set()
+    );
+
+    // ✅ trava por item (atribuir profissional)
+    const [assigningItemIds, setAssigningItemIds] = React.useState<Set<string>>(
+        () => new Set()
+    );
+
+    // seleção por item (UI controlled)
+    const [selectedProfessionalByItem, setSelectedProfessionalByItem] =
+        React.useState<Record<string, string>>({});
+
+    // seleção "rápida" por cliente (aplicar em vários itens)
+    const [bulkProfessionalByClient, setBulkProfessionalByClient] =
+        React.useState<Record<string, string>>({});
 
     const openAccountsCount = openAccounts.length;
 
@@ -602,6 +771,92 @@ export default function AdminCheckoutClient({
         []
     );
 
+    const addProduct = React.useCallback(
+        async (clientId: string, productId: string, quantity: number) => {
+            const res = await fetch(
+                `/api/admin/checkout/accounts/${encodeURIComponent(clientId)}/add-product`,
+                {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ productId, quantity }),
+                }
+            );
+
+            const json = (await res
+                .json()
+                .catch(() => null)) as AddProductResponse | null;
+
+            if (!res.ok || !json || !json.ok) {
+                const msg =
+                    json && !json.ok
+                        ? json.error
+                        : 'Falha ao adicionar produto.';
+                throw new Error(msg);
+            }
+
+            return json.data;
+        },
+        []
+    );
+
+    // ✅ remove UM item de produto (e atualiza totais no backend)
+    const removeProductItem = React.useCallback(
+        async (orderId: string, itemId: string) => {
+            const res = await fetch(
+                `/api/admin/checkout/orders/${encodeURIComponent(orderId)}/remove-product-item`,
+                {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ itemId }),
+                }
+            );
+
+            const json = (await res
+                .json()
+                .catch(() => null)) as RemoveProductItemResponse | null;
+
+            if (!res.ok || !json || !json.ok) {
+                const msg =
+                    json && !json.ok ? json.error : 'Falha ao remover produto.';
+                throw new Error(msg);
+            }
+
+            return json.data;
+        },
+        []
+    );
+
+    // ✅ atribui profissional para UM item
+    const assignProductItemProfessional = React.useCallback(
+        async (orderId: string, itemId: string, professionalId: string) => {
+            const res = await fetch(
+                `/api/admin/checkout/orders/${encodeURIComponent(orderId)}/assign-product-item-professional`,
+                {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ itemId, professionalId }),
+                }
+            );
+
+            const json = (await res
+                .json()
+                .catch(
+                    () => null
+                )) as AssignProductItemProfessionalResponse | null;
+
+            if (!res.ok || !json || !json.ok) {
+                const msg =
+                    json && !json.ok
+                        ? json.error
+                        : 'Falha ao atribuir profissional.';
+                throw new Error(msg);
+            }
+
+            return json.data;
+        },
+        []
+    );
+
     const withPayingOrder = React.useCallback((orderId: string) => {
         setPayingOrderIds((prev) => {
             const next = new Set(prev);
@@ -618,21 +873,55 @@ export default function AdminCheckoutClient({
         };
     }, []);
 
+    const withRemovingItem = React.useCallback((itemId: string) => {
+        setRemovingItemIds((prev) => {
+            const next = new Set(prev);
+            next.add(itemId);
+            return next;
+        });
+
+        return () => {
+            setRemovingItemIds((prev) => {
+                const next = new Set(prev);
+                next.delete(itemId);
+                return next;
+            });
+        };
+    }, []);
+
+    const withAssigningItem = React.useCallback((itemId: string) => {
+        setAssigningItemIds((prev) => {
+            const next = new Set(prev);
+            next.add(itemId);
+            return next;
+        });
+
+        return () => {
+            setAssigningItemIds((prev) => {
+                const next = new Set(prev);
+                next.delete(itemId);
+                return next;
+            });
+        };
+    }, []);
+
+    // compat (ainda existe no código, mas agora não é o fluxo principal)
     const handleCancelProductOrder = React.useCallback(
         async (orderId: string) => {
             if (!orderId) return;
             if (payingClientId) return;
             if (cancelingClientId) return;
+            if (addingProductForClientId) return;
 
             const ok = window.confirm(
-                `Cancelar o pedido #${shortId(orderId)}?\n\nEssa ação não pode ser desfeita.`
+                `Cancelar o pedido #${shortId(orderId)}?\n\nIsso cancelará o pedido inteiro.`
             );
             if (!ok) return;
 
             const release = withPayingOrder(orderId);
 
             try {
-                toast.message(`Cancelando #${shortId(orderId)}…`);
+                toast.message(`Cancelando pedido #${shortId(orderId)}…`);
                 await cancelOrder(orderId);
                 toast.success('Pedido cancelado.');
                 router.refresh();
@@ -643,10 +932,179 @@ export default function AdminCheckoutClient({
             }
         },
         [
+            addingProductForClientId,
             cancelOrder,
             cancelingClientId,
             payingClientId,
             router,
+            withPayingOrder,
+        ]
+    );
+
+    const handleRemoveProductItem = React.useCallback(
+        async (orderId: string, item: ProductOrderItemUI) => {
+            if (!orderId || !item?.itemId) return;
+
+            if (payingClientId) return;
+            if (cancelingClientId) return;
+            if (addingProductForClientId) return;
+
+            if (removingItemIds.has(item.itemId)) return;
+
+            const ok = window.confirm(
+                `Remover este produto do pedido #${shortId(orderId)}?\n\n• ${item.qty}x ${item.name}\n• Total do item: ${item.totalLabel}`
+            );
+            if (!ok) return;
+
+            const releaseItem = withRemovingItem(item.itemId);
+            const releaseOrder = withPayingOrder(orderId);
+
+            try {
+                toast.message(`Removendo produto de #${shortId(orderId)}…`);
+                await removeProductItem(orderId, item.itemId);
+                toast.success('Produto removido.');
+                router.refresh();
+            } catch (e: any) {
+                toast.error(e?.message ?? 'Erro ao remover produto.');
+            } finally {
+                releaseOrder();
+                releaseItem();
+            }
+        },
+        [
+            addingProductForClientId,
+            cancelingClientId,
+            payingClientId,
+            removeProductItem,
+            removingItemIds,
+            router,
+            withPayingOrder,
+            withRemovingItem,
+        ]
+    );
+
+    const handleAssignProfessionalForItem = React.useCallback(
+        async (
+            orderId: string,
+            item: ProductOrderItemUI,
+            professionalId: string
+        ) => {
+            if (!orderId || !item?.itemId) return;
+            if (!professionalId) return;
+
+            if (payingClientId) return;
+            if (cancelingClientId) return;
+            if (addingProductForClientId) return;
+
+            if (assigningItemIds.has(item.itemId)) return;
+
+            const releaseItem = withAssigningItem(item.itemId);
+            const releaseOrder = withPayingOrder(orderId);
+
+            try {
+                toast.message(`Salvando profissional do item…`);
+                await assignProductItemProfessional(
+                    orderId,
+                    item.itemId,
+                    professionalId
+                );
+                toast.success('Profissional atribuído.');
+                router.refresh();
+            } catch (e: any) {
+                toast.error(e?.message ?? 'Erro ao atribuir profissional.');
+            } finally {
+                releaseOrder();
+                releaseItem();
+            }
+        },
+        [
+            addingProductForClientId,
+            assignProductItemProfessional,
+            assigningItemIds,
+            cancelingClientId,
+            payingClientId,
+            router,
+            withAssigningItem,
+            withPayingOrder,
+        ]
+    );
+
+    const handleBulkAssignForAccount = React.useCallback(
+        async (account: OpenAccountUI) => {
+            const clientId = account?.clientId;
+            if (!clientId) return;
+
+            const professionalId = String(
+                bulkProfessionalByClient[clientId] ?? ''
+            ).trim();
+            if (!professionalId) {
+                toast.message('Selecione um profissional para aplicar.');
+                return;
+            }
+
+            if (payingClientId) return;
+            if (cancelingClientId) return;
+            if (addingProductForClientId) return;
+
+            const itemsToAssign: Array<{
+                orderId: string;
+                item: ProductOrderItemUI;
+            }> = [];
+
+            for (const order of account.productOrders ?? []) {
+                const items = Array.isArray(order.items) ? order.items : [];
+                for (const it of items) {
+                    if (!it?.itemId) continue;
+                    if (it.professionalId) continue; // só aplica nos que estão vazios
+                    itemsToAssign.push({ orderId: order.id, item: it });
+                }
+            }
+
+            if (itemsToAssign.length === 0) {
+                toast.message('Todos os itens já têm profissional.');
+                return;
+            }
+
+            const ok = window.confirm(
+                `Aplicar o profissional selecionado em ${itemsToAssign.length} item(ns) sem profissional?`
+            );
+            if (!ok) return;
+
+            try {
+                for (let i = 0; i < itemsToAssign.length; i++) {
+                    const { orderId, item } = itemsToAssign[i];
+                    const releaseItem = withAssigningItem(item.itemId);
+                    const releaseOrder = withPayingOrder(orderId);
+
+                    try {
+                        toast.message(
+                            `Aplicando ${i + 1}/${itemsToAssign.length}…`
+                        );
+                        await assignProductItemProfessional(
+                            orderId,
+                            item.itemId,
+                            professionalId
+                        );
+                    } finally {
+                        releaseOrder();
+                        releaseItem();
+                    }
+                }
+
+                toast.success('Profissional aplicado nos itens pendentes.');
+                router.refresh();
+            } catch (e: any) {
+                toast.error(e?.message ?? 'Erro ao aplicar profissional.');
+            }
+        },
+        [
+            addingProductForClientId,
+            assignProductItemProfessional,
+            bulkProfessionalByClient,
+            cancelingClientId,
+            payingClientId,
+            router,
+            withAssigningItem,
             withPayingOrder,
         ]
     );
@@ -656,6 +1114,7 @@ export default function AdminCheckoutClient({
             if (!account?.clientId) return;
             if (payingClientId) return;
             if (cancelingClientId) return;
+            if (addingProductForClientId) return;
 
             const orderIds = [
                 ...account.serviceOrders.map((o) => o.id),
@@ -693,13 +1152,203 @@ export default function AdminCheckoutClient({
                 setCancelingClientId(null);
             }
         },
-        [cancelAccount, cancelingClientId, payingClientId, router]
+        [
+            addingProductForClientId,
+            cancelAccount,
+            cancelingClientId,
+            payingClientId,
+            router,
+        ]
+    );
+
+    const fetchProducts = React.useCallback(async () => {
+        setProductsLoading(true);
+
+        try {
+            const unit = searchParams?.get('unit');
+            const sp = new URLSearchParams();
+
+            // ✅ Importante: se unit=all, NÃO envia (sua API trata ausência como "todas")
+            if (unit && unit !== 'all') sp.set('unit', unit);
+
+            const url = `/api/admin/checkout/products${
+                sp.toString() ? `?${sp.toString()}` : ''
+            }`;
+
+            const res = await fetch(url, { method: 'GET' });
+
+            const json = (await res
+                .json()
+                .catch(() => null)) as ProductsListResponse | null;
+
+            if (!res.ok || !json || !json.ok) {
+                const msg =
+                    json && !json.ok
+                        ? json.error
+                        : 'Falha ao carregar produtos.';
+                throw new Error(msg);
+            }
+
+            setProducts(json.data.products ?? []);
+        } catch (e: any) {
+            toast.error(e?.message ?? 'Erro ao carregar produtos.');
+            setProducts([]);
+        } finally {
+            setProductsLoading(false);
+        }
+    }, [searchParams]);
+
+    const fetchProfessionals = React.useCallback(async () => {
+        setProfessionalsLoading(true);
+
+        try {
+            const unit = searchParams?.get('unit');
+            const sp = new URLSearchParams();
+
+            // ✅ mesmo padrão: se unit=all, não envia
+            if (unit && unit !== 'all') sp.set('unit', unit);
+
+            const url = `/api/admin/checkout/professionals${
+                sp.toString() ? `?${sp.toString()}` : ''
+            }`;
+
+            const res = await fetch(url, { method: 'GET' });
+
+            const json = (await res
+                .json()
+                .catch(() => null)) as ProfessionalsListResponse | null;
+
+            if (!res.ok || !json || !json.ok) {
+                const msg =
+                    json && !json.ok
+                        ? json.error
+                        : 'Falha ao carregar profissionais.';
+                throw new Error(msg);
+            }
+
+            // ✅ Importante:
+            // - Mantém todos (ativos e inativos) pra não zerar o select por acidente.
+            // - Se quiser esconder inativos, faz isso no render (com label).
+            setProfessionals(json.data.professionals ?? []);
+        } catch (e: any) {
+            toast.error(e?.message ?? 'Erro ao carregar profissionais.');
+            setProfessionals([]);
+        } finally {
+            setProfessionalsLoading(false);
+        }
+    }, [searchParams]);
+
+    React.useEffect(() => {
+        // carrega no mount e quando muda o unit (via searchParams)
+        fetchProducts();
+        fetchProfessionals();
+    }, [fetchProducts, fetchProfessionals]);
+
+    const handleAddProduct = React.useCallback(
+        async (account: OpenAccountUI) => {
+            const clientId = account?.clientId;
+            if (!clientId) return;
+
+            if (payingClientId) return;
+            if (cancelingClientId) return;
+            if (addingProductForClientId) return;
+
+            const productId = selectedProductByClient[clientId] ?? '';
+            const quantity = qtyByClient[clientId] ?? 1;
+
+            if (!productId) {
+                toast.message('Selecione um produto.');
+                return;
+            }
+
+            const qty = toIntSafe(quantity, 1);
+
+            // best-effort no front (a garantia real é a transação no backend)
+            const product = products.find((p) => p.id === productId);
+            if (product && product.stockQuantity < qty) {
+                toast.error(
+                    `Estoque insuficiente: disponível ${product.stockQuantity}, solicitado ${qty}.`
+                );
+                return;
+            }
+
+            setAddingProductForClientId(clientId);
+
+            try {
+                toast.message('Adicionando produto…');
+                const data = await addProduct(clientId, productId, qty);
+
+                toast.success(
+                    `Produto adicionado${
+                        data.orderWasCreated ? ' (novo pedido criado)' : ''
+                    }.`
+                );
+
+                // reseta inputs do cliente
+                setSelectedProductByClient((prev) => {
+                    const next = { ...prev };
+                    next[clientId] = '';
+                    return next;
+                });
+                setQtyByClient((prev) => {
+                    const next = { ...prev };
+                    next[clientId] = 1;
+                    return next;
+                });
+
+                // recarrega lista de produtos para refletir estoque atualizado (nice-to-have)
+                fetchProducts();
+
+                router.refresh();
+            } catch (e: any) {
+                toast.error(e?.message ?? 'Erro ao adicionar produto.');
+            } finally {
+                setAddingProductForClientId(null);
+            }
+        },
+        [
+            addProduct,
+            addingProductForClientId,
+            cancelingClientId,
+            payingClientId,
+            products,
+            qtyByClient,
+            router,
+            selectedProductByClient,
+            fetchProducts,
+        ]
     );
 
     const handleMarkAllAsPaid = React.useCallback(
         async (account: OpenAccountUI) => {
             if (payingClientId) return;
             if (cancelingClientId) return;
+            if (addingProductForClientId) return;
+
+            // ✅ Regra UI: se tem itens de produto (items[]) e algum não tem professionalId, bloqueia
+            if (account.hasProducts) {
+                const productItems = (account.productOrders ?? [])
+                    .flatMap((o) => (Array.isArray(o.items) ? o.items : []))
+                    .filter(Boolean);
+
+                if (productItems.length > 0) {
+                    const missing = productItems.filter((it) => {
+                        const saved = String(it.professionalId ?? '').trim();
+                        const staged = String(
+                            selectedProfessionalByItem[it.itemId] ?? ''
+                        ).trim();
+                        return !saved && !staged;
+                    });
+
+                    if (missing.length > 0) {
+                        toast.error(
+                            `Faltou profissional em ${missing.length} item(ns) de produto. Selecione e clique em "Salvar" em cada item antes de concluir.`
+                        );
+
+                        return;
+                    }
+                }
+            }
 
             const orderIds = [
                 ...account.serviceOrders.map((o) => o.id),
@@ -762,6 +1411,7 @@ export default function AdminCheckoutClient({
             }
         },
         [
+            addingProductForClientId,
             cancelingClientId,
             completeOrder,
             payingClientId,
@@ -823,6 +1473,9 @@ export default function AdminCheckoutClient({
                             const isCanceling =
                                 cancelingClientId === account.clientId;
 
+                            const isAdding =
+                                addingProductForClientId === account.clientId;
+
                             const accountOrderIds = [
                                 ...account.serviceOrders.map((o) => o.id),
                                 ...account.productOrders.map((o) => o.id),
@@ -831,6 +1484,44 @@ export default function AdminCheckoutClient({
                             const anyOrderBusy = accountOrderIds.some((id) =>
                                 payingOrderIds.has(id)
                             );
+
+                            const selectedProductId =
+                                selectedProductByClient[account.clientId] ?? '';
+
+                            const qtyValue = qtyByClient[account.clientId] ?? 1;
+
+                            const isBusyGlobal =
+                                Boolean(payingClientId) ||
+                                Boolean(cancelingClientId) ||
+                                Boolean(addingProductForClientId);
+
+                            const accountProductItems = (
+                                account.productOrders ?? []
+                            )
+                                .flatMap((o) =>
+                                    Array.isArray(o.items) ? o.items : []
+                                )
+                                .filter(Boolean);
+
+                            const missingProfessionalCount =
+                                account.hasProducts &&
+                                accountProductItems.length > 0
+                                    ? accountProductItems.filter((it) => {
+                                          const saved = String(
+                                              it.professionalId ?? ''
+                                          ).trim();
+                                          const staged = String(
+                                              selectedProfessionalByItem[
+                                                  it.itemId
+                                              ] ?? ''
+                                          ).trim();
+                                          return !saved && !staged;
+                                      }).length
+                                    : 0;
+
+                            const bulkProfessionalId =
+                                bulkProfessionalByClient[account.clientId] ??
+                                '';
 
                             return (
                                 <div
@@ -869,6 +1560,19 @@ export default function AdminCheckoutClient({
                                                     </span>
                                                 </span>
                                             </p>
+
+                                            {account.hasProducts &&
+                                            accountProductItems.length > 0 ? (
+                                                <p className="text-paragraph-small text-content-tertiary mt-1">
+                                                    Itens de produto sem
+                                                    profissional:{' '}
+                                                    <span className="font-medium">
+                                                        {
+                                                            missingProfessionalCount
+                                                        }
+                                                    </span>
+                                                </p>
+                                            ) : null}
                                         </div>
 
                                         <div className="flex flex-col items-end gap-1">
@@ -960,9 +1664,89 @@ export default function AdminCheckoutClient({
 
                                     {account.productOrders.length > 0 ? (
                                         <div className="space-y-2 pt-2 border-t border-border-primary">
-                                            <p className="text-label-small text-content-secondary">
-                                                Produtos pendentes
-                                            </p>
+                                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                                <div>
+                                                    <p className="text-label-small text-content-secondary">
+                                                        Produtos na conta
+                                                    </p>
+                                                    <p className="text-xs text-content-tertiary">
+                                                        Remova item por item e
+                                                        atribua o profissional
+                                                        da venda.
+                                                    </p>
+                                                </div>
+
+                                                {account.hasProducts ? (
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <select
+                                                            value={
+                                                                bulkProfessionalId
+                                                            }
+                                                            onChange={(e) =>
+                                                                setBulkProfessionalByClient(
+                                                                    (prev) => ({
+                                                                        ...prev,
+                                                                        [account.clientId]:
+                                                                            e
+                                                                                .target
+                                                                                .value,
+                                                                    })
+                                                                )
+                                                            }
+                                                            className="h-9 rounded-md border border-border-primary bg-background-secondary px-2 text-sm text-content-primary"
+                                                            disabled={
+                                                                isBusyGlobal ||
+                                                                professionalsLoading ||
+                                                                professionals.length ===
+                                                                    0
+                                                            }
+                                                        >
+                                                            <option value="">
+                                                                {professionalsLoading
+                                                                    ? 'Carregando...'
+                                                                    : professionals.length ===
+                                                                        0
+                                                                      ? 'Sem profissionais'
+                                                                      : 'Aplicar em itens vazios'}
+                                                            </option>
+                                                            {professionals.map(
+                                                                (p) => (
+                                                                    <option
+                                                                        key={
+                                                                            p.id
+                                                                        }
+                                                                        value={
+                                                                            p.id
+                                                                        }
+                                                                    >
+                                                                        {p.name}
+                                                                    </option>
+                                                                )
+                                                            )}
+                                                        </select>
+
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() =>
+                                                                handleBulkAssignForAccount(
+                                                                    account
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                isBusyGlobal ||
+                                                                !bulkProfessionalId ||
+                                                                professionals.length ===
+                                                                    0
+                                                            }
+                                                            title="Aplica o profissional selecionado apenas nos itens que ainda não têm profissional."
+                                                        >
+                                                            Aplicar
+                                                        </Button>
+                                                    </div>
+                                                ) : null}
+                                            </div>
 
                                             <div className="space-y-2">
                                                 {account.productOrders.map(
@@ -971,6 +1755,21 @@ export default function AdminCheckoutClient({
                                                             payingOrderIds.has(
                                                                 order.id
                                                             );
+
+                                                        const items =
+                                                            order.items &&
+                                                            Array.isArray(
+                                                                order.items
+                                                            )
+                                                                ? order.items
+                                                                : [];
+
+                                                        const fallbackLines =
+                                                            items.length === 0
+                                                                ? splitItemsLabel(
+                                                                      order.itemsLabel
+                                                                  )
+                                                                : [];
 
                                                         return (
                                                             <div
@@ -985,7 +1784,6 @@ export default function AdminCheckoutClient({
                                                                     <div className="min-w-0">
                                                                         <p className="text-paragraph-small text-content-primary truncate">
                                                                             Pedido
-                                                                            (produto)
                                                                             #
                                                                             {shortId(
                                                                                 order.id
@@ -998,58 +1796,361 @@ export default function AdminCheckoutClient({
                                                                                 order.createdAtLabel
                                                                             }
                                                                         </p>
-                                                                        <p className="text-paragraph-small text-content-secondary">
-                                                                            Produtos:{' '}
-                                                                            {order.itemsLabel ||
-                                                                                '—'}
-                                                                        </p>
                                                                     </div>
 
-                                                                    <div className="flex flex-col items-end gap-2">
-                                                                        <div className="flex flex-col items-end gap-1">
-                                                                            <span className="text-paragraph-small font-semibold text-content-primary">
-                                                                                {
-                                                                                    order.totalLabel
-                                                                                }
-                                                                            </span>
-                                                                            <StatusBadge
-                                                                                status={
-                                                                                    order.status
-                                                                                }
-                                                                            />
-                                                                        </div>
-
-                                                                        <Button
-                                                                            type="button"
-                                                                            variant="outline"
-                                                                            size="sm"
-                                                                            className="text-red-500 border-red-500/40 hover:bg-red-500/5"
-                                                                            onClick={() =>
-                                                                                handleCancelProductOrder(
-                                                                                    order.id
-                                                                                )
+                                                                    <div className="flex flex-col items-end gap-1">
+                                                                        <span className="text-paragraph-small font-semibold text-content-primary">
+                                                                            {
+                                                                                order.totalLabel
                                                                             }
-                                                                            disabled={
-                                                                                isOrderBusy ||
-                                                                                Boolean(
-                                                                                    payingClientId
-                                                                                ) ||
-                                                                                Boolean(
-                                                                                    cancelingClientId
-                                                                                )
+                                                                        </span>
+                                                                        <StatusBadge
+                                                                            status={
+                                                                                order.status
                                                                             }
-                                                                            title={
-                                                                                isOrderBusy
-                                                                                    ? 'Processando...'
-                                                                                    : undefined
-                                                                            }
-                                                                        >
-                                                                            {isOrderBusy
-                                                                                ? 'Processando...'
-                                                                                : 'Cancelar produto'}
-                                                                        </Button>
+                                                                        />
                                                                     </div>
                                                                 </div>
+
+                                                                {/* ✅ blocos por produto (com botão individual + profissional) */}
+                                                                {items.length >
+                                                                0 ? (
+                                                                    <div className="mt-3 space-y-2">
+                                                                        {items.map(
+                                                                            (
+                                                                                it
+                                                                            ) => {
+                                                                                const isRemoving =
+                                                                                    removingItemIds.has(
+                                                                                        it.itemId
+                                                                                    );
+                                                                                const isAssigning =
+                                                                                    assigningItemIds.has(
+                                                                                        it.itemId
+                                                                                    );
+
+                                                                                const disabled =
+                                                                                    isOrderBusy ||
+                                                                                    isRemoving ||
+                                                                                    isAssigning ||
+                                                                                    Boolean(
+                                                                                        payingClientId
+                                                                                    ) ||
+                                                                                    Boolean(
+                                                                                        cancelingClientId
+                                                                                    ) ||
+                                                                                    Boolean(
+                                                                                        addingProductForClientId
+                                                                                    );
+
+                                                                                const currentSelection =
+                                                                                    selectedProfessionalByItem[
+                                                                                        it
+                                                                                            .itemId
+                                                                                    ] ??
+                                                                                    String(
+                                                                                        it.professionalId ??
+                                                                                            ''
+                                                                                    );
+
+                                                                                const selectIsDisabled =
+                                                                                    disabled ||
+                                                                                    professionalsLoading;
+
+                                                                                const hasAssigned =
+                                                                                    Boolean(
+                                                                                        String(
+                                                                                            it.professionalId ??
+                                                                                                ''
+                                                                                        ).trim()
+                                                                                    );
+
+                                                                                return (
+                                                                                    <div
+                                                                                        key={
+                                                                                            it.itemId
+                                                                                        }
+                                                                                        className={cn(
+                                                                                            'rounded-lg border border-border-primary bg-background-tertiary px-3 py-2',
+                                                                                            (isRemoving ||
+                                                                                                isAssigning) &&
+                                                                                                'opacity-70'
+                                                                                        )}
+                                                                                    >
+                                                                                        <div className="flex flex-wrap items-start justify-between gap-3">
+                                                                                            <div className="min-w-0">
+                                                                                                <p className="text-paragraph-small text-content-primary truncate">
+                                                                                                    {
+                                                                                                        it.qty
+                                                                                                    }
+
+                                                                                                    x{' '}
+                                                                                                    {
+                                                                                                        it.name
+                                                                                                    }
+                                                                                                </p>
+                                                                                                <p className="text-paragraph-small text-content-secondary">
+                                                                                                    Total
+                                                                                                    do
+                                                                                                    item:{' '}
+                                                                                                    <span className="font-medium text-content-primary">
+                                                                                                        {
+                                                                                                            it.totalLabel
+                                                                                                        }
+                                                                                                    </span>
+                                                                                                </p>
+
+                                                                                                {it.professionalName ? (
+                                                                                                    <p className="text-xs text-content-tertiary mt-1">
+                                                                                                        Profissional
+                                                                                                        atual:{' '}
+                                                                                                        <span className="font-medium text-content-secondary">
+                                                                                                            {
+                                                                                                                it.professionalName
+                                                                                                            }
+                                                                                                        </span>
+                                                                                                    </p>
+                                                                                                ) : null}
+                                                                                            </div>
+
+                                                                                            <div className="flex flex-wrap items-center gap-2 justify-end">
+                                                                                                {account.hasProducts ? (
+                                                                                                    <>
+                                                                                                        <select
+                                                                                                            value={
+                                                                                                                currentSelection
+                                                                                                            }
+                                                                                                            onChange={(
+                                                                                                                e
+                                                                                                            ) =>
+                                                                                                                setSelectedProfessionalByItem(
+                                                                                                                    (
+                                                                                                                        prev
+                                                                                                                    ) => ({
+                                                                                                                        ...prev,
+                                                                                                                        [it.itemId]:
+                                                                                                                            e
+                                                                                                                                .target
+                                                                                                                                .value,
+                                                                                                                    })
+                                                                                                                )
+                                                                                                            }
+                                                                                                            className={cn(
+                                                                                                                'h-9 rounded-md border border-border-primary bg-background-secondary px-2 text-sm text-content-primary',
+                                                                                                                !hasAssigned &&
+                                                                                                                    'border-amber-500/40'
+                                                                                                            )}
+                                                                                                            disabled={
+                                                                                                                selectIsDisabled
+                                                                                                            }
+                                                                                                            title={
+                                                                                                                professionals.length ===
+                                                                                                                0
+                                                                                                                    ? 'Sem profissionais disponíveis'
+                                                                                                                    : undefined
+                                                                                                            }
+                                                                                                        >
+                                                                                                            <option value="">
+                                                                                                                {professionalsLoading
+                                                                                                                    ? 'Carregando...'
+                                                                                                                    : professionals.length ===
+                                                                                                                        0
+                                                                                                                      ? 'Sem profissionais'
+                                                                                                                      : 'Selecione o profissional'}
+                                                                                                            </option>
+                                                                                                            {professionals.map(
+                                                                                                                (
+                                                                                                                    p
+                                                                                                                ) => (
+                                                                                                                    <option
+                                                                                                                        key={
+                                                                                                                            p.id
+                                                                                                                        }
+                                                                                                                        value={
+                                                                                                                            p.id
+                                                                                                                        }
+                                                                                                                        disabled={
+                                                                                                                            !p.isActive
+                                                                                                                        }
+                                                                                                                    >
+                                                                                                                        {
+                                                                                                                            p.name
+                                                                                                                        }
+                                                                                                                        {!p.isActive
+                                                                                                                            ? ' (inativo)'
+                                                                                                                            : ''}
+                                                                                                                    </option>
+                                                                                                                )
+                                                                                                            )}
+                                                                                                        </select>
+
+                                                                                                        <Button
+                                                                                                            type="button"
+                                                                                                            variant="outline"
+                                                                                                            size="sm"
+                                                                                                            onClick={() =>
+                                                                                                                handleAssignProfessionalForItem(
+                                                                                                                    order.id,
+                                                                                                                    it,
+                                                                                                                    String(
+                                                                                                                        selectedProfessionalByItem[
+                                                                                                                            it
+                                                                                                                                .itemId
+                                                                                                                        ] ??
+                                                                                                                            it.professionalId ??
+                                                                                                                            ''
+                                                                                                                    ).trim()
+                                                                                                                )
+                                                                                                            }
+                                                                                                            disabled={
+                                                                                                                disabled ||
+                                                                                                                !String(
+                                                                                                                    selectedProfessionalByItem[
+                                                                                                                        it
+                                                                                                                            .itemId
+                                                                                                                    ] ??
+                                                                                                                        it.professionalId ??
+                                                                                                                        ''
+                                                                                                                ).trim()
+                                                                                                            }
+                                                                                                        >
+                                                                                                            {isAssigning
+                                                                                                                ? 'Salvando...'
+                                                                                                                : 'Salvar'}
+                                                                                                        </Button>
+                                                                                                    </>
+                                                                                                ) : null}
+
+                                                                                                <Button
+                                                                                                    type="button"
+                                                                                                    variant="outline"
+                                                                                                    size="sm"
+                                                                                                    className="text-red-500 border-red-500/40 hover:bg-red-500/5"
+                                                                                                    onClick={() =>
+                                                                                                        handleRemoveProductItem(
+                                                                                                            order.id,
+                                                                                                            it
+                                                                                                        )
+                                                                                                    }
+                                                                                                    disabled={
+                                                                                                        disabled
+                                                                                                    }
+                                                                                                    title={
+                                                                                                        disabled
+                                                                                                            ? 'Processando...'
+                                                                                                            : 'Remover este produto'
+                                                                                                    }
+                                                                                                >
+                                                                                                    {isRemoving
+                                                                                                        ? 'Removendo...'
+                                                                                                        : 'Remover'}
+                                                                                                </Button>
+                                                                                            </div>
+                                                                                        </div>
+
+                                                                                        {account.hasProducts &&
+                                                                                        !hasAssigned ? (
+                                                                                            <p className="mt-2 text-xs text-amber-700">
+                                                                                                Selecione
+                                                                                                o
+                                                                                                profissional
+                                                                                                para
+                                                                                                liberar
+                                                                                                o
+                                                                                                checkout
+                                                                                                desta
+                                                                                                conta.
+                                                                                            </p>
+                                                                                        ) : null}
+                                                                                    </div>
+                                                                                );
+                                                                            }
+                                                                        )}
+                                                                    </div>
+                                                                ) : fallbackLines.length >
+                                                                  0 ? (
+                                                                    // compat visual (sem botão individual, porque não tem itemId)
+                                                                    <div className="mt-2">
+                                                                        <p className="text-paragraph-small text-content-secondary">
+                                                                            Itens:
+                                                                        </p>
+                                                                        <ul className="pl-4 list-disc space-y-0.5">
+                                                                            {fallbackLines.map(
+                                                                                (
+                                                                                    line,
+                                                                                    idx
+                                                                                ) => (
+                                                                                    <li
+                                                                                        key={`${order.id}:${idx}`}
+                                                                                        className="text-paragraph-small text-content-secondary"
+                                                                                    >
+                                                                                        {
+                                                                                            line
+                                                                                        }
+                                                                                    </li>
+                                                                                )
+                                                                            )}
+                                                                        </ul>
+
+                                                                        <div className="mt-2">
+                                                                            <Button
+                                                                                type="button"
+                                                                                variant="outline"
+                                                                                size="sm"
+                                                                                className="text-red-500 border-red-500/40 hover:bg-red-500/5"
+                                                                                onClick={() =>
+                                                                                    handleCancelProductOrder(
+                                                                                        order.id
+                                                                                    )
+                                                                                }
+                                                                                disabled={
+                                                                                    isOrderBusy ||
+                                                                                    Boolean(
+                                                                                        payingClientId
+                                                                                    ) ||
+                                                                                    Boolean(
+                                                                                        cancelingClientId
+                                                                                    ) ||
+                                                                                    Boolean(
+                                                                                        addingProductForClientId
+                                                                                    )
+                                                                                }
+                                                                            >
+                                                                                {isOrderBusy
+                                                                                    ? 'Processando...'
+                                                                                    : 'Cancelar pedido'}
+                                                                            </Button>
+                                                                        </div>
+
+                                                                        {account.hasProducts ? (
+                                                                            <p className="mt-2 text-xs text-content-tertiary">
+                                                                                Para
+                                                                                atribuir
+                                                                                profissional
+                                                                                por
+                                                                                produto,
+                                                                                o
+                                                                                backend
+                                                                                precisa
+                                                                                enviar{' '}
+                                                                                <span className="font-medium">
+                                                                                    items[]
+                                                                                </span>{' '}
+                                                                                com{' '}
+                                                                                <span className="font-medium">
+                                                                                    itemId
+                                                                                </span>
+
+                                                                                .
+                                                                            </p>
+                                                                        ) : null}
+                                                                    </div>
+                                                                ) : (
+                                                                    <p className="mt-2 text-paragraph-small text-content-secondary">
+                                                                        Itens:{' '}
+                                                                        {'—'}
+                                                                    </p>
+                                                                )}
                                                             </div>
                                                         );
                                                     }
@@ -1059,9 +2160,11 @@ export default function AdminCheckoutClient({
                                     ) : null}
 
                                     <div className="pt-2 border-t border-border-primary space-y-2">
-                                        <p className="text-label-small text-content-secondary">
-                                            Adicionar produto na conta
-                                        </p>
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="text-label-small text-content-secondary">
+                                                Adicionar produto na conta
+                                            </p>
+                                        </div>
 
                                         <div className="flex flex-wrap items-end gap-2">
                                             <div className="flex flex-col gap-1">
@@ -1069,13 +2172,43 @@ export default function AdminCheckoutClient({
                                                     Produto
                                                 </label>
                                                 <select
-                                                    defaultValue=""
+                                                    value={selectedProductId}
+                                                    onChange={(e) =>
+                                                        setSelectedProductByClient(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                [account.clientId]:
+                                                                    e.target
+                                                                        .value,
+                                                            })
+                                                        )
+                                                    }
                                                     className="h-9 min-w-60 rounded-md border border-border-primary bg-background-secondary px-2 text-sm text-content-primary"
-                                                    disabled
+                                                    disabled={
+                                                        isBusyGlobal ||
+                                                        productsLoading ||
+                                                        products.length === 0
+                                                    }
                                                 >
                                                     <option value="" disabled>
-                                                        Selecione o produto
+                                                        {productsLoading
+                                                            ? 'Carregando...'
+                                                            : products.length ===
+                                                                0
+                                                              ? 'Sem produtos disponíveis'
+                                                              : 'Selecione o produto'}
                                                     </option>
+                                                    {products.map((p) => (
+                                                        <option
+                                                            key={p.id}
+                                                            value={p.id}
+                                                        >
+                                                            {p.name} •{' '}
+                                                            {p.priceLabel} •
+                                                            estoque:{' '}
+                                                            {p.stockQuantity}
+                                                        </option>
+                                                    ))}
                                                 </select>
                                             </div>
 
@@ -1086,9 +2219,22 @@ export default function AdminCheckoutClient({
                                                 <input
                                                     type="number"
                                                     min={1}
-                                                    defaultValue={1}
-                                                    className="h-9 w-22.5 rounded-md border border-border-primary bg-background-secondary px-2 text-sm text-content-primary"
-                                                    disabled
+                                                    value={qtyValue}
+                                                    onChange={(e) =>
+                                                        setQtyByClient(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                [account.clientId]:
+                                                                    toIntSafe(
+                                                                        e.target
+                                                                            .value,
+                                                                        1
+                                                                    ),
+                                                            })
+                                                        )
+                                                    }
+                                                    className="h-9 w-24 rounded-md border border-border-primary bg-background-secondary px-2 text-sm text-content-primary"
+                                                    disabled={isBusyGlobal}
                                                 />
                                             </div>
 
@@ -1096,15 +2242,39 @@ export default function AdminCheckoutClient({
                                                 type="button"
                                                 variant="edit2"
                                                 size="sm"
-                                                disabled
+                                                onClick={() =>
+                                                    handleAddProduct(account)
+                                                }
+                                                disabled={
+                                                    isBusyGlobal ||
+                                                    productsLoading ||
+                                                    !selectedProductId ||
+                                                    products.length === 0
+                                                }
+                                                title={
+                                                    isAdding
+                                                        ? 'Adicionando...'
+                                                        : undefined
+                                                }
                                             >
-                                                Adicionar produto
+                                                {isAdding
+                                                    ? 'Adicionando...'
+                                                    : 'Adicionar produto'}
                                             </Button>
 
-                                            <p className="text-xs text-content-secondary w-full">
-                                                O preço é calculado no checkout
-                                                e fica congelado no item.
-                                            </p>
+                                            {products.length === 0 &&
+                                            !productsLoading ? (
+                                                <p className="text-xs text-content-tertiary w-full">
+                                                    Nenhum produto disponível
+                                                    para esta unidade/filtro.
+                                                </p>
+                                            ) : (
+                                                <p className="text-xs text-content-secondary w-full">
+                                                    O preço é calculado no
+                                                    checkout e fica congelado no
+                                                    item.
+                                                </p>
+                                            )}
                                         </div>
                                     </div>
 
@@ -1117,9 +2287,10 @@ export default function AdminCheckoutClient({
                                                         pela venda dos produtos
                                                     </p>
                                                     <p className="text-paragraph-small text-content-secondary">
-                                                        Necessário para calcular
-                                                        faturamento e comissão
-                                                        das vendas de produto.
+                                                        Atribua o profissional
+                                                        em cada item de produto
+                                                        para calcular
+                                                        faturamento e comissão.
                                                     </p>
                                                 </>
                                             ) : (
@@ -1142,12 +2313,17 @@ export default function AdminCheckoutClient({
                                                 disabled={
                                                     isPaying ||
                                                     anyOrderBusy ||
-                                                    isCanceling
+                                                    isCanceling ||
+                                                    isAdding ||
+                                                    (account.hasProducts &&
+                                                        missingProfessionalCount >
+                                                            0)
                                                 }
                                                 title={
                                                     isPaying ||
                                                     anyOrderBusy ||
-                                                    isCanceling
+                                                    isCanceling ||
+                                                    isAdding
                                                         ? 'Processando...'
                                                         : 'Cancela todos os pedidos pendentes da conta'
                                                 }
@@ -1156,18 +2332,6 @@ export default function AdminCheckoutClient({
                                                     ? 'Cancelando...'
                                                     : 'Cancelar conta'}
                                             </Button>
-
-                                            {account.hasProducts ? (
-                                                <select
-                                                    defaultValue=""
-                                                    className="h-9 rounded-md border border-border-primary bg-background-secondary px-2 text-sm text-content-primary"
-                                                    disabled
-                                                >
-                                                    <option value="" disabled>
-                                                        Selecione o Profissional
-                                                    </option>
-                                                </select>
-                                            ) : null}
 
                                             <Button
                                                 type="button"
@@ -1179,14 +2343,22 @@ export default function AdminCheckoutClient({
                                                 disabled={
                                                     isPaying ||
                                                     anyOrderBusy ||
-                                                    isCanceling
+                                                    isCanceling ||
+                                                    isAdding ||
+                                                    (account.hasProducts &&
+                                                        missingProfessionalCount >
+                                                            0)
                                                 }
                                                 title={
-                                                    isPaying ||
-                                                    anyOrderBusy ||
-                                                    isCanceling
-                                                        ? 'Concluindo checkout...'
-                                                        : undefined
+                                                    account.hasProducts &&
+                                                    missingProfessionalCount > 0
+                                                        ? `Faltam ${missingProfessionalCount} item(ns) de produto sem profissional.`
+                                                        : isPaying ||
+                                                            anyOrderBusy ||
+                                                            isCanceling ||
+                                                            isAdding
+                                                          ? 'Concluindo checkout...'
+                                                          : undefined
                                                 }
                                             >
                                                 {isPaying || anyOrderBusy
@@ -1214,10 +2386,7 @@ export default function AdminCheckoutClient({
 
             <OrdersSection
                 monthLabel={monthLabel}
-                totalCountLabel={`${monthGroups.reduce(
-                    (sum, g) => sum + g.orders.length,
-                    0
-                )} pedidos`}
+                totalCountLabel={`${monthGroups.reduce((sum, g) => sum + g.orders.length, 0)} pedidos`}
                 groups={monthGroups}
             />
         </div>

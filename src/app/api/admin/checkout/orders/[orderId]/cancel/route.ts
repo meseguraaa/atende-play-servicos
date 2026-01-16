@@ -63,7 +63,7 @@ export async function PATCH(
         const orderId = normalizeString(orderIdRaw);
         if (!orderId) return jsonErr('orderId é obrigatório.', 400);
 
-        // 1) Carrega pedido (tenant safe)
+        // 1) Carrega pedido (tenant safe) + itens (para reverter estoque se necessário)
         const order = await prisma.order.findFirst({
             where: { id: orderId, companyId },
             select: {
@@ -71,6 +71,12 @@ export async function PATCH(
                 unitId: true,
                 status: true,
                 inventoryRevertedAt: true,
+                items: {
+                    select: {
+                        productId: true,
+                        quantity: true,
+                    },
+                },
             },
         });
 
@@ -86,15 +92,13 @@ export async function PATCH(
         }
 
         // 3) Regras de transição
-        if (order.status === 'CANCELED') {
-            // idempotência
+        // - se já cancelado e já reverteu inventário: idempotente (não duplica estoque)
+        if (order.status === 'CANCELED' && order.inventoryRevertedAt) {
             return jsonOk({
                 orderId: order.id,
                 status: 'CANCELED',
                 canceledAt: new Date().toISOString(),
-                inventoryRevertedAt: order.inventoryRevertedAt
-                    ? order.inventoryRevertedAt.toISOString()
-                    : null,
+                inventoryRevertedAt: order.inventoryRevertedAt.toISOString(),
             });
         }
 
@@ -105,7 +109,11 @@ export async function PATCH(
             );
         }
 
-        if (order.status !== 'PENDING' && order.status !== 'PENDING_CHECKIN') {
+        if (
+            order.status !== 'PENDING' &&
+            order.status !== 'PENDING_CHECKIN' &&
+            order.status !== 'CANCELED'
+        ) {
             return jsonErr(
                 `Não é possível cancelar pedido com status "${order.status}".`,
                 400
@@ -114,15 +122,57 @@ export async function PATCH(
 
         const now = new Date();
 
-        // 4) Cancela pedido
-        const updated = await prisma.order.update({
-            where: { id: order.id },
-            data: {
-                status: 'CANCELED',
-                expiredAt: now,
-                inventoryRevertedAt: order.inventoryRevertedAt ?? now,
-            },
-            select: { id: true, inventoryRevertedAt: true },
+        // 4) Cancela + reverte estoque (apenas 1x)
+        const updated = await prisma.$transaction(async (tx) => {
+            // 4.1) Se ainda não reverteu estoque, incrementa de volta
+            // (somente itens com productId)
+            if (!order.inventoryRevertedAt) {
+                const qtyByProduct = new Map<string, number>();
+
+                for (const it of order.items ?? []) {
+                    const pid = normalizeString(it.productId);
+                    if (!pid) continue;
+
+                    const q =
+                        typeof it.quantity === 'number' ? it.quantity : NaN;
+
+                    if (!Number.isFinite(q) || q <= 0) continue;
+
+                    qtyByProduct.set(pid, (qtyByProduct.get(pid) ?? 0) + q);
+                }
+
+                for (const [productId, qty] of qtyByProduct.entries()) {
+                    // tenant safe
+                    await tx.product.updateMany({
+                        where: { id: productId, companyId },
+                        data: { stockQuantity: { increment: qty } },
+                    });
+                }
+            }
+
+            // 4.2) Atualiza pedido para CANCELED + seta inventoryRevertedAt se foi a primeira vez
+            const upd = await tx.order.updateMany({
+                where: { id: order.id, companyId },
+                data: {
+                    status: 'CANCELED',
+                    expiredAt: now,
+                    inventoryRevertedAt: order.inventoryRevertedAt ?? now,
+                },
+            });
+
+            if (upd.count === 0) {
+                throw new Error('Falha ao atualizar pedido (tenant mismatch).');
+            }
+
+            // 4.3) Recarrega para devolver inventoryRevertedAt certinho
+            const o = await tx.order.findFirst({
+                where: { id: order.id, companyId },
+                select: { id: true, inventoryRevertedAt: true },
+            });
+
+            if (!o) throw new Error('Pedido não encontrado após atualização.');
+
+            return o;
         });
 
         return jsonOk({
