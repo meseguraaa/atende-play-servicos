@@ -61,7 +61,6 @@ function formatBRL(value: unknown) {
 }
 
 function formatDateTimeLabel(d: Date) {
-    // dd/MM/yyyy às HH:mm (aprox, sem depender de date-fns)
     const date = d.toLocaleDateString('pt-BR');
     const time = d.toLocaleTimeString('pt-BR', {
         hour: '2-digit',
@@ -71,12 +70,10 @@ function formatDateTimeLabel(d: Date) {
 }
 
 function formatMonthLabel(dateInMonth: Date) {
-    // "Janeiro de 2026"
     const monthName = dateInMonth.toLocaleDateString('pt-BR', {
         month: 'long',
     });
     const year = dateInMonth.getFullYear();
-    // garante capitalização padrão pt-BR (alguns ambientes retornam minúsculo)
     const niceMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
     return `${niceMonth} de ${year}`;
 }
@@ -87,7 +84,6 @@ function parseMonthQuery(monthRaw: string | null): {
     monthEnd: Date;
     monthLabel: string;
 } {
-    // aceita "yyyy-MM"; fallback: mês atual
     const now = new Date();
 
     const safe = normalizeString(monthRaw);
@@ -114,6 +110,18 @@ function parseMonthQuery(monthRaw: string | null): {
     return { monthQuery, monthStart, monthEnd, monthLabel };
 }
 
+type CheckoutOpenProductItemUI = {
+    itemId: string;
+    productId: string;
+    name: string;
+    qty: number;
+    totalLabel: string;
+
+    // ✅ profissional do item (para comissão/faturamento)
+    professionalId: string | null;
+    professionalName: string | null;
+};
+
 type CheckoutOpenAccountUI = {
     clientId: string;
     clientLabel: string;
@@ -134,8 +142,16 @@ type CheckoutOpenAccountUI = {
     productOrders: Array<{
         id: string;
         createdAtLabel: string;
+
+        // ✅ mantemos o label antigo (compat)
         itemsLabel: string;
+
+        // ✅ itens de produto com itemId (para cancelar 1 por 1)
+        items: CheckoutOpenProductItemUI[];
+
+        // subtotal apenas de produtos deste pedido
         totalLabel: string;
+
         status: 'PENDING' | 'PENDING_CHECKIN' | 'COMPLETED' | 'CANCELED';
     }>;
 };
@@ -271,6 +287,10 @@ export async function GET(request: Request) {
                         totalPrice: true,
                         serviceId: true,
                         productId: true,
+
+                        professionalId: true,
+                        professional: { select: { id: true, name: true } },
+
                         service: { select: { id: true, name: true } },
                         product: { select: { id: true, name: true } },
                     },
@@ -298,29 +318,8 @@ export async function GET(request: Request) {
                 productItems.reduce((s, it) => s + money(it.totalPrice), 0)
             );
 
-            const hasProducts = productItems.length > 0;
-
-            const itemsLabelParts: string[] = [];
-            for (const it of o.items ?? []) {
-                const qty = it.quantity ?? 1;
-                const name =
-                    it.service?.name ||
-                    it.product?.name ||
-                    (it.serviceId
-                        ? 'Serviço'
-                        : it.productId
-                          ? 'Produto'
-                          : 'Item');
-                itemsLabelParts.push(`${qty}x ${name}`);
-            }
-            const itemsLabel = itemsLabelParts.join(', ') || '—';
-
-            const rowBase = {
-                id: o.id,
-                createdAtLabel: formatDateTimeLabel(o.createdAt),
-                totalLabel: formatBRL(o.totalAmount),
-                status: o.status as any,
-            };
+            const hasService = serviceItems.length > 0;
+            const hasProduct = productItems.length > 0;
 
             const appointmentAtLabel = o.appointment?.scheduleAt
                 ? formatDateTimeLabel(o.appointment.scheduleAt)
@@ -329,8 +328,39 @@ export async function GET(request: Request) {
             const professionalName =
                 normalizeString(o.professional?.name) || '—';
 
-            const hasService = serviceItems.length > 0;
-            const hasProduct = productItems.length > 0;
+            const serviceItemsLabel =
+                serviceItems
+                    .map((it) => {
+                        const qty = it.quantity ?? 1;
+                        const name = it.service?.name || 'Serviço';
+                        return `${qty}x ${name}`;
+                    })
+                    .join(', ') || '—';
+
+            const productItemsLabel =
+                productItems
+                    .map((it) => {
+                        const qty = it.quantity ?? 1;
+                        const name = it.product?.name || 'Produto';
+                        return `${qty}x ${name}`;
+                    })
+                    .join(', ') || '—';
+
+            // ✅ itens de produto com itemId + professionalId/professionalName
+            const productItemsUI: CheckoutOpenProductItemUI[] =
+                productItems.map((it) => ({
+                    itemId: it.id,
+                    productId: String(it.productId ?? ''),
+                    name: normalizeString(it.product?.name) || 'Produto',
+                    qty: typeof it.quantity === 'number' ? it.quantity : 1,
+                    totalLabel: formatBRL(it.totalPrice),
+                    professionalId: it.professionalId
+                        ? String(it.professionalId)
+                        : null,
+                    professionalName: it.professional?.name
+                        ? normalizeString(it.professional.name) || null
+                        : null,
+                }));
 
             const existing = openByClient.get(clientKey);
 
@@ -339,10 +369,10 @@ export async function GET(request: Request) {
                     clientId: o.clientId ?? clientKey,
                     clientLabel,
                     latestLabel,
-                    totalLabel: formatBRL(o.totalAmount),
-                    totalServicesLabel: formatBRL(servicesTotal),
-                    totalProductsLabel: formatBRL(productsTotal),
-                    hasProducts,
+                    totalLabel: formatBRL(0),
+                    totalServicesLabel: formatBRL(0),
+                    totalProductsLabel: formatBRL(0),
+                    hasProducts: false,
                     serviceOrders: [],
                     productOrders: [],
                 });
@@ -350,7 +380,7 @@ export async function GET(request: Request) {
 
             const bucket = openByClient.get(clientKey)!;
 
-            // soma totais agregados
+            // soma agregados (conta do cliente)
             const prevTotal = money(
                 Number(
                     String(bucket.totalLabel)
@@ -359,8 +389,6 @@ export async function GET(request: Request) {
                         .replace(',', '.')
                 )
             );
-            const nextTotal = money(prevTotal + money(o.totalAmount));
-
             const prevServices = money(
                 Number(
                     String(bucket.totalServicesLabel)
@@ -369,8 +397,6 @@ export async function GET(request: Request) {
                         .replace(',', '.')
                 )
             );
-            const nextServices = money(prevServices + servicesTotal);
-
             const prevProducts = money(
                 Number(
                     String(bucket.totalProductsLabel)
@@ -379,38 +405,34 @@ export async function GET(request: Request) {
                         .replace(',', '.')
                 )
             );
-            const nextProducts = money(prevProducts + productsTotal);
 
-            bucket.totalLabel = formatBRL(nextTotal);
-            bucket.totalServicesLabel = formatBRL(nextServices);
-            bucket.totalProductsLabel = formatBRL(nextProducts);
+            bucket.totalLabel = formatBRL(prevTotal + money(o.totalAmount));
+            bucket.totalServicesLabel = formatBRL(prevServices + servicesTotal);
+            bucket.totalProductsLabel = formatBRL(prevProducts + productsTotal);
             bucket.hasProducts = bucket.hasProducts || hasProduct;
 
-            // como openOrders vem ordenado por updatedAt desc, o primeiro é o mais recente
-            if (!existing) {
-                bucket.latestLabel = latestLabel;
-            }
+            if (!existing) bucket.latestLabel = latestLabel;
 
             if (hasService) {
                 bucket.serviceOrders.push({
-                    ...rowBase,
+                    id: o.id,
+                    createdAtLabel: formatDateTimeLabel(o.createdAt),
                     appointmentAtLabel,
                     professionalName,
-                    itemsLabel,
+                    itemsLabel: serviceItemsLabel,
+                    totalLabel: formatBRL(servicesTotal),
+                    status: o.status as any,
                 });
             }
 
-            if (hasProduct && !hasService) {
+            if (hasProduct) {
                 bucket.productOrders.push({
-                    ...rowBase,
-                    itemsLabel,
-                });
-            }
-
-            if (hasProduct && hasService) {
-                bucket.productOrders.push({
-                    ...rowBase,
-                    itemsLabel,
+                    id: o.id,
+                    createdAtLabel: formatDateTimeLabel(o.createdAt),
+                    itemsLabel: productItemsLabel,
+                    items: productItemsUI,
+                    totalLabel: formatBRL(productsTotal),
+                    status: o.status as any,
                 });
             }
         }
@@ -420,20 +442,19 @@ export async function GET(request: Request) {
         // ==========================
         // 3) Busca pedidos do mês (COMPLETED)
         // ==========================
-        // ✅ IMPORTANTE:
-        // O mês do "Pedidos do mês" deve refletir quando o checkout foi concluído (pago).
-        // Como ainda não temos paidAt/completedAt no Order, usamos updatedAt (que muda no PATCH /complete).
+        // ✅ Order NÃO tem checkedOutAt no seu schema.
+        // ✅ Para o relatório mensal, filtramos por createdAt (pedidos criados no mês).
         const completedOrders = await prisma.order.findMany({
             where: {
                 companyId,
                 ...unitWhere,
                 status: 'COMPLETED',
-                updatedAt: {
+                createdAt: {
                     gte: monthStart,
                     lt: monthEnd,
                 },
             },
-            orderBy: { updatedAt: 'desc' },
+            orderBy: { createdAt: 'desc' },
             select: {
                 id: true,
                 status: true,
@@ -513,7 +534,6 @@ export async function GET(request: Request) {
 
             const orderUI: CheckoutMonthOrderUI = {
                 id: o.id,
-                // Mantemos o "Criado em" como createdAt (a UI mostra "Criado em ...")
                 createdAtLabel: formatDateTimeLabel(o.createdAt),
                 appointmentAtLabel: o.appointment?.scheduleAt
                     ? formatDateTimeLabel(o.appointment.scheduleAt)
@@ -532,8 +552,8 @@ export async function GET(request: Request) {
                 monthByClient.set(clientKey, {
                     clientKey,
                     clientLabel,
-                    // ✅ "Última movimentação" do mês deve refletir quando pagou (updatedAt)
-                    latestLabel: formatDateTimeLabel(o.updatedAt),
+                    // ✅ coerente com o filtro/ordenação: createdAt
+                    latestLabel: formatDateTimeLabel(o.createdAt),
                     totalLabel: formatBRL(o.totalAmount),
                     servicesLabel: formatBRL(servicesSubtotal),
                     productsLabel: formatBRL(productsSubtotal),
@@ -571,8 +591,6 @@ export async function GET(request: Request) {
             existing.servicesLabel = formatBRL(prevServices + servicesSubtotal);
             existing.productsLabel = formatBRL(prevProducts + productsSubtotal);
 
-            // como a query está ordenada por updatedAt desc, o primeiro pedido do cliente é o mais recente (pagamento)
-            // então mantemos o latestLabel já setado no primeiro insert.
             existing.orders.push(orderUI);
         }
 

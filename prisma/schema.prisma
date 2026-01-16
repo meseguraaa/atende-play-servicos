@@ -369,6 +369,9 @@ model Professional {
   user                  User?                            @relation(fields: [userId], references: [id])
   services              ServiceProfessional[]
 
+  // ✅ NOVO: backrelation pra itens de pedido (principalmente produto)
+  orderItems            OrderItem[]
+
   @@unique([companyId, email])
   @@index([companyId])
   @@map("professionals")
@@ -674,6 +677,11 @@ model OrderItem {
   orderId    String
   productId  String?
   serviceId  String?
+
+  // ✅ NOVO: profissional responsável (para venda de produto / comissão)
+  professionalId String?
+  professional   Professional? @relation(fields: [professionalId], references: [id])
+
   quantity   Int      @default(1)
   unitPrice  Decimal  @db.Decimal(10, 2)
   totalPrice Decimal  @db.Decimal(10, 2)
@@ -688,6 +696,10 @@ model OrderItem {
   @@index([orderId])
   @@index([productId])
   @@index([serviceId])
+
+  // ✅ NOVO (recomendado)
+  @@index([professionalId])
+
   @@map("order_items")
 }
 
