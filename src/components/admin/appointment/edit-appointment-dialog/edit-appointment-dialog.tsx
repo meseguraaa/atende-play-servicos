@@ -71,7 +71,13 @@ export type ServiceOption = {
     id: string;
     name: string;
     durationMinutes: number;
-    price?: number;
+
+    /**
+     * ✅ Admin costuma enviar number; em alguns SSRs pode vir string (Decimal serializado).
+     * A UI não depende do price, mas aceitamos os dois para não quebrar tipagem.
+     */
+    price?: number | string;
+
     isActive: boolean;
     unitId?: string | null;
 };
@@ -100,6 +106,19 @@ type Props = {
 
     // escopo do admin-nav (se vier, trava unidade)
     forcedUnitId?: string | null;
+
+    /**
+     * ✅ NOVO: quando usado no painel do profissional
+     * - troca as rotas /api/admin/... por /api/professional/...
+     * - e evita depender de endpoints "admin/clients/search"
+     */
+    apiNamespace?: 'admin' | 'professional';
+
+    /**
+     * ✅ NOVO: trava o profissional (useful no painel do profissional)
+     * Se vier, o select de profissional fica read-only e sempre usa esse id.
+     */
+    forcedProfessionalId?: string | null;
 
     // dados pré-carregados no server (page.tsx)
     units?: UnitOption[];
@@ -145,6 +164,10 @@ export default function EditAppointmentDialog({
     children,
     appt,
     forcedUnitId = null,
+
+    apiNamespace = 'admin',
+    forcedProfessionalId = null,
+
     units = [],
     clients = [],
     professionals = [],
@@ -152,10 +175,25 @@ export default function EditAppointmentDialog({
 }: Props) {
     const router = useRouter();
 
+    const isProfessionalContext = apiNamespace === 'professional';
+
+    const apiAppointmentsBase =
+        apiNamespace === 'professional'
+            ? '/api/professional/appointments'
+            : '/api/admin/appointments';
+
+    const apiAvailabilityBase =
+        apiNamespace === 'professional'
+            ? '/api/professional/availability/times'
+            : '/api/admin/availability/times';
+
+    const apiClientsSearch =
+        apiNamespace === 'professional' ? null : '/api/admin/clients/search';
+
     const [open, setOpen] = useState(false);
     const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
-    // ===== ADMIN: cliente picker =====
+    // ===== cliente picker =====
     const [isClientPickerOpen, setIsClientPickerOpen] = useState(false);
     const [clientQuery, setClientQuery] = useState('');
     const [selectedClientId, setSelectedClientId] = useState<string>('');
@@ -212,7 +250,11 @@ export default function EditAppointmentDialog({
     const lastClientSearchAbortRef = useRef<AbortController | null>(null);
 
     const resetDependentFlow = (keepUnit: boolean) => {
-        setProfessionalId('');
+        // 🔒 se for contexto profissional com profissional travado, não limpamos o profissional
+        if (!forcedProfessionalId) {
+            setProfessionalId('');
+        }
+
         setServiceId('');
         setScheduleDate(undefined);
         setTime('');
@@ -267,11 +309,12 @@ export default function EditAppointmentDialog({
         const initialUnit = forcedUnitId ?? appt.unitId ?? '';
         setUnitId(initialUnit);
 
-        setProfessionalId(appt.professionalId ?? '');
+        // 🔒 se veio forcedProfessionalId, usamos ele. Senão, usa o do appointment.
+        setProfessionalId(forcedProfessionalId ?? appt.professionalId ?? '');
+
         setServiceId(appt.serviceId ?? '');
         setScheduleDate(apptDate);
 
-        // ✅ importante: a hora vem daqui (e vai permanecer porque agora excluímos appointmentId na disponibilidade)
         setTime(apptTime);
 
         setAvailableTimes([]);
@@ -288,6 +331,17 @@ export default function EditAppointmentDialog({
         };
     }, [open]);
 
+    // ✅ Garantia extra: se o dialog abrir e existe forcedProfessionalId,
+    // mantém o estado coerente mesmo que algo tenha tentado alterar.
+    React.useEffect(() => {
+        if (!open) return;
+        if (!forcedProfessionalId) return;
+        if (professionalId !== forcedProfessionalId) {
+            setProfessionalId(forcedProfessionalId);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open, forcedProfessionalId]);
+
     // Busca local de cliente (igual no Novo)
     React.useEffect(() => {
         if (!open) return;
@@ -302,6 +356,14 @@ export default function EditAppointmentDialog({
             const label = `${selectedClient.name}${selectedClient.phone ? ` • ${selectedClient.phone}` : ''}`;
             if (q === label) return;
         }
+
+        // Para o painel do profissional, normalmente já vem uma lista menor (<= 200).
+        // Então sempre usamos busca local e evitamos depender de /api/admin/clients/search.
+        const useLocalOnly =
+            isProfessionalContext ||
+            clients.length === 0 ||
+            clients.length <= 250 ||
+            !apiClientsSearch;
 
         if (q.length < 2) {
             setClientResults(
@@ -318,7 +380,7 @@ export default function EditAppointmentDialog({
         }
 
         const debounce = setTimeout(async () => {
-            if (clients.length > 0 && clients.length <= 250) {
+            if (useLocalOnly) {
                 setClientResults(
                     clients
                         .filter((c) => {
@@ -345,7 +407,7 @@ export default function EditAppointmentDialog({
                 params.set('take', '20');
 
                 const res = await fetch(
-                    `/api/admin/clients/search?${params.toString()}`,
+                    `${apiClientsSearch}?${params.toString()}`,
                     {
                         method: 'GET',
                         signal: ac.signal,
@@ -378,10 +440,13 @@ export default function EditAppointmentDialog({
     React.useEffect(() => {
         if (!open) return;
 
+        // 🔒 se contexto profissional e forcedProfessionalId veio, sempre usa ele.
+        const effectiveProfessionalId = forcedProfessionalId ?? professionalId;
+
         if (
             !canProceed ||
             !unitId ||
-            !professionalId ||
+            !effectiveProfessionalId ||
             !serviceId ||
             !scheduleDate
         ) {
@@ -406,15 +471,15 @@ export default function EditAppointmentDialog({
 
                 const params = new URLSearchParams();
                 params.set('unitId', unitId);
-                params.set('professionalId', professionalId);
+                params.set('professionalId', effectiveProfessionalId);
                 params.set('serviceId', serviceId);
                 params.set('date', dateStr);
 
-                // ✅ edição: permite manter o mesmo horário (exclui o próprio agendamento do cálculo)
+                // ✅ edição: permite manter o mesmo horário
                 if (appt?.id) params.set('appointmentId', appt.id);
 
                 const res = await fetch(
-                    `/api/admin/availability/times?${params.toString()}`,
+                    `${apiAvailabilityBase}?${params.toString()}`,
                     {
                         method: 'GET',
                         signal: ac.signal,
@@ -441,8 +506,6 @@ export default function EditAppointmentDialog({
 
                 setAvailableTimes(times);
 
-                // se o horário selecionado não existe mais, limpa
-                // (ex: trocou serviço de 30 -> 60 e agora colide com outro agendamento)
                 if (time && !times.includes(time)) {
                     setTime('');
                 }
@@ -457,9 +520,20 @@ export default function EditAppointmentDialog({
 
         run();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [open, canProceed, unitId, professionalId, serviceId, scheduleDate]);
+    }, [
+        open,
+        canProceed,
+        unitId,
+        professionalId,
+        forcedProfessionalId,
+        serviceId,
+        scheduleDate,
+    ]);
 
     const handleSubmit = async () => {
+        // 🔒 se contexto profissional e forcedProfessionalId veio, sempre usa ele.
+        const effectiveProfessionalId = forcedProfessionalId ?? professionalId;
+
         if (!selectedClientId) {
             toast.error('Selecione um cliente para continuar.');
             return;
@@ -476,7 +550,7 @@ export default function EditAppointmentDialog({
             toast.error('Selecione a unidade.');
             return;
         }
-        if (!professionalId) {
+        if (!effectiveProfessionalId) {
             toast.error('Selecione o profissional.');
             return;
         }
@@ -511,7 +585,7 @@ export default function EditAppointmentDialog({
         try {
             setSubmitting(true);
 
-            const res = await fetch(`/api/admin/appointments/${appt.id}`, {
+            const res = await fetch(`${apiAppointmentsBase}/${appt.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -519,7 +593,7 @@ export default function EditAppointmentDialog({
                     clientName: clientName.trim(),
                     phone: phone.trim(),
                     unitId,
-                    professionalId,
+                    professionalId: effectiveProfessionalId,
                     serviceId,
                     description,
                     scheduleAt: scheduleAt.toISOString(),
@@ -545,10 +619,12 @@ export default function EditAppointmentDialog({
         }
     };
 
+    const effectiveProfessionalId = forcedProfessionalId ?? professionalId;
+
     const timeSelectDisabled =
         !canProceed ||
         !unitId ||
-        !professionalId ||
+        !effectiveProfessionalId ||
         !serviceId ||
         !scheduleDate ||
         isLoadingTimes;
@@ -563,6 +639,17 @@ export default function EditAppointmentDialog({
     const selectedDateKey = scheduleDate
         ? formatDateParamYYYYMMDD(scheduleDate)
         : null;
+
+    const shouldLockProfessional =
+        !!forcedProfessionalId ||
+        isProfessionalContext ||
+        professionals.length <= 1;
+
+    const lockedProfessionalLabel = useMemo(() => {
+        const id = forcedProfessionalId ?? professionalId;
+        if (!id) return 'Profissional';
+        return professionals.find((p) => p.id === id)?.name ?? 'Profissional';
+    }, [forcedProfessionalId, professionalId, professionals]);
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -801,59 +888,77 @@ export default function EditAppointmentDialog({
                             Profissional
                         </p>
 
-                        <Select
-                            value={professionalId}
-                            onValueChange={(v) => {
-                                setProfessionalId(v);
-                                setScheduleDate(undefined);
-                                setTime('');
-                                setAvailableTimes([]);
-                                setTimesError(null);
-                            }}
-                            disabled={!canProceed || !unitId}
-                        >
-                            <SelectTrigger
-                                className="
-                                  w-full justify-between text-left font-normal
-                                  bg-background-tertiary border-border-primary text-content-primary
-                                  focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand
-                                  focus:border-border-brand focus-visible:border-border-brand
-                                  disabled:opacity-60 disabled:cursor-not-allowed
-                                "
+                        {shouldLockProfessional ? (
+                            <div className="relative">
+                                <UserCircle
+                                    className="absolute left-3 top-1/2 -translate-y-1/2 transform text-content-brand"
+                                    size={18}
+                                />
+                                <Input
+                                    value={lockedProfessionalLabel}
+                                    readOnly
+                                    className="pl-10"
+                                    disabled
+                                />
+                            </div>
+                        ) : (
+                            <Select
+                                value={professionalId}
+                                onValueChange={(v) => {
+                                    setProfessionalId(v);
+                                    setScheduleDate(undefined);
+                                    setTime('');
+                                    setAvailableTimes([]);
+                                    setTimesError(null);
+                                }}
+                                disabled={!canProceed || !unitId}
                             >
-                                <div className="flex items-center gap-2">
-                                    <UserCircle className="h-4 w-4 text-content-brand" />
-                                    <SelectValue
-                                        placeholder={
-                                            !canProceed
-                                                ? 'Selecione um cliente'
-                                                : !unitId
-                                                  ? 'Selecione a unidade'
-                                                  : 'Selecione o profissional'
-                                        }
-                                    />
-                                </div>
-                            </SelectTrigger>
+                                <SelectTrigger
+                                    className="
+                                      w-full justify-between text-left font-normal
+                                      bg-background-tertiary border-border-primary text-content-primary
+                                      focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand
+                                      focus:border-border-brand focus-visible:border-border-brand
+                                      disabled:opacity-60 disabled:cursor-not-allowed
+                                    "
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <UserCircle className="h-4 w-4 text-content-brand" />
+                                        <SelectValue
+                                            placeholder={
+                                                !canProceed
+                                                    ? 'Selecione um cliente'
+                                                    : !unitId
+                                                      ? 'Selecione a unidade'
+                                                      : 'Selecione o profissional'
+                                            }
+                                        />
+                                    </div>
+                                </SelectTrigger>
 
-                            <SelectContent>
-                                {professionals.length === 0 ? (
-                                    <SelectItem
-                                        disabled
-                                        value="no-professionals"
-                                    >
-                                        Nenhum profissional disponível
-                                    </SelectItem>
-                                ) : (
-                                    professionals
-                                        .filter((p) => p.isActive !== false)
-                                        .map((p) => (
-                                            <SelectItem key={p.id} value={p.id}>
-                                                {p.name}
-                                            </SelectItem>
-                                        ))
-                                )}
-                            </SelectContent>
-                        </Select>
+                                <SelectContent>
+                                    {professionals.length === 0 ? (
+                                        <SelectItem
+                                            disabled
+                                            value="no-professionals"
+                                        >
+                                            Nenhum profissional disponível
+                                        </SelectItem>
+                                    ) : (
+                                        professionals
+                                            .filter((p) => p.isActive !== false)
+                                            .map((p) => (
+                                                <SelectItem
+                                                    key={p.id}
+                                                    value={p.id}
+                                                >
+                                                    {p.name}
+                                                </SelectItem>
+                                            ))
+                                    )}
+                                </SelectContent>
+                            </Select>
+                        )}
                     </div>
 
                     {/* 6) SERVIÇO */}
@@ -871,7 +976,11 @@ export default function EditAppointmentDialog({
                                 setAvailableTimes([]);
                                 setTimesError(null);
                             }}
-                            disabled={!canProceed || !unitId || !professionalId}
+                            disabled={
+                                !canProceed ||
+                                !unitId ||
+                                !effectiveProfessionalId
+                            }
                         >
                             <SelectTrigger>
                                 <div className="flex items-center gap-2">
@@ -882,7 +991,7 @@ export default function EditAppointmentDialog({
                                                 ? 'Selecione um cliente'
                                                 : !unitId
                                                   ? 'Selecione a unidade'
-                                                  : !professionalId
+                                                  : !effectiveProfessionalId
                                                     ? 'Selecione o profissional'
                                                     : 'Selecione o serviço'
                                         }
@@ -922,7 +1031,7 @@ export default function EditAppointmentDialog({
                                     disabled={
                                         !canProceed ||
                                         !unitId ||
-                                        !professionalId ||
+                                        !effectiveProfessionalId ||
                                         !serviceId
                                     }
                                     className={cn(
@@ -944,7 +1053,7 @@ export default function EditAppointmentDialog({
                                                     ? 'Selecione um cliente'
                                                     : !unitId
                                                       ? 'Selecione a unidade'
-                                                      : !professionalId
+                                                      : !effectiveProfessionalId
                                                         ? 'Selecione o profissional'
                                                         : !serviceId
                                                           ? 'Selecione o serviço'
@@ -970,7 +1079,6 @@ export default function EditAppointmentDialog({
                                         setTimesError(null);
                                         if (d) setIsDatePickerOpen(false);
                                     }}
-                                    // ✅ mesma regra do "novo", mas permite manter a data atual se estiver no passado
                                     disabled={(d) => {
                                         const today = startOfToday();
                                         if (d >= today) return false;
@@ -1022,7 +1130,7 @@ export default function EditAppointmentDialog({
                                                 ? 'Selecione um cliente'
                                                 : !unitId
                                                   ? 'Selecione a unidade'
-                                                  : !professionalId
+                                                  : !effectiveProfessionalId
                                                     ? 'Selecione o profissional'
                                                     : !serviceId
                                                       ? 'Selecione o serviço'
@@ -1080,7 +1188,7 @@ export default function EditAppointmentDialog({
                                 submitting ||
                                 !selectedClientId ||
                                 !unitId ||
-                                !professionalId ||
+                                !effectiveProfessionalId ||
                                 !serviceId ||
                                 !scheduleDate ||
                                 !time ||
