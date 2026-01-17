@@ -276,27 +276,27 @@ function levelChipColors(level: CustomerLevelKey) {
     switch (level) {
         case 'BRONZE':
             return {
-                bg: 'rgba(245, 158, 11, 0.10)', // amber-500/10
-                border: 'rgba(245, 158, 11, 0.30)', // amber-500/30
-                text: 'rgb(180, 83, 9)', // amber-700
+                bg: 'rgba(245, 158, 11, 0.10)',
+                border: 'rgba(245, 158, 11, 0.30)',
+                text: 'rgb(180, 83, 9)',
             };
         case 'PRATA':
             return {
-                bg: 'rgba(100, 116, 139, 0.10)', // slate-500/10
-                border: 'rgba(100, 116, 139, 0.30)', // slate-500/30
-                text: 'rgb(226, 232, 240)', // slate-200
+                bg: 'rgba(100, 116, 139, 0.10)',
+                border: 'rgba(100, 116, 139, 0.30)',
+                text: 'rgb(226, 232, 240)',
             };
         case 'OURO':
             return {
-                bg: 'rgba(234, 179, 8, 0.10)', // yellow-500/10
-                border: 'rgba(234, 179, 8, 0.30)', // yellow-500/30
-                text: 'rgb(161, 98, 7)', // yellow-700 (aprox)
+                bg: 'rgba(234, 179, 8, 0.10)',
+                border: 'rgba(234, 179, 8, 0.30)',
+                text: 'rgb(161, 98, 7)',
             };
         case 'DIAMANTE':
             return {
-                bg: 'rgba(14, 165, 233, 0.10)', // sky-500/10
-                border: 'rgba(14, 165, 233, 0.30)', // sky-500/30
-                text: 'rgb(3, 105, 161)', // sky-700
+                bg: 'rgba(14, 165, 233, 0.10)',
+                border: 'rgba(14, 165, 233, 0.30)',
+                text: 'rgb(3, 105, 161)',
             };
     }
 }
@@ -314,7 +314,6 @@ const ProductCard = memo(function ProductCard({
         onPressDetails(item.id);
     }, [item.id, onPressDetails]);
 
-    // ✅ decide quais valores usar + calcula economia%
     const pricing = useMemo(() => {
         const base = safeNumber(item.basePrice, NaN);
         const final = safeNumber(item.finalPrice, NaN);
@@ -322,7 +321,6 @@ const ProductCard = memo(function ProductCard({
         const hasBase = Number.isFinite(base);
         const hasFinal = Number.isFinite(final);
 
-        // se vier do endpoint: usa (base/final)
         if (hasBase && hasFinal) {
             const hasDiscount = !!item.hasDiscount && final < base;
 
@@ -339,7 +337,6 @@ const ProductCard = memo(function ProductCard({
             };
         }
 
-        // fallback: só "price"
         const p = safeNumber(item.price, 0);
         return {
             base: p,
@@ -381,7 +378,6 @@ const ProductCard = memo(function ProductCard({
                     fadeDuration={0}
                 />
 
-                {/* ✅ badge: ANIVERSÁRIO NÃO APARECE AQUI (só no topo). Mantém LEVEL */}
                 {item.badge?.label ? (
                     <View style={[S.badgePill]}>
                         <Text style={S.badgePillText} numberOfLines={1}>
@@ -406,7 +402,6 @@ const ProductCard = memo(function ProductCard({
                     {item.unitName}
                 </Text>
 
-                {/* ✅ regra do preço (De/Por/Economia) */}
                 {pricing.hasDiscount ? (
                     <View style={S.priceStack}>
                         <Text style={S.basePriceStriked} numberOfLines={1}>
@@ -486,16 +481,13 @@ export default function Home() {
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
-    // ✅ multi-tenant: companyId + refreshMe no fluxo da Home
     const { user, meLoading, companyId, refreshMe } = useAuth();
 
-    // ✅ mantém sempre o companyId mais atual (mata closure velha)
     const companyIdRef = useRef<string | null>(companyId ?? null);
     useEffect(() => {
         companyIdRef.current = companyId ?? null;
     }, [companyId]);
 
-    // ✅ evita alert repetido
     const warnedMissingCompanyRef = useRef(false);
 
     const displayName = useMemo(
@@ -508,54 +500,11 @@ export default function Home() {
         [user?.image]
     );
 
-    // ✅ nível do cliente (label curta)
-    const userLevelLabel = useMemo(() => {
-        const raw =
-            (user as any)?.level?.label ??
-            (user as any)?.levelLabel ??
-            (user as any)?.level ??
-            (user as any)?.customerLevel?.label ??
-            (user as any)?.customerLevel ??
-            (user as any)?.tier?.label ??
-            (user as any)?.tier ??
-            null;
-
-        const s = String(raw ?? '').trim();
-        if (!s) return null;
-
-        // corta pra não virar textão em cima do header
-        return s.length > 12 ? `${s.slice(0, 12)}…` : s;
-    }, [user]);
-
-    // ✅ ícone por nível
-    const userLevelIcon = useMemo(() => {
-        const l = String(userLevelLabel ?? '').toLowerCase();
-        if (l.includes('diam')) return 'diamond';
-        if (l.includes('ouro')) return 'trophy';
-        if (l.includes('prata')) return 'certificate';
-        return 'star';
-    }, [userLevelLabel]);
-
-    // ✅ cores copiadas do Admin
-    const userLevelKey = useMemo(() => normalizeCustomerLevelKey(user), [user]);
-
-    const userLevelStyle = useMemo(() => {
-        if (!userLevelKey) return null;
-        const c = levelChipColors(userLevelKey);
-
-        return {
-            container: {
-                backgroundColor: c.bg,
-                borderColor: c.border,
-            },
-            text: {
-                color: c.text,
-            },
-            icon: {
-                color: c.text,
-            },
-        } as const;
-    }, [userLevelKey]);
+    // ✅ helper: sempre envia x-company-id nas requests (tenant-safe)
+    const withTenantHeaders = useCallback(() => {
+        const cid = companyIdRef.current;
+        return cid ? { headers: { 'x-company-id': cid } } : undefined;
+    }, []);
 
     const [next, setNext] = useState<NextAppt | null>(null);
     const [nextLoading, setNextLoading] = useState(true);
@@ -572,7 +521,6 @@ export default function Home() {
     const [pendingReviewCount, setPendingReviewCount] = useState<number>(0);
     const reviewFetchingRef = useRef(false);
 
-    // ✅ aniversário (apenas 1x no topo)
     const [birthdayBadgeLabel, setBirthdayBadgeLabel] = useState<string | null>(
         null
     );
@@ -615,10 +563,37 @@ export default function Home() {
             setNextLoading(true);
 
             const res = await api.get<{ ok: boolean; next: NextAppt | null }>(
-                '/api/mobile/me/appointments/next'
+                '/api/mobile/me/appointments/next',
+                withTenantHeaders()
             );
 
-            setNext(res?.next ?? null);
+            const rawNext =
+                (res as any)?.next ??
+                (res as any)?.data?.next ??
+                (res as any)?.data?.appointment ??
+                (res as any)?.appointment ??
+                null;
+
+            const normalizedNext = rawNext
+                ? {
+                      ...rawNext,
+                      // ✅ compat: se vier rules.canReschedule e não vier canReschedule direto
+                      canReschedule:
+                          typeof rawNext?.canReschedule === 'boolean'
+                              ? rawNext.canReschedule
+                              : typeof rawNext?.rules?.canReschedule ===
+                                  'boolean'
+                                ? rawNext.rules.canReschedule
+                                : true,
+
+                      canCancel:
+                          typeof rawNext?.canCancel === 'boolean'
+                              ? rawNext.canCancel
+                              : true,
+                  }
+                : null;
+
+            setNext(normalizedNext);
         } catch {
             setNext(null);
         } finally {
@@ -628,7 +603,7 @@ export default function Home() {
             didNextRef.current = true;
             recomputeReady();
         }
-    }, [recomputeReady]);
+    }, [recomputeReady, withTenantHeaders]);
 
     const fetchHistoryPreview = useCallback(async () => {
         if (fetchingHistoryRef.current) return;
@@ -639,7 +614,7 @@ export default function Home() {
                 ok: boolean;
                 items: HistoryItem[];
                 _debug?: any;
-            }>('/api/mobile/me/history/preview');
+            }>('/api/mobile/me/history/preview', withTenantHeaders());
 
             if (__DEV__) {
                 console.log('[home] history preview', {
@@ -660,7 +635,7 @@ export default function Home() {
             didHistoryRef.current = true;
             recomputeReady();
         }
-    }, [recomputeReady]);
+    }, [recomputeReady, withTenantHeaders]);
 
     const fetchProductsPreview = useCallback(async () => {
         if (fetchingProductsRef.current) return;
@@ -672,14 +647,13 @@ export default function Home() {
                 items?: any[];
                 products?: any[];
                 nextCursor?: string | null;
-            }>('/api/mobile/products?limit=4');
+            }>('/api/mobile/products?limit=4', withTenantHeaders());
 
             const rawList =
                 (Array.isArray(res?.items) ? res.items : null) ??
                 (Array.isArray(res?.products) ? res.products : null) ??
                 [];
 
-            // ✅ pega 1 label de aniversário (se vier), mas NÃO mostra nos cards
             const birthdayFromApi = rawList.find(
                 (p: any) =>
                     p?.badge?.type === 'BIRTHDAY' &&
@@ -714,7 +688,6 @@ export default function Home() {
                               }
                             : null;
 
-                    // ✅ regra: BIRTHDAY não vai pro card
                     const badge: ProductBadge =
                         rawBadge?.type === 'BIRTHDAY' ? null : rawBadge;
 
@@ -752,7 +725,7 @@ export default function Home() {
             didProductsRef.current = true;
             recomputeReady();
         }
-    }, [recomputeReady]);
+    }, [recomputeReady, withTenantHeaders]);
 
     const fetchPendingCart = useCallback(async () => {
         if (cartFetchingRef.current)
@@ -761,7 +734,8 @@ export default function Home() {
 
         try {
             const res: any = await api.get(
-                '/api/mobile/orders?view=bag&limit=1'
+                '/api/mobile/orders?view=bag&limit=1',
+                withTenantHeaders()
             );
 
             const list = (res?.orders ?? res?.items ?? []) as any[];
@@ -784,7 +758,7 @@ export default function Home() {
             didCartRef.current = true;
             recomputeReady();
         }
-    }, [recomputeReady]);
+    }, [recomputeReady, withTenantHeaders]);
 
     const fetchPendingReviewCount = useCallback(async () => {
         if (reviewFetchingRef.current) return 0;
@@ -792,7 +766,8 @@ export default function Home() {
 
         try {
             const res = await api.get<PendingReviewResponse>(
-                '/api/mobile/reviews/pending'
+                '/api/mobile/reviews/pending',
+                withTenantHeaders()
             );
 
             const listCount =
@@ -815,9 +790,8 @@ export default function Home() {
             didReviewRef.current = true;
             recomputeReady();
         }
-    }, [recomputeReady]);
+    }, [recomputeReady, withTenantHeaders]);
 
-    // ✅ marca como “concluído” em caso de abort por tenant ausente, pra não travar skeleton
     const markAllDoneForGate = useCallback(() => {
         didNextRef.current = true;
         didHistoryRef.current = true;
@@ -834,7 +808,6 @@ export default function Home() {
             resetGate();
 
             (async () => {
-                // ✅ tenta garantir tenant (1x)
                 if (!companyIdRef.current) {
                     try {
                         await refreshMe();
@@ -847,7 +820,6 @@ export default function Home() {
 
                 const cid = companyIdRef.current;
 
-                // ✅ se ainda não existe, não dispara requests (evita 401/500 inúteis)
                 if (!cid) {
                     if (!warnedMissingCompanyRef.current) {
                         warnedMissingCompanyRef.current = true;
@@ -857,15 +829,12 @@ export default function Home() {
                         );
                     }
 
-                    // libera a tela (não deixa ScreenGate preso)
                     markAllDoneForGate();
                     return;
                 }
 
-                // 📌 Home entrou em foco: page_viewed (base do heatmap)
                 trackEvent('page_viewed', { page: 'home' }, undefined, cid);
 
-                // ✅ sempre tenta buscar (agora com tenant garantido)
                 fetchNext();
                 fetchHistoryPreview();
                 fetchProductsPreview();
@@ -1039,7 +1008,8 @@ export default function Home() {
 
                 const res = await api.post<{ ok: boolean; error?: string }>(
                     `/api/mobile/me/appointments/${appointmentId}/cancel`,
-                    {}
+                    {},
+                    withTenantHeaders()
                 );
 
                 if (!res?.ok) {
@@ -1064,7 +1034,7 @@ export default function Home() {
                 Alert.alert('Erro', String(msg));
             }
         },
-        [fetchNext, fetchHistoryPreview]
+        [fetchNext, fetchHistoryPreview, withTenantHeaders]
     );
 
     const onPressCancel = useCallback(() => {
@@ -1111,6 +1081,51 @@ export default function Home() {
         [historyPreview.length]
     );
 
+    const userLevelLabel = useMemo(() => {
+        const raw =
+            (user as any)?.level?.label ??
+            (user as any)?.levelLabel ??
+            (user as any)?.level ??
+            (user as any)?.customerLevel?.label ??
+            (user as any)?.customerLevel ??
+            (user as any)?.tier?.label ??
+            (user as any)?.tier ??
+            null;
+
+        const s = String(raw ?? '').trim();
+        if (!s) return null;
+
+        return s.length > 12 ? `${s.slice(0, 12)}…` : s;
+    }, [user]);
+
+    const userLevelIcon = useMemo(() => {
+        const l = String(userLevelLabel ?? '').toLowerCase();
+        if (l.includes('diam')) return 'diamond';
+        if (l.includes('ouro')) return 'trophy';
+        if (l.includes('prata')) return 'certificate';
+        return 'star';
+    }, [userLevelLabel]);
+
+    const userLevelKey = useMemo(() => normalizeCustomerLevelKey(user), [user]);
+
+    const userLevelStyle = useMemo(() => {
+        if (!userLevelKey) return null;
+        const c = levelChipColors(userLevelKey);
+
+        return {
+            container: {
+                backgroundColor: c.bg,
+                borderColor: c.border,
+            },
+            text: {
+                color: c.text,
+            },
+            icon: {
+                color: c.text,
+            },
+        } as const;
+    }, [userLevelKey]);
+
     const Header = useMemo(() => {
         const hasNext = !!next;
 
@@ -1121,9 +1136,7 @@ export default function Home() {
         const isInService =
             hasNext &&
             (String(next!.status || '').toUpperCase() === 'IN_SERVICE' ||
-                String(next!.status || '').toUpperCase() === 'ATENDIMENTO' ||
-                String(next!.statusLabel || '').toUpperCase() ===
-                    'ATENDIMENTO');
+                String(next!.status || '').toUpperCase() === 'ATENDIMENTO');
 
         const canReschedule = hasNext ? next!.canReschedule !== false : false;
         const canCancel = hasNext ? next!.canCancel !== false : false;
@@ -1404,7 +1417,6 @@ export default function Home() {
                         </View>
 
                         <View style={S.topRightRow}>
-                            {/* ✅ aniversário: só aqui, à esquerda do nível */}
                             {birthdayBadgeLabel ? (
                                 <Pressable
                                     style={S.iconBtn}
@@ -1422,7 +1434,6 @@ export default function Home() {
                                 </Pressable>
                             ) : null}
 
-                            {/* ⭐ Nível do cliente */}
                             {userLevelLabel ? (
                                 <Pressable
                                     style={[

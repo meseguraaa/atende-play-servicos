@@ -1,3 +1,4 @@
+// app/booking/details.tsx
 import React, {
     useCallback,
     useEffect,
@@ -47,10 +48,12 @@ function pad2(n: number) {
 }
 
 function toMinutes(hhmm: string) {
-    const [hh, mm] = String(hhmm).split(':');
+    const [hh, mm] = String(hhmm ?? '')
+        .trim()
+        .split(':');
     const h = Number(hh);
     const m = Number(mm);
-    if (Number.isNaN(h) || Number.isNaN(m)) return NaN;
+    if (!Number.isFinite(h) || !Number.isFinite(m)) return NaN;
     return h * 60 + m;
 }
 
@@ -65,17 +68,32 @@ function fromMinutes(total: number) {
  * Usa UTC parts do dateISO pra não “virar dia”.
  */
 function buildScheduleAtSaoPauloISO(dateISO: string, startTime: string) {
-    const d = new Date(dateISO);
+    const d = new Date(String(dateISO ?? '').trim());
     if (Number.isNaN(d.getTime())) return '';
 
     const yyyy = d.getUTCFullYear();
     const mm = pad2(d.getUTCMonth() + 1);
     const dd = pad2(d.getUTCDate());
 
-    const [hh, mi] = String(startTime || '').split(':');
-    if (!hh || !mi) return '';
+    const raw = String(startTime ?? '').trim();
+    const m = raw.match(/^(\d{1,2}):(\d{2})/);
+    if (!m) return '';
 
-    return `${yyyy}-${mm}-${dd}T${pad2(Number(hh))}:${pad2(Number(mi))}:00-03:00`;
+    const hhNum = Number(m[1]);
+    const miNum = Number(m[2]);
+
+    if (
+        !Number.isFinite(hhNum) ||
+        !Number.isFinite(miNum) ||
+        hhNum < 0 ||
+        hhNum > 23 ||
+        miNum < 0 ||
+        miNum > 59
+    ) {
+        return '';
+    }
+
+    return `${yyyy}-${mm}-${dd}T${pad2(hhNum)}:${pad2(miNum)}:00-03:00`;
 }
 
 type AppointmentGetResponse = {
@@ -100,6 +118,12 @@ export default function BookingDetails() {
         serviceId?: string;
         serviceName?: string;
         serviceDurationMinutes?: string;
+
+        // ✅ novo padrão
+        professionalId?: string;
+        professionalName?: string;
+
+        // ✅ compat legado
         barberId?: string;
         barberName?: string;
 
@@ -113,31 +137,44 @@ export default function BookingDetails() {
         currentStartTime?: string;
     }>();
 
-    const unitId = useMemo(() => String(params.unitId ?? ''), [params.unitId]);
+    const unitId = useMemo(
+        () => String(params.unitId ?? '').trim(),
+        [params.unitId]
+    );
     const unitName = useMemo(
-        () => String(params.unitName ?? ''),
+        () => String(params.unitName ?? '').trim(),
         [params.unitName]
     );
     const serviceId = useMemo(
-        () => String(params.serviceId ?? ''),
+        () => String(params.serviceId ?? '').trim(),
         [params.serviceId]
     );
     const serviceName = useMemo(
-        () => String(params.serviceName ?? ''),
+        () => String(params.serviceName ?? '').trim(),
         [params.serviceName]
     );
-    const barberId = useMemo(
-        () => String(params.barberId ?? ''),
-        [params.barberId]
-    );
-    const barberName = useMemo(
-        () => String(params.barberName ?? ''),
-        [params.barberName]
-    );
+
+    // ✅ resolve professional (novo) com fallback no legado
+    const professionalId = useMemo(() => {
+        return (
+            String(params.professionalId ?? '').trim() ||
+            String(params.barberId ?? '').trim()
+        );
+    }, [params.barberId, params.professionalId]);
+
+    const professionalName = useMemo(() => {
+        return (
+            String(params.professionalName ?? '').trim() ||
+            String(params.barberName ?? '').trim()
+        );
+    }, [params.barberName, params.professionalName]);
+
+    // ✅ compat: backend atual ainda espera barberId
+    const barberIdCompat = professionalId;
 
     const isEdit = useMemo(
-        () => String(params.mode ?? '') === 'edit',
-        [params]
+        () => String(params.mode ?? '').trim() === 'edit',
+        [params.mode]
     );
     const appointmentId = useMemo(
         () => String(params.appointmentId ?? '').trim(),
@@ -160,7 +197,6 @@ export default function BookingDetails() {
         String(params.currentStartTime ?? '').trim()
     );
 
-    // ✅ gate
     const [dataReady, setDataReady] = useState(false);
     const fetchingRef = useRef(false);
 
@@ -249,7 +285,7 @@ export default function BookingDetails() {
     }, [currentStartTime, isEdit, pickedStartTime]);
 
     const serviceDurationMin = useMemo(() => {
-        const raw = Number(params.serviceDurationMinutes ?? '');
+        const raw = Number(String(params.serviceDurationMinutes ?? '').trim());
         return Number.isFinite(raw) && raw > 0 ? raw : 30;
     }, [params.serviceDurationMinutes]);
 
@@ -260,7 +296,7 @@ export default function BookingDetails() {
     }, [effectiveStartTime, serviceDurationMin]);
 
     const dateLabel = useMemo(() => {
-        const d = new Date(effectiveDateISO);
+        const d = new Date(String(effectiveDateISO ?? '').trim());
         if (Number.isNaN(d.getTime())) return '';
         return d.toLocaleDateString('pt-BR', {
             year: 'numeric',
@@ -276,7 +312,8 @@ export default function BookingDetails() {
 
     const confirm = useCallback(async () => {
         try {
-            if (!unitId || !serviceId || !barberId) {
+            // ✅ valida o que o backend realmente entende hoje
+            if (!unitId || !serviceId || !barberIdCompat) {
                 Alert.alert(
                     'Ops',
                     'Seu agendamento está incompleto. Volte e tente novamente.'
@@ -318,7 +355,18 @@ export default function BookingDetails() {
             // EDITAR (RESCHEDULE)
             // ==========================
             if (isEdit) {
-                const payload = { unitId, serviceId, barberId, scheduleAt };
+                const payload = {
+                    unitId,
+                    serviceId,
+
+                    // ✅ novo padrão (pra UI/logs)
+                    professionalId,
+
+                    // ✅ compat backend atual
+                    barberId: barberIdCompat,
+
+                    scheduleAt,
+                };
 
                 if (__DEV__) {
                     console.log(
@@ -354,9 +402,16 @@ export default function BookingDetails() {
                 clientName: name,
                 phone: digits,
                 description: serviceName || 'Agendamento',
+
                 unitId,
                 serviceId,
-                barberId,
+
+                // ✅ novo padrão
+                professionalId,
+
+                // ✅ compat backend atual
+                barberId: barberIdCompat,
+
                 scheduleAt,
                 dateISO: effectiveDateISO,
                 startTime: effectiveStartTime,
@@ -417,12 +472,13 @@ export default function BookingDetails() {
         }
     }, [
         appointmentId,
-        barberId,
+        barberIdCompat,
         clientName,
         effectiveDateISO,
         effectiveStartTime,
         isEdit,
         phone,
+        professionalId,
         router,
         scheduleAt,
         serviceId,
@@ -471,8 +527,8 @@ export default function BookingDetails() {
                             <Text style={S.heroDesc}>
                                 {unitName ? `Unidade: ${unitName}` : ' '}
                                 {serviceName ? `\nServiço: ${serviceName}` : ''}
-                                {barberName
-                                    ? `\nProfissional: ${barberName}`
+                                {professionalName
+                                    ? `\nProfissional: ${professionalName}`
                                     : ''}
                                 {dateLabel && effectiveStartTime
                                     ? `\nData: ${dateLabel} • ${effectiveStartTime}${
@@ -622,13 +678,6 @@ const S = StyleSheet.create({
         fontSize: 13,
         fontWeight: '500',
         lineHeight: 18,
-    },
-    heroNote: {
-        marginTop: 10,
-        color: UI.colors.text,
-        fontSize: 12,
-        fontWeight: '600',
-        opacity: 0.9,
     },
 
     whiteArea: { flex: 1, backgroundColor: UI.colors.white },

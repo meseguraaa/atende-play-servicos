@@ -135,9 +135,11 @@ export default function BookingEdit() {
         try {
             setLoading(true);
 
-            const res = await api.get<EditPayload>(
+            // ✅ IMPORTANTE: api.get (axios-like) => dados em response.data
+            const resp = await api.get<EditPayload>(
                 `/api/mobile/me/appointments/${appointmentId}/edit`
             );
+            const res = (resp as any)?.data ?? resp;
 
             if (!res?.ok) {
                 Alert.alert('Erro', 'Não foi possível preparar a edição.');
@@ -154,7 +156,7 @@ export default function BookingEdit() {
                 return;
             }
 
-            const list = res.units ?? [];
+            const list: Unit[] = Array.isArray(res.units) ? res.units : [];
             setUnits(list);
 
             setCurrentUnitId(res.appointment?.unitId ?? null);
@@ -176,15 +178,21 @@ export default function BookingEdit() {
             // if (current) goService(current);
 
             if (__DEV__) console.log('[booking/edit] units:', list.length);
+            if (__DEV__ && current)
+                console.log('[booking/edit] currentUnit:', current.id);
         } catch (err: any) {
-            console.log(
-                '[booking/edit] error:',
-                err?.data ?? err?.message ?? err
-            );
+            // tenta extrair msg do axios (err.response.data.error)
             const msg =
+                err?.response?.data?.error ||
                 err?.data?.error ||
                 err?.message ||
                 'Não foi possível carregar os dados de edição. Tente novamente.';
+
+            console.log(
+                '[booking/edit] error:',
+                err?.response?.data ?? err?.data ?? err?.message ?? err
+            );
+
             Alert.alert('Erro', msg);
             router.back();
         } finally {
@@ -193,10 +201,21 @@ export default function BookingEdit() {
     }, [appointmentId, goService, router]);
 
     useEffect(() => {
-        fetchEdit();
+        let alive = true;
+
+        (async () => {
+            await fetchEdit();
+        })();
+
+        return () => {
+            alive = false;
+            // (alive fica aqui caso você queira evoluir pra abort/cancel depois)
+            void alive;
+        };
     }, [fetchEdit]);
 
     const key = useCallback((item: Unit) => item.id, []);
+
     const render = useCallback(
         ({ item, index }: ListRenderItemInfo<Unit>) => (
             <UnitRow

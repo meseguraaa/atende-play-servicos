@@ -43,6 +43,11 @@ type NotificationItem = {
     type: 'PENDING_REVIEW';
 };
 
+function unwrapApiData<T>(res: unknown): T {
+    const anyRes = res as any;
+    return (anyRes?.data ?? anyRes) as T;
+}
+
 function formatPtBRDateTime(iso: string) {
     try {
         const d = new Date(iso);
@@ -192,11 +197,17 @@ export default function ClientNotifications() {
         try {
             setLoading(true);
 
-            const res = await api.get<PendingReviewResponse>(
+            const raw = await api.get<PendingReviewResponse>(
                 '/api/mobile/reviews/pending'
             );
 
+            const res = unwrapApiData<PendingReviewResponse>(raw);
+
             if (!res?.ok) {
+                console.log(
+                    '[notifications] api error:',
+                    res?.error ?? 'unknown'
+                );
                 setPendingItems([]);
                 return;
             }
@@ -219,6 +230,10 @@ export default function ClientNotifications() {
 
             setPendingItems(mapped);
         } catch (err: any) {
+            console.log(
+                '[notifications] fetch error:',
+                err?.data ?? err?.message ?? err
+            );
             setPendingItems([]);
         } finally {
             setLoading(false);
@@ -268,10 +283,12 @@ export default function ClientNotifications() {
         try {
             setDismissingId(appointmentId);
 
-            const res = await api.post<{ ok: boolean; error?: string }>(
+            const raw = await api.post<{ ok: boolean; error?: string }>(
                 '/api/mobile/reviews/dismiss',
                 { appointmentId }
             );
+
+            const res = unwrapApiData<{ ok: boolean; error?: string }>(raw);
 
             if (!res?.ok) {
                 Alert.alert(
@@ -286,6 +303,10 @@ export default function ClientNotifications() {
                 prev.filter((x) => x.appointmentId !== appointmentId)
             );
         } catch (err: any) {
+            console.log(
+                '[notifications] dismiss error:',
+                err?.data ?? err?.message ?? err
+            );
             Alert.alert('Erro', 'Não foi possível atualizar. Tente novamente.');
         } finally {
             setDismissingId(null);

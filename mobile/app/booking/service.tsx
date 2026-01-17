@@ -45,8 +45,11 @@ type EditPayload = {
         unitName: string | null;
         serviceId: string | null;
         serviceName: string | null;
-        barberId: string | null;
+
+        barberId: string | null; // legado
         barberName: string | null;
+
+        // (o backend pode mandar como string ISO)
         scheduleAt: string | Date;
         status: string;
     };
@@ -68,7 +71,14 @@ function formatMoneyBRL(value: any): string | null {
 
     if (Number.isNaN(n)) return null;
 
-    return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    try {
+        return n.toLocaleString('pt-BR', {
+            style: 'currency',
+            currency: 'BRL',
+        });
+    } catch {
+        return null;
+    }
 }
 
 function normalizeDurationMinutes(v: any): number {
@@ -177,14 +187,30 @@ export default function BookingService() {
     const params = useLocalSearchParams<{
         unitId?: string;
         unitName?: string;
+
+        professionalId?: string;
+        professionalName?: string;
+
         mode?: string;
         appointmentId?: string;
     }>();
 
-    const unitId = useMemo(() => String(params.unitId ?? ''), [params.unitId]);
+    const unitId = useMemo(
+        () => String(params.unitId ?? '').trim(),
+        [params.unitId]
+    );
     const unitName = useMemo(
-        () => String(params.unitName ?? ''),
+        () => String(params.unitName ?? '').trim(),
         [params.unitName]
+    );
+
+    const professionalId = useMemo(
+        () => String(params.professionalId ?? '').trim(),
+        [params.professionalId]
+    );
+    const professionalName = useMemo(
+        () => String(params.professionalName ?? '').trim(),
+        [params.professionalName]
     );
 
     const isEdit = String(params.mode ?? '') === 'edit';
@@ -199,9 +225,10 @@ export default function BookingService() {
     const [currentServiceId, setCurrentServiceId] = useState<string | null>(
         null
     );
-    const [currentBarberId, setCurrentBarberId] = useState<string | null>(null);
+    const [currentProfessionalId, setCurrentProfessionalId] = useState<
+        string | null
+    >(null);
     const [currentScheduleAt, setCurrentScheduleAt] = useState<string>('');
-
     const [currentDateISO, setCurrentDateISO] = useState<string>('');
     const [currentStartTime, setCurrentStartTime] = useState<string>('');
 
@@ -237,7 +264,9 @@ export default function BookingService() {
 
         try {
             const res = await api.get<EditPayload>(
-                `/api/mobile/me/appointments/${appointmentId}/edit`
+                `/api/mobile/me/appointments/${encodeURIComponent(
+                    appointmentId
+                )}/edit`
             );
 
             if (!res?.ok) {
@@ -256,18 +285,19 @@ export default function BookingService() {
             }
 
             const appt = res.appointment;
+
             const scheduleAtStr =
                 appt?.scheduleAt instanceof Date
                     ? appt.scheduleAt.toISOString()
                     : String(appt?.scheduleAt ?? '');
 
             setCurrentServiceId(appt?.serviceId ?? null);
-            setCurrentBarberId(appt?.barberId ?? null);
+            setCurrentProfessionalId(appt?.barberId ?? null); // legado
             setCurrentScheduleAt(scheduleAtStr);
 
             const { dateISO, startTime } = splitScheduleAt(scheduleAtStr);
-            setCurrentDateISO(dateISO);
-            setCurrentStartTime(startTime);
+            setCurrentDateISO(dateISO || '');
+            setCurrentStartTime(startTime || '');
         } catch (err: any) {
             console.log(
                 '[booking/service][edit] error:',
@@ -286,10 +316,10 @@ export default function BookingService() {
     }, [appointmentId, isEdit, recomputeReady, router]);
 
     const fetchServices = useCallback(async () => {
-        if (!unitId) {
+        if (!unitId || !professionalId) {
             Alert.alert(
                 'Ops',
-                'Unidade não informada. Volte e tente novamente.'
+                'Parâmetros incompletos. Volte e tente novamente.'
             );
             router.back();
             return;
@@ -298,13 +328,28 @@ export default function BookingService() {
         try {
             setLoading(true);
 
-            const res = await api.get<{ ok?: boolean; services?: Service[] }>(
-                `/api/mobile/services?unitId=${encodeURIComponent(unitId)}`
+            const res = await api.get<{
+                ok?: boolean;
+                services?: Service[];
+                error?: string;
+            }>(
+                `/api/mobile/services?unitId=${encodeURIComponent(
+                    unitId
+                )}&professionalId=${encodeURIComponent(professionalId)}`
             );
 
-            const list = (res?.services ?? [])
+            if (res && res.ok === false) {
+                throw new Error(
+                    String((res as any)?.error ?? 'Falha ao carregar serviços')
+                );
+            }
+
+            const list = (Array.isArray(res?.services) ? res.services : [])
                 .slice()
-                .sort((a, b) => a.name.localeCompare(b.name));
+                .sort((a, b) =>
+                    String(a?.name ?? '').localeCompare(String(b?.name ?? ''))
+                );
+
             setServices(list);
         } catch (err: any) {
             console.log(
@@ -321,7 +366,7 @@ export default function BookingService() {
             didServicesRef.current = true;
             recomputeReady();
         }
-    }, [recomputeReady, router, unitId]);
+    }, [professionalId, recomputeReady, router, unitId]);
 
     useEffect(() => {
         let alive = true;
@@ -337,26 +382,32 @@ export default function BookingService() {
         };
     }, [fetchEditInfoIfNeeded, fetchServices, isEdit]);
 
-    const pushProfessional = useCallback(
+    const pushTime = useCallback(
         (s: Service, replace?: boolean) => {
+            const sid = String(s?.id ?? '').trim();
+            if (!sid) return;
+
             const duration = normalizeDurationMinutes(s.durationMinutes);
 
             const nav = {
-                pathname: '/booking/professional',
+                pathname: '/booking/time',
                 params: {
                     unitId,
                     unitName,
-                    serviceId: s.id,
-                    serviceName: s.name,
+                    professionalId,
+                    professionalName,
+
+                    serviceId: sid,
+                    serviceName: String(s?.name ?? 'Serviço'),
                     serviceDurationMinutes: String(duration),
+
+                    ...(isEdit ? { mode: 'edit', appointmentId } : {}),
 
                     ...(isEdit
                         ? {
-                              mode: 'edit',
-                              appointmentId,
-
+                              currentProfessionalId:
+                                  currentProfessionalId ?? '',
                               currentServiceId: currentServiceId ?? '',
-                              currentBarberId: currentBarberId ?? '',
                               currentScheduleAt: currentScheduleAt ?? '',
                               currentDateISO: currentDateISO ?? '',
                               currentStartTime: currentStartTime ?? '',
@@ -370,12 +421,14 @@ export default function BookingService() {
         },
         [
             appointmentId,
-            currentBarberId,
             currentDateISO,
+            currentProfessionalId,
             currentScheduleAt,
             currentServiceId,
             currentStartTime,
             isEdit,
+            professionalId,
+            professionalName,
             router,
             unitId,
             unitName,
@@ -385,13 +438,10 @@ export default function BookingService() {
     useEffect(() => {
         if (loading) return;
         if (!services || services.length !== 1) return;
-        pushProfessional(services[0], true);
-    }, [loading, pushProfessional, services]);
+        pushTime(services[0], true);
+    }, [loading, pushTime, services]);
 
-    const goProfessional = useCallback(
-        (s: Service) => pushProfessional(s, false),
-        [pushProfessional]
-    );
+    const goTime = useCallback((s: Service) => pushTime(s, false), [pushTime]);
 
     const key = useCallback((item: Service) => item.id, []);
     const render = useCallback(
@@ -399,11 +449,11 @@ export default function BookingService() {
             <ServiceRow
                 item={item}
                 isCurrent={!!currentServiceId && item.id === currentServiceId}
-                onPress={() => goProfessional(item)}
+                onPress={() => goTime(item)}
                 showDivider={index < services.length - 1}
             />
         ),
-        [currentServiceId, goProfessional, services.length]
+        [currentServiceId, goTime, services.length]
     );
 
     return (
@@ -413,7 +463,11 @@ export default function BookingService() {
                     <View style={safeTopStyle} />
 
                     <View style={S.stickyRow}>
-                        <Pressable onPress={goBack} style={S.backBtn}>
+                        <Pressable
+                            onPress={goBack}
+                            style={S.backBtn}
+                            hitSlop={8}
+                        >
                             <FontAwesome
                                 name="angle-left"
                                 size={20}
@@ -435,7 +489,6 @@ export default function BookingService() {
                 />
                 <View style={{ height: TOP_OFFSET }} />
 
-                {/* ⬛ Parte preta com raio (agora aparece, pq o fundo atrás é branco) */}
                 <View style={S.darkShell}>
                     <View style={S.darkInner}>
                         <View style={S.heroCard}>
@@ -443,6 +496,9 @@ export default function BookingService() {
 
                             <Text style={S.heroDesc}>
                                 {unitName ? `Unidade: ${unitName}` : ' '}
+                                {professionalName
+                                    ? `\nProfissional: ${professionalName}`
+                                    : ''}
                             </Text>
                         </View>
                     </View>
@@ -463,8 +519,8 @@ export default function BookingService() {
                                     Nenhum serviço disponível
                                 </Text>
                                 <Text style={S.centerText}>
-                                    Não encontramos serviços ativos para essa
-                                    unidade.
+                                    Não encontramos serviços ativos para esse
+                                    profissional.
                                 </Text>
 
                                 <Pressable
@@ -493,7 +549,6 @@ export default function BookingService() {
 }
 
 const S = StyleSheet.create({
-    // ✅ CHAVE: fundo geral branco, igual o FlatList da Home
     page: { flex: 1, backgroundColor: UI.colors.white },
 
     fixedTop: {
@@ -513,7 +568,6 @@ const S = StyleSheet.create({
         justifyContent: 'space-between',
     },
 
-    // mantém roxinho com ícone branco
     backBtn: {
         width: 42,
         height: 42,
@@ -535,7 +589,6 @@ const S = StyleSheet.create({
         backgroundColor: UI.colors.bg,
     },
 
-    // ✅ aqui o raio já existia, agora ele APARECE pq o fundo atrás é branco
     darkShell: {
         backgroundColor: UI.colors.bg,
         borderBottomLeftRadius: 28,
@@ -547,7 +600,6 @@ const S = StyleSheet.create({
         paddingBottom: UI.spacing.screenX,
     },
 
-    // ⚠️ card NÃO mexe
     heroCard: {
         marginTop: 14,
         backgroundColor: 'rgba(124,108,255,0.22)',
@@ -563,13 +615,6 @@ const S = StyleSheet.create({
         fontSize: 13,
         fontWeight: '500',
         lineHeight: 18,
-    },
-    heroNote: {
-        marginTop: 10,
-        color: UI.colors.text,
-        fontSize: 12,
-        fontWeight: '600',
-        opacity: 0.9,
     },
 
     whiteArea: { flex: 1, backgroundColor: UI.colors.white },

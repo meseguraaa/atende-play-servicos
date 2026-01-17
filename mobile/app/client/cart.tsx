@@ -136,6 +136,31 @@ function normalizePage(pathname: string) {
         : noQuery || '/';
 }
 
+/* ---------------------------------------------------------
+ * 🖼️ Image URL helper (igual tela de produtos)
+ * - aceita http/https
+ * - resolve paths relativos tipo "/uploads/..."
+ * ---------------------------------------------------------*/
+function resolveImageUri(raw: unknown): string | null {
+    const v = String(raw ?? '').trim();
+    if (!v) return null;
+
+    // já é absoluta
+    if (/^https?:\/\//i.test(v)) return v;
+
+    // tenta usar baseURL do client api
+    const base =
+        String((api as any)?.defaults?.baseURL ?? '')
+            .trim()
+            .replace(/\/+$/, '') || '';
+
+    if (!base) return v.startsWith('/') ? v : `/${v}`;
+
+    // path relativo => absolutiza
+    const path = v.startsWith('/') ? v : `/${v}`;
+    return `${base}${path}`.replace(/([^:]\/)\/+/g, '$1'); // remove // duplicado
+}
+
 const Row = memo(function Row({
     icon,
     label,
@@ -463,7 +488,9 @@ export default function CartScreen() {
     const renderItem = useCallback(({ item }: { item: CartItem }) => {
         const name = item.product?.name ?? 'Produto';
         const category = item.product?.category ?? null;
-        const imageUrl = item.product?.imageUrl ?? null;
+
+        // ✅ resolve URL absoluto (igual tela de produtos)
+        const imageUri = resolveImageUri(item.product?.imageUrl);
 
         // ✅ visibilidade do motor (com fallback)
         const base = Number(item.product?.basePrice ?? NaN);
@@ -485,9 +512,9 @@ export default function CartScreen() {
         return (
             <View style={S.itemCard}>
                 <View style={S.itemImageWrap}>
-                    {imageUrl ? (
+                    {imageUri ? (
                         <Image
-                            source={{ uri: imageUrl }}
+                            source={{ uri: imageUri }}
                             style={S.itemImage}
                             resizeMode="cover"
                         />
