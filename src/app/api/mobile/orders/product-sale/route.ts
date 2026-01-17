@@ -214,7 +214,7 @@ export async function POST(req: Request) {
                     companyId, // ✅ tenant scope
                     clientId,
                     appointmentId: null,
-                    barberId: null,
+                    // ✅ barberId removido: não existe mais no schema
                     status: 'PENDING_CHECKIN',
                     reservedUntil,
                     totalAmount: totalPrice,
