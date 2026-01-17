@@ -27,11 +27,12 @@ export const metadata: Metadata = {
     title: 'Admin | Dashboard',
 };
 
+/**
+ * ✅ Next (versões recentes) pode tipar `searchParams` como Promise nos tipos gerados.
+ * Para evitar conflito com `.next/dev/types/...`, tratamos como Promise<any>.
+ */
 type PageProps = {
-    searchParams?: {
-        date?: string; // yyyy-MM-dd (filtro do DIA)
-        month?: string; // yyyy-MM (filtro do MÊS)
-    };
+    searchParams?: Promise<any>;
 };
 
 function normalizeString(v: unknown): string {
@@ -106,6 +107,14 @@ function dateKeyLocal(d: Date) {
 }
 
 export default async function AdminDashboardPage({ searchParams }: PageProps) {
+    // ✅ Unwrap do Next (searchParams pode vir como Promise)
+    const sp = (await searchParams) as
+        | {
+              date?: string; // yyyy-MM-dd (filtro do DIA)
+              month?: string; // yyyy-MM (filtro do MÊS)
+          }
+        | undefined;
+
     // ✅ Guard central (redirect interno)
     const adminCtx = (await requireAdminForModule('DASHBOARD')) as any;
 
@@ -130,8 +139,8 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
         );
     }
 
-    const dayBase = parseDateParam(searchParams?.date);
-    const monthBase = parseMonthParam(searchParams?.month);
+    const dayBase = parseDateParam(sp?.date);
+    const monthBase = parseMonthParam(sp?.month);
 
     const dayStart = startOfDay(dayBase);
     const dayEnd = endOfDay(dayBase);
