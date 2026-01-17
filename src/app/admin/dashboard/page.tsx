@@ -1,7 +1,18 @@
 // app/admin/dashboard/page.tsx
 import type { Metadata } from 'next';
 
+import { prisma } from '@/lib/prisma';
 import { requireAdminForModule } from '@/lib/admin-permissions';
+
+import {
+    endOfDay,
+    endOfMonth,
+    format,
+    startOfDay,
+    startOfMonth,
+    subMonths,
+} from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 import { DatePicker } from '@/components/date-picker';
 import { DashboardDailySummary } from '@/components/admin/dashboard/dashboard-daily-summary';
@@ -16,24 +27,577 @@ export const metadata: Metadata = {
     title: 'Admin | Dashboard',
 };
 
-export default async function AdminDashboardPage() {
-    // ✅ Guard central (redirect interno)
-    await requireAdminForModule('DASHBOARD');
+type PageProps = {
+    searchParams?: {
+        date?: string; // yyyy-MM-dd (filtro do DIA)
+        month?: string; // yyyy-MM (filtro do MÊS)
+    };
+};
 
-    // ====== MOCKS (UI only) ======
+function normalizeString(v: unknown): string {
+    return String(v ?? '').trim();
+}
+
+/* ---------------------------------------------------------
+ * ✅ Decimal-safe helpers (evita NaN com Prisma.Decimal)
+ * ---------------------------------------------------------*/
+function toNumberDecimal(v: unknown): number {
+    if (v == null) return NaN;
+    if (typeof v === 'number') return v;
+
+    if (typeof v === 'string') {
+        const n = Number(v.replace(',', '.'));
+        return Number.isFinite(n) ? n : NaN;
+    }
+
+    if (typeof v === 'object') {
+        const anyObj = v as any;
+        if (typeof anyObj?.toNumber === 'function') {
+            const n = anyObj.toNumber();
+            return Number.isFinite(n) ? n : NaN;
+        }
+        if (typeof anyObj?.toString === 'function') {
+            const n = Number(String(anyObj.toString()).replace(',', '.'));
+            return Number.isFinite(n) ? n : NaN;
+        }
+    }
+
+    const n = Number(v as any);
+    return Number.isFinite(n) ? n : NaN;
+}
+
+function parseDateParam(dateParam?: string): Date {
+    const raw = normalizeString(dateParam);
+    if (!raw) return new Date();
+
+    // esperado yyyy-MM-dd
+    const [y, m, d] = raw.split('-').map(Number);
+    if (!y || !m || !d) return new Date();
+
+    return new Date(y, m - 1, d);
+}
+
+function parseMonthParam(monthParam?: string): Date {
+    const raw = normalizeString(monthParam);
+    if (!raw) return startOfMonth(new Date());
+
+    // esperado yyyy-MM
+    const [y, m] = raw.split('-').map(Number);
+    if (!y || !m) return startOfMonth(new Date());
+
+    return startOfMonth(new Date(y, m - 1, 1));
+}
+
+function clampToPct(v: number) {
+    if (!Number.isFinite(v)) return 0;
+    if (v < 0) return 0;
+    if (v > 100) return 100;
+    return v;
+}
+
+function safeAdd(a: number, b: number) {
+    const aa = Number.isFinite(a) ? a : 0;
+    const bb = Number.isFinite(b) ? b : 0;
+    return aa + bb;
+}
+
+function dateKeyLocal(d: Date) {
+    return format(d, 'yyyy-MM-dd');
+}
+
+export default async function AdminDashboardPage({ searchParams }: PageProps) {
+    // ✅ Guard central (redirect interno)
+    const adminCtx = (await requireAdminForModule('DASHBOARD')) as any;
+
+    // ✅ Contexto (best-effort, sem quebrar se seu helper tiver outro shape)
+    const companyId: string | undefined =
+        adminCtx?.companyId ??
+        adminCtx?.company?.id ??
+        adminCtx?.session?.companyId ??
+        adminCtx?.data?.companyId;
+
+    const unitId: string | undefined =
+        adminCtx?.unitId ??
+        adminCtx?.unit?.id ??
+        adminCtx?.session?.unitId ??
+        adminCtx?.data?.unitId;
+
+    if (!companyId) {
+        // Se isso acontecer, seu requireAdminForModule não está devolvendo contexto.
+        // Prefiro falhar explicitamente do que mostrar número “mágico”.
+        throw new Error(
+            'AdminDashboardPage: companyId não encontrado no contexto do admin.'
+        );
+    }
+
+    const dayBase = parseDateParam(searchParams?.date);
+    const monthBase = parseMonthParam(searchParams?.month);
+
+    const dayStart = startOfDay(dayBase);
+    const dayEnd = endOfDay(dayBase);
+
+    const monthStart = startOfMonth(monthBase);
+    const monthEnd = endOfMonth(monthBase);
+
+    const prevMonthStart = startOfMonth(subMonths(monthBase, 1));
+    const prevMonthEnd = endOfMonth(subMonths(monthBase, 1));
+
     const currencyFormatter = new Intl.NumberFormat('pt-BR', {
         style: 'currency',
         currency: 'BRL',
         minimumFractionDigits: 2,
     });
 
-    const totalGrossDay = 1250.5;
-    const totalGrossDayServices = 840.0;
-    const totalGrossDayProducts = 410.5;
+    const orderScope = {
+        companyId,
+        ...(unitId ? { unitId } : {}),
+    } as const;
 
-    const totalCommissionDay = 290.0;
-    const totalCommissionDayServices = 210.0;
-    const totalCommissionDayProducts = 80.0;
+    // ---------------------------------------------------------
+    // ✅ ORDERS COMPLETED (DIA) + ITENS (para split e comissões)
+    // ---------------------------------------------------------
+    const completedOrdersDay = await prisma.order.findMany({
+        where: {
+            ...orderScope,
+            status: 'COMPLETED',
+            updatedAt: { gte: dayStart, lte: dayEnd },
+        },
+        select: {
+            id: true,
+            totalAmount: true,
+            appointment: {
+                select: {
+                    professionalPercentageAtTheTime: true,
+                },
+            },
+            items: {
+                select: {
+                    quantity: true,
+                    totalPrice: true,
+                    serviceId: true,
+                    productId: true,
+                    service: {
+                        select: {
+                            professionalPercentage: true,
+                        },
+                    },
+                    product: {
+                        select: {
+                            professionalPercentage: true,
+                        },
+                    },
+                },
+            },
+        },
+    });
+
+    // ---------------------------------------------------------
+    // ✅ ORDERS COMPLETED (MÊS ATUAL) + ITENS
+    // ---------------------------------------------------------
+    const completedOrdersMonth = await prisma.order.findMany({
+        where: {
+            ...orderScope,
+            status: 'COMPLETED',
+            updatedAt: { gte: monthStart, lte: monthEnd },
+        },
+        select: {
+            id: true,
+            totalAmount: true,
+            updatedAt: true,
+            appointment: {
+                select: {
+                    professionalPercentageAtTheTime: true,
+                },
+            },
+            items: {
+                select: {
+                    quantity: true,
+                    totalPrice: true,
+                    serviceId: true,
+                    productId: true,
+                    service: {
+                        select: {
+                            professionalPercentage: true,
+                        },
+                    },
+                    product: {
+                        select: {
+                            professionalPercentage: true,
+                        },
+                    },
+                },
+            },
+        },
+    });
+
+    // ---------------------------------------------------------
+    // ✅ ORDERS COMPLETED (MÊS ANTERIOR) para comparativo do gráfico
+    // ---------------------------------------------------------
+    const completedOrdersPrevMonth = await prisma.order.findMany({
+        where: {
+            ...orderScope,
+            status: 'COMPLETED',
+            updatedAt: { gte: prevMonthStart, lte: prevMonthEnd },
+        },
+        select: {
+            id: true,
+            totalAmount: true,
+            updatedAt: true,
+            items: {
+                select: {
+                    totalPrice: true,
+                    serviceId: true,
+                    productId: true,
+                },
+            },
+        },
+    });
+
+    // ---------------------------------------------------------
+    // ✅ CANCEL FEES (DIA/MÊS)
+    // ---------------------------------------------------------
+    const canceledAppointmentsDay = await prisma.appointment.findMany({
+        where: {
+            ...orderScope,
+            status: 'CANCELED',
+            cancelledAt: { gte: dayStart, lte: dayEnd },
+        },
+        select: {
+            id: true,
+            cancelFeeApplied: true,
+            cancelFeeValue: true,
+        },
+    });
+
+    const canceledAppointmentsMonth = await prisma.appointment.findMany({
+        where: {
+            ...orderScope,
+            status: 'CANCELED',
+            cancelledAt: { gte: monthStart, lte: monthEnd },
+        },
+        select: {
+            id: true,
+            cancelFeeApplied: true,
+            cancelFeeValue: true,
+        },
+    });
+
+    // ---------------------------------------------------------
+    // ✅ APPOINTMENTS DONE (DIA/MÊS)
+    // ---------------------------------------------------------
+    const [appointmentsDoneDayCount, appointmentsDoneMonthCount] =
+        await Promise.all([
+            prisma.appointment.count({
+                where: {
+                    ...orderScope,
+                    status: 'DONE',
+                    doneAt: { gte: dayStart, lte: dayEnd },
+                },
+            }),
+            prisma.appointment.count({
+                where: {
+                    ...orderScope,
+                    status: 'DONE',
+                    doneAt: { gte: monthStart, lte: monthEnd },
+                },
+            }),
+        ]);
+
+    // ---------------------------------------------------------
+    // ✅ APPOINTMENTS CANCELED (DIA/MÊS)
+    // ---------------------------------------------------------
+    const [appointmentsCanceledDayCount, appointmentsCanceledMonthCount] =
+        await Promise.all([
+            prisma.appointment.count({
+                where: {
+                    ...orderScope,
+                    status: 'CANCELED',
+                    cancelledAt: { gte: dayStart, lte: dayEnd },
+                },
+            }),
+            prisma.appointment.count({
+                where: {
+                    ...orderScope,
+                    status: 'CANCELED',
+                    cancelledAt: { gte: monthStart, lte: monthEnd },
+                },
+            }),
+        ]);
+
+    // ---------------------------------------------------------
+    // ✅ EXPENSES (MÊS) | Lucro real = liquido - despesas
+    // Critério recomendado p/ “real”: isPaid = true
+    // ---------------------------------------------------------
+    const expensesMonth = await prisma.expense.findMany({
+        where: {
+            ...orderScope,
+            dueDate: { gte: monthStart, lte: monthEnd },
+            isPaid: true,
+        },
+        select: {
+            amount: true,
+        },
+    });
+
+    // ---------------------------------------------------------
+    // ✅ PRODUCTS: estoque total e vendas/reservas do mês
+    // ---------------------------------------------------------
+    const productsInStockAgg = await prisma.product.aggregate({
+        where: {
+            ...orderScope,
+        },
+        _sum: {
+            stockQuantity: true,
+        },
+    });
+
+    // vendidos (mês): itens de produto em pedidos COMPLETED no mês
+    const soldProductItemsMonth = await prisma.orderItem.findMany({
+        where: {
+            companyId,
+            ...(unitId ? { order: { unitId } } : {}),
+            productId: { not: null },
+            order: {
+                companyId,
+                ...(unitId ? { unitId } : {}),
+                status: 'COMPLETED',
+                updatedAt: { gte: monthStart, lte: monthEnd },
+            },
+        },
+        select: {
+            quantity: true,
+        },
+    });
+
+    // reservados (mês): pedidos em PENDING/PENDING_CHECKIN no mês com itens de produto
+    const reservedProductItemsMonth = await prisma.orderItem.findMany({
+        where: {
+            companyId,
+            ...(unitId ? { order: { unitId } } : {}),
+            productId: { not: null },
+            order: {
+                companyId,
+                ...(unitId ? { unitId } : {}),
+                status: { in: ['PENDING', 'PENDING_CHECKIN'] },
+                createdAt: { gte: monthStart, lte: monthEnd },
+            },
+        },
+        select: {
+            quantity: true,
+        },
+    });
+
+    // ---------------------------------------------------------
+    // ✅ REVIEWS (mês e geral)
+    // ---------------------------------------------------------
+    const reviewsMonthAgg = await prisma.appointmentReview.aggregate({
+        where: {
+            companyId,
+            ...(unitId ? { appointment: { unitId } } : {}),
+            createdAt: { gte: monthStart, lte: monthEnd },
+        },
+        _count: { id: true },
+        _avg: { rating: true },
+    });
+
+    const reviewsOverallAgg = await prisma.appointmentReview.aggregate({
+        where: {
+            companyId,
+            ...(unitId ? { appointment: { unitId } } : {}),
+        },
+        _count: { id: true },
+        _avg: { rating: true },
+    });
+
+    // distribuição (1..5) no mês
+    const ratingsDist = await prisma.appointmentReview.groupBy({
+        by: ['rating'],
+        where: {
+            companyId,
+            ...(unitId ? { appointment: { unitId } } : {}),
+            createdAt: { gte: monthStart, lte: monthEnd },
+        },
+        _count: { rating: true },
+    });
+
+    // ranking de profissionais no mês (avg + count)
+    const reviewsByProfessional = await prisma.appointmentReview.groupBy({
+        by: ['professionalId'],
+        where: {
+            companyId,
+            ...(unitId ? { appointment: { unitId } } : {}),
+            createdAt: { gte: monthStart, lte: monthEnd },
+        },
+        _count: { id: true },
+        _avg: { rating: true },
+        orderBy: [{ _avg: { rating: 'desc' } }, { _count: { id: 'desc' } }],
+    });
+
+    const professionalIds = reviewsByProfessional
+        .map((r) => r.professionalId)
+        .filter(Boolean);
+
+    const professionals = professionalIds.length
+        ? await prisma.professional.findMany({
+              where: {
+                  companyId,
+                  id: { in: professionalIds },
+              },
+              select: { id: true, name: true },
+          })
+        : [];
+
+    const professionalNameById = new Map(
+        professionals.map((p) => [p.id, p.name])
+    );
+
+    // tags (positivas/negativas) mais citadas no mês
+    const reviewTagsAgg = await prisma.appointmentReviewTag.groupBy({
+        by: ['tagId'],
+        where: {
+            review: {
+                companyId,
+                ...(unitId ? { appointment: { unitId } } : {}),
+                createdAt: { gte: monthStart, lte: monthEnd },
+            },
+        },
+        _count: { tagId: true },
+        orderBy: { _count: { tagId: 'desc' } },
+        take: 50,
+    });
+
+    const tagIds = reviewTagsAgg.map((t) => t.tagId);
+    const tags =
+        tagIds.length > 0
+            ? await prisma.reviewTag.findMany({
+                  where: { companyId, id: { in: tagIds } },
+                  select: { id: true, label: true, isNegative: true },
+              })
+            : [];
+
+    const tagMetaById = new Map(tags.map((t) => [t.id, t]));
+
+    const topPositiveTags = reviewTagsAgg
+        .map((row) => {
+            const meta = tagMetaById.get(row.tagId);
+            if (!meta || meta.isNegative) return null;
+            return { label: meta.label, count: row._count.tagId };
+        })
+        .filter(Boolean)
+        .slice(0, 8) as Array<{ label: string; count: number }>;
+
+    const topNegativeTags = reviewTagsAgg
+        .map((row) => {
+            const meta = tagMetaById.get(row.tagId);
+            if (!meta || !meta.isNegative) return null;
+            return { label: meta.label, count: row._count.tagId };
+        })
+        .filter(Boolean)
+        .slice(0, 8) as Array<{ label: string; count: number }>;
+
+    // reviews recentes (positivas / negativas) no mês
+    const [recentPositiveReviews, recentNegativeReviews] = await Promise.all([
+        prisma.appointmentReview.findMany({
+            where: {
+                companyId,
+                ...(unitId ? { appointment: { unitId } } : {}),
+                createdAt: { gte: monthStart, lte: monthEnd },
+                rating: { gte: 3 },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 8,
+            include: {
+                client: { select: { name: true } },
+                professional: { select: { name: true } },
+                appointment: {
+                    select: {
+                        service: { select: { name: true } },
+                    },
+                },
+                tags: { include: { tag: { select: { label: true } } } },
+            },
+        }),
+        prisma.appointmentReview.findMany({
+            where: {
+                companyId,
+                ...(unitId ? { appointment: { unitId } } : {}),
+                createdAt: { gte: monthStart, lte: monthEnd },
+                rating: { lte: 2 },
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 8,
+            include: {
+                client: { select: { name: true } },
+                professional: { select: { name: true } },
+                appointment: {
+                    select: {
+                        service: { select: { name: true } },
+                    },
+                },
+                tags: { include: { tag: { select: { label: true } } } },
+            },
+        }),
+    ]);
+
+    // ---------------------------------------------------------
+    // ✅ CÁLCULOS (DIA)
+    // Bruto: sempre da Order.totalAmount
+    // Split e comissão: pelos itens (service/product)
+    // ---------------------------------------------------------
+    let totalGrossDay = 0;
+    let totalGrossDayServices = 0;
+    let totalGrossDayProducts = 0;
+
+    let totalCommissionDay = 0;
+    let totalCommissionDayServices = 0;
+    let totalCommissionDayProducts = 0;
+
+    for (const o of completedOrdersDay) {
+        totalGrossDay = safeAdd(totalGrossDay, toNumberDecimal(o.totalAmount));
+
+        const pctFromAppointment = clampToPct(
+            toNumberDecimal(o.appointment?.professionalPercentageAtTheTime)
+        );
+
+        for (const it of o.items) {
+            const itemTotal = toNumberDecimal(it.totalPrice);
+
+            if (it.serviceId) {
+                totalGrossDayServices = safeAdd(
+                    totalGrossDayServices,
+                    itemTotal
+                );
+
+                const pctFromService = clampToPct(
+                    toNumberDecimal(it.service?.professionalPercentage)
+                );
+                const pct = pctFromAppointment || pctFromService;
+
+                const commission = (itemTotal * pct) / 100;
+                totalCommissionDayServices = safeAdd(
+                    totalCommissionDayServices,
+                    commission
+                );
+                totalCommissionDay = safeAdd(totalCommissionDay, commission);
+            } else if (it.productId) {
+                totalGrossDayProducts = safeAdd(
+                    totalGrossDayProducts,
+                    itemTotal
+                );
+
+                const pctFromProduct = clampToPct(
+                    toNumberDecimal(it.product?.professionalPercentage)
+                );
+                const commission = (itemTotal * pctFromProduct) / 100;
+
+                totalCommissionDayProducts = safeAdd(
+                    totalCommissionDayProducts,
+                    commission
+                );
+                totalCommissionDay = safeAdd(totalCommissionDay, commission);
+            }
+        }
+    }
 
     const totalNetDay = totalGrossDay - totalCommissionDay;
     const totalNetDayServices =
@@ -41,74 +605,190 @@ export default async function AdminDashboardPage() {
     const totalNetDayProducts =
         totalGrossDayProducts - totalCommissionDayProducts;
 
-    const totalCancelFeeDay = 25.0;
-    const totalCanceledWithFeeDay = 1;
+    // cancel fee (dia)
+    let totalCancelFeeDay = 0;
+    let totalCanceledWithFeeDay = 0;
 
-    const totalGrossMonth = 28650.75;
-    const totalGrossMonthServices = 20100.0;
-    const totalGrossMonthProducts = 8550.75;
+    for (const a of canceledAppointmentsDay) {
+        if (!a.cancelFeeApplied) continue;
+        const fee = toNumberDecimal(a.cancelFeeValue);
+        if (Number.isFinite(fee) && fee > 0) {
+            totalCancelFeeDay = safeAdd(totalCancelFeeDay, fee);
+            totalCanceledWithFeeDay += 1;
+        }
+    }
 
-    const totalCommissionMonthServices = 5200.0;
-    const totalCommissionMonthProducts = 1650.0;
+    // ---------------------------------------------------------
+    // ✅ CÁLCULOS (MÊS)
+    // ---------------------------------------------------------
+    let totalGrossMonth = 0;
+    let totalGrossMonthServices = 0;
+    let totalGrossMonthProducts = 0;
+
+    let totalCommissionMonthServices = 0;
+    let totalCommissionMonthProducts = 0;
+
+    // para gráficos (dia a dia)
+    const daysInMonth = Number(format(monthEnd, 'd'));
+    const revenueCurrent = new Array<number>(daysInMonth).fill(0);
+    const revenuePrev = new Array<number>(
+        Number(format(prevMonthEnd, 'd'))
+    ).fill(0);
+
+    const servicesDaily = new Array<number>(daysInMonth).fill(0);
+    const productsDaily = new Array<number>(daysInMonth).fill(0);
+
+    for (const o of completedOrdersMonth) {
+        totalGrossMonth = safeAdd(
+            totalGrossMonth,
+            toNumberDecimal(o.totalAmount)
+        );
+
+        const dayIndex = Number(format(o.updatedAt, 'd')) - 1;
+        if (dayIndex >= 0 && dayIndex < revenueCurrent.length) {
+            revenueCurrent[dayIndex] = safeAdd(
+                revenueCurrent[dayIndex],
+                toNumberDecimal(o.totalAmount)
+            );
+        }
+
+        const pctFromAppointment = clampToPct(
+            toNumberDecimal(o.appointment?.professionalPercentageAtTheTime)
+        );
+
+        for (const it of o.items) {
+            const itemTotal = toNumberDecimal(it.totalPrice);
+
+            if (it.serviceId) {
+                totalGrossMonthServices = safeAdd(
+                    totalGrossMonthServices,
+                    itemTotal
+                );
+                if (dayIndex >= 0 && dayIndex < servicesDaily.length) {
+                    servicesDaily[dayIndex] = safeAdd(
+                        servicesDaily[dayIndex],
+                        itemTotal
+                    );
+                }
+
+                const pctFromService = clampToPct(
+                    toNumberDecimal(it.service?.professionalPercentage)
+                );
+                const pct = pctFromAppointment || pctFromService;
+
+                const commission = (itemTotal * pct) / 100;
+                totalCommissionMonthServices = safeAdd(
+                    totalCommissionMonthServices,
+                    commission
+                );
+            } else if (it.productId) {
+                totalGrossMonthProducts = safeAdd(
+                    totalGrossMonthProducts,
+                    itemTotal
+                );
+                if (dayIndex >= 0 && dayIndex < productsDaily.length) {
+                    productsDaily[dayIndex] = safeAdd(
+                        productsDaily[dayIndex],
+                        itemTotal
+                    );
+                }
+
+                const pctFromProduct = clampToPct(
+                    toNumberDecimal(it.product?.professionalPercentage)
+                );
+                const commission = (itemTotal * pctFromProduct) / 100;
+
+                totalCommissionMonthProducts = safeAdd(
+                    totalCommissionMonthProducts,
+                    commission
+                );
+            }
+        }
+    }
+
+    for (const o of completedOrdersPrevMonth) {
+        const dayIndex = Number(format(o.updatedAt, 'd')) - 1;
+        if (dayIndex >= 0 && dayIndex < revenuePrev.length) {
+            revenuePrev[dayIndex] = safeAdd(
+                revenuePrev[dayIndex],
+                toNumberDecimal(o.totalAmount)
+            );
+        }
+    }
 
     const totalNetMonthServices =
         totalGrossMonthServices - totalCommissionMonthServices;
     const totalNetMonthProducts =
         totalGrossMonthProducts - totalCommissionMonthProducts;
-
     const totalNetMonth = totalNetMonthServices + totalNetMonthProducts;
 
-    const totalExpensesMonth = 7200.0;
+    // despesas (mês) - real
+    let totalExpensesMonth = 0;
+    for (const e of expensesMonth) {
+        totalExpensesMonth = safeAdd(
+            totalExpensesMonth,
+            toNumberDecimal(e.amount)
+        );
+    }
+
     const realNetMonth = totalNetMonth - totalExpensesMonth;
 
-    const totalAppointmentsDoneDay = 11;
-    const totalAppointmentsDoneMonth = 242;
+    // cancel fee (mês)
+    let totalCanceledWithFeeMonth = 0;
+    for (const a of canceledAppointmentsMonth) {
+        if (!a.cancelFeeApplied) continue;
+        const fee = toNumberDecimal(a.cancelFeeValue);
+        if (Number.isFinite(fee) && fee > 0) totalCanceledWithFeeMonth += 1;
+    }
 
-    const totalAppointmentsCanceledDay = 2;
-    const totalAppointmentsCanceledMonth = 18;
+    // produtos (estoque / vendido / reservado)
+    const totalProductsInStock =
+        Number(productsInStockAgg._sum.stockQuantity ?? 0) || 0;
 
-    const totalCanceledWithFeeMonth = 6;
+    const totalProductsSoldMonth = soldProductItemsMonth.reduce(
+        (acc, it) => acc + (it.quantity ?? 0),
+        0
+    );
 
-    const totalProductsInStock = 380;
-    const totalProductsSoldMonth = 215;
-    const totalProductsReservedMonth = 64;
+    const totalProductsReservedMonth = reservedProductItemsMonth.reduce(
+        (acc, it) => acc + (it.quantity ?? 0),
+        0
+    );
 
-    const currentMonthLabel = 'jan/2026';
-    const previousMonthLabel = 'dez/2025';
-    const variationPercentage = 12.4;
+    // ---------------------------------------------------------
+    // ✅ Labels e gráficos
+    // ---------------------------------------------------------
+    const currentMonthLabel = format(monthBase, 'MMM/yyyy', { locale: ptBR });
+    const previousMonthLabel = format(subMonths(monthBase, 1), 'MMM/yyyy', {
+        locale: ptBR,
+    });
 
-    const revenueChartData = Array.from({ length: 31 }, (_, index) => {
-        const day = index + 1;
+    const sumCurrentMonth = revenueCurrent.reduce((a, b) => a + b, 0);
+    const sumPrevMonth = revenuePrev.reduce((a, b) => a + b, 0);
+
+    const variationPercentage =
+        sumPrevMonth > 0
+            ? ((sumCurrentMonth - sumPrevMonth) / sumPrevMonth) * 100
+            : 0;
+
+    const revenueChartData = Array.from({ length: daysInMonth }, (_, i) => {
+        const day = i + 1;
         return {
             day,
-            currentMonth: Math.max(
-                0,
-                Math.round(900 + Math.sin(day / 2) * 220 + (day % 5) * 35)
-            ),
-            previousMonth: Math.max(
-                0,
-                Math.round(820 + Math.cos(day / 2) * 180 + (day % 4) * 28)
-            ),
+            currentMonth: Math.max(0, Math.round(revenueCurrent[i] ?? 0)),
+            previousMonth: Math.max(0, Math.round(revenuePrev[i] ?? 0)),
         };
     });
 
     const productsVsServicesChartData = Array.from(
-        { length: 31 },
-        (_, index) => {
-            const day = index + 1;
-            const services = Math.max(
-                0,
-                Math.round(520 + Math.sin(day / 2.2) * 140 + (day % 6) * 22)
-            );
-            const products = Math.max(
-                0,
-                Math.round(280 + Math.cos(day / 2.3) * 110 + (day % 5) * 18)
-            );
+        { length: daysInMonth },
+        (_, i) => {
+            const day = i + 1;
             return {
                 day,
                 label: String(day).padStart(2, '0'),
-                services,
-                products,
+                services: Math.max(0, Math.round(servicesDaily[i] ?? 0)),
+                products: Math.max(0, Math.round(productsDaily[i] ?? 0)),
             };
         }
     );
@@ -122,103 +802,54 @@ export default async function AdminDashboardPage() {
         0
     );
 
-    const totalReviewsMonth = 37;
-    const totalReviewsOverall = 412;
+    // ---------------------------------------------------------
+    // ✅ REVIEWS - números finais para UI
+    // ---------------------------------------------------------
+    const totalReviewsMonth = reviewsMonthAgg._count.id ?? 0;
+    const totalReviewsOverall = reviewsOverallAgg._count.id ?? 0;
 
-    const averageRatingMonth = 4.42;
-    const averageRatingOverall = 4.31;
+    const averageRatingMonth = Number(reviewsMonthAgg._avg.rating ?? 0);
+    const averageRatingOverall = Number(reviewsOverallAgg._avg.rating ?? 0);
 
     const averageRatingMonthDisplay =
         totalReviewsMonth > 0 ? averageRatingMonth.toFixed(2) : '—';
     const averageRatingOverallDisplay =
         totalReviewsOverall > 0 ? averageRatingOverall.toFixed(2) : '—';
 
-    const professionalReviewsRanking = [
-        {
-            professionalId: 'p1',
-            professionalName: 'Amanda',
-            totalReviews: 12,
-            avgRating: 4.8,
-        },
-        {
-            professionalId: 'p2',
-            professionalName: 'Bruno',
-            totalReviews: 9,
-            avgRating: 4.6,
-        },
-        {
-            professionalId: 'p3',
-            professionalName: 'Carla',
-            totalReviews: 6,
-            avgRating: 4.5,
-        },
-        {
-            professionalId: 'p4',
-            professionalName: 'Diego',
-            totalReviews: 10,
-            avgRating: 4.2,
-        },
-    ].sort((a, b) => {
-        if (b.avgRating !== a.avgRating) return b.avgRating - a.avgRating;
-        if (b.totalReviews !== a.totalReviews)
-            return b.totalReviews - a.totalReviews;
-        return a.professionalName.localeCompare(b.professionalName);
+    const professionalReviewsRanking = reviewsByProfessional
+        .map((row) => {
+            const id = row.professionalId;
+            if (!id) return null;
+
+            return {
+                professionalId: id,
+                professionalName:
+                    professionalNameById.get(id) ?? 'Profissional',
+                totalReviews: row._count.id ?? 0,
+                avgRating: Number(row._avg.rating ?? 0),
+            };
+        })
+        .filter(Boolean)
+        .sort((a, b) => {
+            const aa = a as any;
+            const bb = b as any;
+            if (bb.avgRating !== aa.avgRating)
+                return bb.avgRating - aa.avgRating;
+            if (bb.totalReviews !== aa.totalReviews)
+                return bb.totalReviews - aa.totalReviews;
+            return aa.professionalName.localeCompare(bb.professionalName);
+        }) as Array<{
+        professionalId: string;
+        professionalName: string;
+        totalReviews: number;
+        avgRating: number;
+    }>;
+
+    const ratingBuckets = [1, 2, 3, 4, 5].map((r) => {
+        const found = ratingsDist.find((x) => x.rating === r);
+        return found?._count.rating ?? 0;
     });
 
-    const topPositiveTags = [
-        { label: 'Atendimento', count: 18 },
-        { label: 'Pontualidade', count: 12 },
-        { label: 'Ambiente', count: 9 },
-        { label: 'Resultado', count: 7 },
-        { label: 'Preço justo', count: 5 },
-    ].slice(0, 8);
-
-    const topNegativeTags = [
-        { label: 'Atraso', count: 4 },
-        { label: 'Comunicação', count: 3 },
-        { label: 'Organização', count: 2 },
-    ].slice(0, 8);
-
-    const recentPositiveReviews = [
-        {
-            id: 'r1',
-            rating: 5,
-            comment: 'Excelente, voltarei com certeza.',
-            createdAt: new Date(),
-            client: { name: 'Mariana' },
-            professional: { name: 'Amanda' },
-            appointment: { service: { name: 'Corte + Barba' } },
-            tags: [
-                { tag: { label: 'Atendimento' } },
-                { tag: { label: 'Resultado' } },
-            ],
-        },
-        {
-            id: 'r2',
-            rating: 4,
-            comment: 'Muito bom, super atenciosos.',
-            createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5),
-            client: { name: 'Rafael' },
-            professional: { name: 'Bruno' },
-            appointment: { service: { name: 'Corte' } },
-            tags: [{ tag: { label: 'Pontualidade' } }],
-        },
-    ];
-
-    const recentNegativeReviews = [
-        {
-            id: 'r3',
-            rating: 2,
-            comment: 'Demorou mais do que o esperado.',
-            createdAt: new Date(Date.now() - 1000 * 60 * 60 * 30),
-            client: { name: 'Lucas' },
-            professional: { name: 'Diego' },
-            appointment: { service: { name: 'Corte' } },
-            tags: [{ tag: { label: 'Atraso' } }],
-        },
-    ];
-
-    const ratingBuckets = [1, 2, 4, 12, 18]; // 1..5
     const ratingsDistributionData = ratingBuckets.map((count, index) => ({
         rating: index + 1,
         count,
@@ -291,10 +922,10 @@ export default async function AdminDashboardPage() {
                 )}
                 realNetMonth={currencyFormatter.format(realNetMonth)}
                 realNetMonthIsPositive={realNetMonth >= 0}
-                totalAppointmentsDoneDay={totalAppointmentsDoneDay}
-                totalAppointmentsDoneMonth={totalAppointmentsDoneMonth}
-                totalAppointmentsCanceledDay={totalAppointmentsCanceledDay}
-                totalAppointmentsCanceledMonth={totalAppointmentsCanceledMonth}
+                totalAppointmentsDoneDay={appointmentsDoneDayCount}
+                totalAppointmentsDoneMonth={appointmentsDoneMonthCount}
+                totalAppointmentsCanceledDay={appointmentsCanceledDayCount}
+                totalAppointmentsCanceledMonth={appointmentsCanceledMonthCount}
                 totalCanceledWithFeeDay={totalCanceledWithFeeDay}
                 totalCanceledWithFeeMonth={totalCanceledWithFeeMonth}
                 productsInStock={totalProductsInStock}
@@ -333,7 +964,15 @@ export default async function AdminDashboardPage() {
                             </span>
                             {totalReviewsMonth > 0 && (
                                 <span className="ml-2 align-middle text-xl text-yellow-500">
-                                    {'★'.repeat(Math.round(averageRatingMonth))}
+                                    {'★'.repeat(
+                                        Math.max(
+                                            0,
+                                            Math.min(
+                                                5,
+                                                Math.round(averageRatingMonth)
+                                            )
+                                        )
+                                    )}
                                 </span>
                             )}
                         </p>

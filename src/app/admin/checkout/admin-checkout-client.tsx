@@ -1342,7 +1342,7 @@ export default function AdminCheckoutClient({
 
                     if (missing.length > 0) {
                         toast.error(
-                            `Faltou profissional em ${missing.length} item(ns) de produto. Selecione e clique em "Salvar" em cada item antes de concluir.`
+                            `Faltou profissional em ${missing.length} item(ns) de produto. Selecione o profissional em cada item antes de concluir.`
                         );
 
                         return;
@@ -1449,17 +1449,6 @@ export default function AdminCheckoutClient({
                             ({openAccountsCount})
                         </span>
                     </h2>
-
-                    <div className="flex items-center gap-2">
-                        <Button
-                            type="button"
-                            variant="brand"
-                            disabled
-                            title="Será conectado depois"
-                        >
-                            Nova venda
-                        </Button>
-                    </div>
                 </div>
 
                 {openAccounts.length === 0 ? (
@@ -1675,77 +1664,6 @@ export default function AdminCheckoutClient({
                                                         da venda.
                                                     </p>
                                                 </div>
-
-                                                {account.hasProducts ? (
-                                                    <div className="flex flex-wrap items-center gap-2">
-                                                        <select
-                                                            value={
-                                                                bulkProfessionalId
-                                                            }
-                                                            onChange={(e) =>
-                                                                setBulkProfessionalByClient(
-                                                                    (prev) => ({
-                                                                        ...prev,
-                                                                        [account.clientId]:
-                                                                            e
-                                                                                .target
-                                                                                .value,
-                                                                    })
-                                                                )
-                                                            }
-                                                            className="h-9 rounded-md border border-border-primary bg-background-secondary px-2 text-sm text-content-primary"
-                                                            disabled={
-                                                                isBusyGlobal ||
-                                                                professionalsLoading ||
-                                                                professionals.length ===
-                                                                    0
-                                                            }
-                                                        >
-                                                            <option value="">
-                                                                {professionalsLoading
-                                                                    ? 'Carregando...'
-                                                                    : professionals.length ===
-                                                                        0
-                                                                      ? 'Sem profissionais'
-                                                                      : 'Aplicar em itens vazios'}
-                                                            </option>
-                                                            {professionals.map(
-                                                                (p) => (
-                                                                    <option
-                                                                        key={
-                                                                            p.id
-                                                                        }
-                                                                        value={
-                                                                            p.id
-                                                                        }
-                                                                    >
-                                                                        {p.name}
-                                                                    </option>
-                                                                )
-                                                            )}
-                                                        </select>
-
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() =>
-                                                                handleBulkAssignForAccount(
-                                                                    account
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                isBusyGlobal ||
-                                                                !bulkProfessionalId ||
-                                                                professionals.length ===
-                                                                    0
-                                                            }
-                                                            title="Aplica o profissional selecionado apenas nos itens que ainda não têm profissional."
-                                                        >
-                                                            Aplicar
-                                                        </Button>
-                                                    </div>
-                                                ) : null}
                                             </div>
 
                                             <div className="space-y-2">
@@ -1922,19 +1840,40 @@ export default function AdminCheckoutClient({
                                                                                                             }
                                                                                                             onChange={(
                                                                                                                 e
-                                                                                                            ) =>
+                                                                                                            ) => {
+                                                                                                                const nextProfessionalId =
+                                                                                                                    e
+                                                                                                                        .target
+                                                                                                                        .value;
+
+                                                                                                                // mantém o select controlado
                                                                                                                 setSelectedProfessionalByItem(
                                                                                                                     (
                                                                                                                         prev
                                                                                                                     ) => ({
                                                                                                                         ...prev,
                                                                                                                         [it.itemId]:
-                                                                                                                            e
-                                                                                                                                .target
-                                                                                                                                .value,
+                                                                                                                            nextProfessionalId,
                                                                                                                     })
+                                                                                                                );
+
+                                                                                                                // salva automático quando selecionar
+                                                                                                                const pid =
+                                                                                                                    String(
+                                                                                                                        nextProfessionalId ??
+                                                                                                                            ''
+                                                                                                                    ).trim();
+                                                                                                                if (
+                                                                                                                    !pid
                                                                                                                 )
-                                                                                                            }
+                                                                                                                    return;
+
+                                                                                                                handleAssignProfessionalForItem(
+                                                                                                                    order.id,
+                                                                                                                    it,
+                                                                                                                    pid
+                                                                                                                );
+                                                                                                            }}
                                                                                                             className={cn(
                                                                                                                 'h-9 rounded-md border border-border-primary bg-background-secondary px-2 text-sm text-content-primary',
                                                                                                                 !hasAssigned &&
@@ -1983,41 +1922,6 @@ export default function AdminCheckoutClient({
                                                                                                                 )
                                                                                                             )}
                                                                                                         </select>
-
-                                                                                                        <Button
-                                                                                                            type="button"
-                                                                                                            variant="outline"
-                                                                                                            size="sm"
-                                                                                                            onClick={() =>
-                                                                                                                handleAssignProfessionalForItem(
-                                                                                                                    order.id,
-                                                                                                                    it,
-                                                                                                                    String(
-                                                                                                                        selectedProfessionalByItem[
-                                                                                                                            it
-                                                                                                                                .itemId
-                                                                                                                        ] ??
-                                                                                                                            it.professionalId ??
-                                                                                                                            ''
-                                                                                                                    ).trim()
-                                                                                                                )
-                                                                                                            }
-                                                                                                            disabled={
-                                                                                                                disabled ||
-                                                                                                                !String(
-                                                                                                                    selectedProfessionalByItem[
-                                                                                                                        it
-                                                                                                                            .itemId
-                                                                                                                    ] ??
-                                                                                                                        it.professionalId ??
-                                                                                                                        ''
-                                                                                                                ).trim()
-                                                                                                            }
-                                                                                                        >
-                                                                                                            {isAssigning
-                                                                                                                ? 'Salvando...'
-                                                                                                                : 'Salvar'}
-                                                                                                        </Button>
                                                                                                     </>
                                                                                                 ) : null}
 
