@@ -45,10 +45,17 @@ function addDays(base: Date, days: number) {
     return d;
 }
 
-function toISOAtNoon(d: Date) {
-    const safe = new Date(d);
-    safe.setHours(12, 0, 0, 0);
-    return safe.toISOString();
+/**
+ * ✅ ISO estável: "meio-dia UTC" do dia local selecionado (YYYY-MM-DD),
+ * evitando depender do timezone do device ao chamar toISOString().
+ *
+ * Ex: 2026-01-17 -> 2026-01-17T12:00:00.000Z
+ */
+function toISOAtNoonUTC(d: Date) {
+    const y = d.getFullYear();
+    const m = d.getMonth();
+    const day = d.getDate();
+    return new Date(Date.UTC(y, m, day, 12, 0, 0, 0)).toISOString();
 }
 
 function weekdayShortPt(d: Date) {
@@ -84,6 +91,12 @@ function timeToMinutes(hhmm: string) {
 function nowMinutesLocal() {
     const now = new Date();
     return now.getHours() * 60 + now.getMinutes();
+}
+
+function normalizeDurationMinutesStr(v: string, fallback = 30) {
+    const n = Number(String(v ?? '').trim());
+    if (!Number.isFinite(n) || n <= 0) return String(fallback);
+    return String(Math.round(n));
 }
 
 type AppointmentGetResponse = {
@@ -182,6 +195,12 @@ export default function BookingTime() {
         unitName?: string;
         serviceId?: string;
         serviceName?: string;
+
+        // ✅ novo padrão
+        professionalId?: string;
+        professionalName?: string;
+
+        // ✅ compat legado
         barberId?: string;
         barberName?: string;
 
@@ -194,30 +213,44 @@ export default function BookingTime() {
         currentStartTime?: string;
     }>();
 
-    const unitId = useMemo(() => String(params.unitId ?? ''), [params.unitId]);
+    const unitId = useMemo(
+        () => String(params.unitId ?? '').trim(),
+        [params.unitId]
+    );
     const unitName = useMemo(
-        () => String(params.unitName ?? ''),
+        () => String(params.unitName ?? '').trim(),
         [params.unitName]
     );
     const serviceId = useMemo(
-        () => String(params.serviceId ?? ''),
+        () => String(params.serviceId ?? '').trim(),
         [params.serviceId]
     );
     const serviceName = useMemo(
-        () => String(params.serviceName ?? ''),
+        () => String(params.serviceName ?? '').trim(),
         [params.serviceName]
     );
-    const barberId = useMemo(
-        () => String(params.barberId ?? ''),
-        [params.barberId]
-    );
-    const barberName = useMemo(
-        () => String(params.barberName ?? ''),
-        [params.barberName]
-    );
+
+    // ✅ resolve professional (novo) com fallback no legado
+    const professionalId = useMemo(() => {
+        return (
+            String(params.professionalId ?? '').trim() ||
+            String(params.barberId ?? '').trim()
+        );
+    }, [params.barberId, params.professionalId]);
+
+    const professionalName = useMemo(() => {
+        return (
+            String(params.professionalName ?? '').trim() ||
+            String(params.barberName ?? '').trim()
+        );
+    }, [params.barberName, params.professionalName]);
 
     const serviceDurationMinutes = useMemo(
-        () => String(params.serviceDurationMinutes ?? ''),
+        () =>
+            normalizeDurationMinutesStr(
+                String(params.serviceDurationMinutes ?? ''),
+                30
+            ),
         [params.serviceDurationMinutes]
     );
 
@@ -262,15 +295,30 @@ export default function BookingTime() {
                             d.getMonth() + 1
                         )}`;
 
-            list.push({ key, label, dateISO: toISOAtNoon(d) });
+            list.push({ key, label, dateISO: toISOAtNoonUTC(d) });
         }
         return list;
     }, []);
 
+    const syncGateReady = useCallback(() => {
+        if (!isEdit) {
+            if (didSlotsFetchRef.current) setDataReady(true);
+            return;
+        }
+        if (didEditFetchRef.current && didSlotsFetchRef.current) {
+            setDataReady(true);
+        }
+    }, [isEdit]);
+
     const fetchCurrentAppointmentIfNeeded = useCallback(async () => {
         try {
             if (!isEdit) return;
-            if (!appointmentId) return;
+
+            if (!appointmentId) {
+                Alert.alert('Ops', 'appointmentId ausente no modo alterar.');
+                router.back();
+                return;
+            }
 
             const res = await api.get<AppointmentGetResponse>(
                 `/api/mobile/me/appointments/${encodeURIComponent(appointmentId)}`
@@ -298,9 +346,9 @@ export default function BookingTime() {
             );
         } finally {
             didEditFetchRef.current = true;
-            if (!isEdit) didEditFetchRef.current = true;
+            syncGateReady();
         }
-    }, [appointmentId, isEdit, router]);
+    }, [appointmentId, isEdit, router, syncGateReady]);
 
     useEffect(() => {
         fetchCurrentAppointmentIfNeeded();
@@ -327,7 +375,6 @@ export default function BookingTime() {
         [days, selectedDayKey]
     );
 
-    // ✅ verdadeiro quando o dia selecionado é "hoje" (local do device)
     const isTodaySelected = useMemo(() => {
         return selectedDayKey === dateKey(new Date());
     }, [selectedDayKey]);
@@ -335,19 +382,9 @@ export default function BookingTime() {
     const [loading, setLoading] = useState(true);
     const [slots, setSlots] = useState<string[]>([]);
 
-    const syncGateReady = useCallback(() => {
-        if (!isEdit) {
-            if (didSlotsFetchRef.current) setDataReady(true);
-            return;
-        }
-        if (didEditFetchRef.current && didSlotsFetchRef.current) {
-            setDataReady(true);
-        }
-    }, [isEdit]);
-
     const fetchSlots = useCallback(async () => {
         try {
-            if (!unitId || !serviceId || !barberId || !selectedDateISO) {
+            if (!unitId || !serviceId || !professionalId || !selectedDateISO) {
                 Alert.alert(
                     'Ops',
                     'Parâmetros do agendamento estão incompletos.'
@@ -359,24 +396,31 @@ export default function BookingTime() {
             setLoading(true);
 
             const url =
-                `/api/mobile/availability?barberId=${encodeURIComponent(barberId)}` +
+                `/api/mobile/availability?professionalId=${encodeURIComponent(professionalId)}` +
                 `&unitId=${encodeURIComponent(unitId)}` +
                 `&serviceId=${encodeURIComponent(serviceId)}` +
                 `&dateISO=${encodeURIComponent(selectedDateISO)}` +
                 (serviceDurationMinutes
-                    ? `&serviceDurationInMinutes=${encodeURIComponent(
-                          serviceDurationMinutes
-                      )}`
+                    ? `&serviceDurationInMinutes=${encodeURIComponent(serviceDurationMinutes)}`
                     : '') +
                 (isEdit && appointmentId
                     ? `&appointmentId=${encodeURIComponent(appointmentId)}`
                     : '');
 
-            const res = await api.get<{ ok: boolean; slots: string[] }>(url);
+            const res = await api.get<{
+                ok: boolean;
+                slots: string[];
+                error?: string;
+            }>(url);
+
+            if (res && res.ok === false) {
+                throw new Error(
+                    String((res as any)?.error ?? 'Falha ao carregar horários')
+                );
+            }
 
             const normalized = (res?.slots ?? []).map(normTime).filter(Boolean);
 
-            // garante consistência mesmo se o backend mandar duplicado
             const uniq = Array.from(new Set(normalized)).sort(
                 (a, b) => timeToMinutes(a) - timeToMinutes(b)
             );
@@ -399,8 +443,8 @@ export default function BookingTime() {
         }
     }, [
         appointmentId,
-        barberId,
         isEdit,
+        professionalId,
         router,
         selectedDateISO,
         serviceId,
@@ -413,22 +457,14 @@ export default function BookingTime() {
         fetchSlots();
     }, [fetchSlots]);
 
-    useEffect(() => {
-        syncGateReady();
-    }, [currentDateISO, currentStartTime, syncGateReady]);
-
     const sameDayAsCurrent = useMemo(() => {
         if (!isEdit || !currentDateISO || !selectedDateISO) return false;
         return isoDayKeyUTC(currentDateISO) === isoDayKeyUTC(selectedDateISO);
     }, [currentDateISO, isEdit, selectedDateISO]);
 
-    // Segurança extra:
-    // - modo edit: garante que o horário atual apareça (se for o mesmo dia)
-    // - dia "hoje": remove horários no passado (mantém o "Atual" no edit)
     const displaySlots = useMemo(() => {
         const base = slots.slice();
 
-        // 1) merge do horário atual (edit) antes de filtrar
         let mergedBase = base;
 
         if (isEdit) {
@@ -440,15 +476,12 @@ export default function BookingTime() {
             }
         }
 
-        // 2) uniq + ordenação
         const uniq = Array.from(new Set(mergedBase)).sort(
             (a, b) => timeToMinutes(a) - timeToMinutes(b)
         );
 
-        // 3) se não for hoje, volta tudo
         if (!isTodaySelected) return uniq;
 
-        // 4) hoje: remove horários que já passaram
         const nowMins = nowMinutesLocal();
 
         const cur = normTime(currentStartTime);
@@ -458,12 +491,10 @@ export default function BookingTime() {
         return uniq.filter((t) => {
             const mins = timeToMinutes(t);
             if (!Number.isFinite(mins)) return false;
-
-            // mantém o "Atual" no modo edição, mesmo que esteja no passado
             if (keepCurrent && t === cur) return true;
 
-            // não mostra horários no passado
-            return mins >= nowMins;
+            // ✅ estritamente no futuro
+            return mins > nowMins;
         });
     }, [currentStartTime, isEdit, sameDayAsCurrent, slots, isTodaySelected]);
 
@@ -476,11 +507,19 @@ export default function BookingTime() {
                     unitName,
                     serviceId,
                     serviceName,
-                    barberId,
-                    barberName,
+
+                    // ✅ novo padrão
+                    professionalId,
+                    professionalName,
+
+                    // ✅ compat
+                    barberId: professionalId,
+                    barberName: professionalName,
+
                     dateISO: selectedDateISO,
                     startTime: normTime(startTime),
                     serviceDurationMinutes: serviceDurationMinutes || '30',
+
                     ...(isEdit ? { mode: 'edit', appointmentId } : {}),
                     ...(isEdit
                         ? {
@@ -494,11 +533,11 @@ export default function BookingTime() {
         },
         [
             appointmentId,
-            barberId,
-            barberName,
             currentDateISO,
             currentStartTime,
             isEdit,
+            professionalId,
+            professionalName,
             router,
             selectedDateISO,
             serviceDurationMinutes,
@@ -589,8 +628,8 @@ export default function BookingTime() {
                             <Text style={S.heroDesc}>
                                 {unitName ? `Unidade: ${unitName}` : ' '}
                                 {serviceName ? `\nServiço: ${serviceName}` : ''}
-                                {barberName
-                                    ? `\nProfissional: ${barberName}`
+                                {professionalName
+                                    ? `\nProfissional: ${professionalName}`
                                     : ''}
                             </Text>
                         </View>
@@ -623,11 +662,11 @@ export default function BookingTime() {
                         ) : displaySlots.length === 0 ? (
                             <View style={S.emptyInline}>
                                 <Text style={S.emptyTitle}>
-                                    Sem horários para este dia
+                                    Esse profissional não está disponível
                                 </Text>
                                 <Text style={S.centerText}>
-                                    Tente outro dia ou volte e troque o
-                                    profissional.
+                                    Escolha outro profissional ou troque o dia
+                                    para ser atendido por esse profissional.
                                 </Text>
                             </View>
                         ) : (

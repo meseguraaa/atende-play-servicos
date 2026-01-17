@@ -39,6 +39,15 @@ function normalizePage(pathname: string) {
         : noQuery || '/';
 }
 
+/**
+ * ✅ Desembrulha resposta de API quando o client retorna { data: ... } (Axios-like)
+ * e mantém compatibilidade quando ele já retorna o JSON direto.
+ */
+function unwrapApiData<T>(res: unknown): T {
+    const anyRes = res as any;
+    return (anyRes?.data ?? anyRes) as T;
+}
+
 const HistoryRow = memo(function HistoryRow({
     item,
     showDivider,
@@ -120,9 +129,11 @@ export default function ClientHistory() {
         try {
             setLoading(true);
 
-            const res = await api.get<HistoryResponse>(
+            const raw = await api.get<HistoryResponse>(
                 '/api/mobile/me/history'
             );
+
+            const res = unwrapApiData<HistoryResponse>(raw);
 
             if (!res?.ok) {
                 console.log('[history] api error:', res?.error);

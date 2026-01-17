@@ -130,6 +130,33 @@ function birthBRToISO(b: string): string | null {
     return `${yyyy}-${pad2(mm)}-${pad2(dd)}`;
 }
 
+/* ===========================
+ * ✅ Cursor-safe helpers p/ máscara
+ * ===========================*/
+function countDigitsBeforeIndex(text: string, idx: number) {
+    const s = String(text ?? '');
+    const end = Math.max(0, Math.min(idx, s.length));
+    let count = 0;
+    for (let i = 0; i < end; i++) {
+        if (/\d/.test(s[i])) count++;
+    }
+    return count;
+}
+
+function indexAfterNDigits(masked: string, nDigits: number) {
+    const s = String(masked ?? '');
+    if (nDigits <= 0) return 0;
+
+    let seen = 0;
+    for (let i = 0; i < s.length; i++) {
+        if (/\d/.test(s[i])) {
+            seen++;
+            if (seen >= nDigits) return i + 1;
+        }
+    }
+    return s.length;
+}
+
 type MeApiUser = {
     id: string;
     name: string | null;
@@ -193,27 +220,27 @@ function levelChipColors(level: CustomerLevelKey) {
     switch (level) {
         case 'BRONZE':
             return {
-                bg: 'rgba(245, 158, 11, 0.10)', // amber-500/10
-                border: 'rgba(245, 158, 11, 0.30)', // amber-500/30
-                text: 'rgb(180, 83, 9)', // amber-700
+                bg: 'rgba(245, 158, 11, 0.10)',
+                border: 'rgba(245, 158, 11, 0.30)',
+                text: 'rgb(180, 83, 9)',
             };
         case 'PRATA':
             return {
-                bg: 'rgba(100, 116, 139, 0.10)', // slate-500/10
-                border: 'rgba(100, 116, 139, 0.30)', // slate-500/30
-                text: 'rgb(226, 232, 240)', // slate-200
+                bg: 'rgba(100, 116, 139, 0.10)',
+                border: 'rgba(100, 116, 139, 0.30)',
+                text: 'rgb(226, 232, 240)',
             };
         case 'OURO':
             return {
-                bg: 'rgba(234, 179, 8, 0.10)', // yellow-500/10
-                border: 'rgba(234, 179, 8, 0.30)', // yellow-500/30
-                text: 'rgb(161, 98, 7)', // yellow-700 (aprox)
+                bg: 'rgba(234, 179, 8, 0.10)',
+                border: 'rgba(234, 179, 8, 0.30)',
+                text: 'rgb(161, 98, 7)',
             };
         case 'DIAMANTE':
             return {
-                bg: 'rgba(14, 165, 233, 0.10)', // sky-500/10
-                border: 'rgba(14, 165, 233, 0.30)', // sky-500/30
-                text: 'rgb(3, 105, 161)', // sky-700
+                bg: 'rgba(14, 165, 233, 0.10)',
+                border: 'rgba(14, 165, 233, 0.30)',
+                text: 'rgb(3, 105, 161)',
             };
     }
 }
@@ -226,6 +253,9 @@ const Field = memo(function Field({
     editable,
     onChangeText,
     keyboardType,
+    selection,
+    onSelectionChange,
+    textContentType,
 }: {
     label: string;
     value?: string;
@@ -234,6 +264,9 @@ const Field = memo(function Field({
     editable?: boolean;
     onChangeText?: (t: string) => void;
     keyboardType?: any;
+    selection?: { start: number; end: number };
+    onSelectionChange?: (sel: { start: number; end: number }) => void;
+    textContentType?: any;
 }) {
     return (
         <View style={S.fieldWrap}>
@@ -261,6 +294,13 @@ const Field = memo(function Field({
                     }
                     autoCorrect={false}
                     autoCapitalize="none"
+                    selection={selection}
+                    onSelectionChange={
+                        onSelectionChange
+                            ? (e) => onSelectionChange(e.nativeEvent.selection)
+                            : undefined
+                    }
+                    textContentType={textContentType}
                 />
             </View>
         </View>
@@ -281,6 +321,19 @@ export default function Profile() {
 
     const [phone, setPhone] = useState('');
     const [birth, setBirth] = useState('');
+
+    // ✅ cursor control p/ telefone (iOS-friendly)
+    const [phoneSelection, setPhoneSelection] = useState({ start: 0, end: 0 });
+
+    // último selection conhecido (iOS às vezes atrasa)
+    const phoneSelRef = useRef<{ start: number; end: number }>({
+        start: 0,
+        end: 0,
+    });
+
+    // últimos valores (para delta de dígitos)
+    const prevPhoneMaskedRef = useRef('');
+    const prevPhoneDigitsRef = useRef('');
 
     // ✅ onboarding gate
     const [profileComplete, setProfileComplete] = useState<boolean>(true);
@@ -404,8 +457,17 @@ export default function Profile() {
                 setEmail(u.email ?? '');
                 setAvatar(u.image?.trim() ? u.image : AVATAR_PLACEHOLDER);
 
-                setPhone(u.phone ? maskPhone(u.phone) : '');
+                const maskedPhone = u.phone ? maskPhone(u.phone) : '';
+                setPhone(maskedPhone);
                 setBirth(maskDate(formatBirthdayBR(u.birthday)));
+
+                // ✅ prepara refs do telefone
+                prevPhoneMaskedRef.current = maskedPhone;
+                prevPhoneDigitsRef.current = digitsOnly(maskedPhone);
+
+                const end = maskedPhone.length;
+                setPhoneSelection({ start: end, end });
+                phoneSelRef.current = { start: end, end };
 
                 // ✅ gate
                 const pc =
@@ -449,7 +511,6 @@ export default function Profile() {
         const pDigits = digitsOnly(phone);
         const b = birth.trim();
 
-        // telefone: mínimo razoável pra BR (DDD + 8/9 dígitos)
         if (!pDigits || pDigits.length < 10) {
             Alert.alert(
                 'Telefone obrigatório',
@@ -469,16 +530,65 @@ export default function Profile() {
         return true;
     }
 
+    // ✅ telefone com máscara + cursor estável no iOS
+    function handlePhoneSelectionChange(sel: { start: number; end: number }) {
+        setPhoneSelection(sel);
+        phoneSelRef.current = sel;
+    }
+
+    function applyPhoneSelectionNextFrame(start: number) {
+        const sel = { start, end: start };
+
+        if (Platform.OS === 'ios') {
+            requestAnimationFrame(() => {
+                setPhoneSelection(sel);
+                phoneSelRef.current = sel;
+            });
+        } else {
+            setPhoneSelection(sel);
+            phoneSelRef.current = sel;
+        }
+    }
+
+    function handlePhoneChangeText(t: string) {
+        const prevMasked = prevPhoneMaskedRef.current || '';
+        const prevDigits = prevPhoneDigitsRef.current || '';
+
+        const nextDigits = digitsOnly(t).slice(0, 11);
+        const nextMasked = maskPhone(nextDigits);
+
+        // caret ANTERIOR (mais confiável no iOS)
+        const prevSel = phoneSelRef.current;
+        const prevDigitsBefore = countDigitsBeforeIndex(
+            prevMasked,
+            prevSel.start
+        );
+
+        // delta de dígitos (digitou/apagou/colou)
+        const delta = nextDigits.length - prevDigits.length;
+
+        let desiredDigitsBefore = prevDigitsBefore;
+        if (delta > 0) desiredDigitsBefore = prevDigitsBefore + delta;
+        if (delta < 0)
+            desiredDigitsBefore = Math.max(0, prevDigitsBefore + delta);
+
+        const nextCursor = indexAfterNDigits(nextMasked, desiredDigitsBefore);
+
+        setPhone(nextMasked);
+        applyPhoneSelectionNextFrame(nextCursor);
+
+        prevPhoneMaskedRef.current = nextMasked;
+        prevPhoneDigitsRef.current = nextDigits;
+    }
+
     async function handleSave() {
         if (saving) return;
 
         const b = birth.trim();
 
-        // Se está em onboarding, vira obrigatório.
         if (needsOnboarding) {
             if (!validateRequiredForOnboarding()) return;
         } else {
-            // Fora onboarding, só valida se preencheu algo
             if (b.length > 0 && !/^\d{2}\/\d{2}\/\d{4}$/.test(b)) {
                 Alert.alert('Data inválida', 'Use o formato 00/00/0000.');
                 return;
@@ -489,7 +599,6 @@ export default function Profile() {
             }
         }
 
-        // ✅ payload “limpo” pro backend
         const phoneDigits = digitsOnly(phone);
         const birthdayISO = b ? birthBRToISO(b) : null;
 
@@ -560,7 +669,12 @@ export default function Profile() {
 
                     {/* TOPO FIXO */}
                     <View style={S.fixedTop}>
-                        <View style={safeTopStyle} />
+                        <View
+                            style={{
+                                height: insets.top,
+                                backgroundColor: UI.brand.primary,
+                            }}
+                        />
                         <View style={S.stickyRow}>
                             <Text style={S.title}>Perfil</Text>
                         </View>
@@ -568,7 +682,10 @@ export default function Profile() {
 
                     <ScrollView
                         style={S.scroll}
-                        contentContainerStyle={scrollContentStyle}
+                        contentContainerStyle={[
+                            S.scrollContent,
+                            { paddingBottom: 28 + insets.bottom },
+                        ]}
                         showsVerticalScrollIndicator={false}
                         keyboardShouldPersistTaps="handled"
                         keyboardDismissMode="interactive"
@@ -582,13 +699,13 @@ export default function Profile() {
                             pointerEvents="none"
                             style={[
                                 S.topBounceDark,
-                                { height: topBounceHeight },
+                                { height: insets.top + STICKY_ROW_H + 1400 },
                             ]}
                         />
 
                         <View
                             style={{
-                                height: TOP_OFFSET,
+                                height: insets.top + STICKY_ROW_H,
                                 backgroundColor: UI.colors.bg,
                             }}
                         />
@@ -596,7 +713,6 @@ export default function Profile() {
                         {/* BLOCO ESCURO */}
                         <View style={S.darkShell}>
                             <View style={S.darkInner}>
-                                {/* ✅ Card igual ao heroCard da Home */}
                                 <View style={S.heroCard}>
                                     <View style={S.profileHeroRow}>
                                         <View style={S.avatarWrap}>
@@ -712,10 +828,13 @@ export default function Profile() {
                                         placeholder="(00) 00000-0000"
                                         icon="phone"
                                         editable={!loadingMe && !saving}
-                                        onChangeText={(t) =>
-                                            setPhone(maskPhone(t))
+                                        onChangeText={handlePhoneChangeText}
+                                        onSelectionChange={
+                                            handlePhoneSelectionChange
                                         }
+                                        selection={phoneSelection}
                                         keyboardType="number-pad"
+                                        textContentType="telephoneNumber"
                                     />
 
                                     <Field
@@ -734,9 +853,6 @@ export default function Profile() {
                                 <Pressable
                                     style={[
                                         S.saveBtn,
-                                        needsOnboarding
-                                            ? S.saveBtnOnboarding
-                                            : null,
                                         saving || loadingMe
                                             ? { opacity: 0.85 }
                                             : null,
@@ -822,7 +938,6 @@ const S = StyleSheet.create({
         paddingBottom: UI.spacing.screenX,
     },
 
-    /* ✅ HERO (igual Home) */
     heroCard: {
         marginTop: 14,
         backgroundColor: 'rgba(124,108,255,0.22)',
@@ -838,7 +953,6 @@ const S = StyleSheet.create({
         alignItems: 'center',
     },
 
-    // ⭐ pill de nível (canto direito do card)
     levelPill: {
         height: 56,
         minWidth: 64,
@@ -997,9 +1111,6 @@ const S = StyleSheet.create({
         backgroundColor: '#141414',
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    saveBtnOnboarding: {
-        backgroundColor: '#141414',
     },
     saveBtnText: {
         color: '#FFFFFF',

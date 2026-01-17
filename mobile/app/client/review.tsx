@@ -4,7 +4,6 @@ import {
     Text,
     Pressable,
     StyleSheet,
-    SectionList,
     TextInput,
     ActivityIndicator,
     Alert,
@@ -13,6 +12,7 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
+import { KeyboardAwareSectionList } from 'react-native-keyboard-aware-scroll-view';
 
 import { UI } from '../../src/theme/client-theme';
 import { api } from '../../src/services/api';
@@ -519,7 +519,6 @@ export default function ClientReview() {
             if (item.type === 'ACTIONS') {
                 return (
                     <View style={S.block}>
-                        {/* ✅ igual "Ver todos os produtos" da Home (sem ícone) */}
                         <Pressable
                             style={[
                                 S.primaryHomeBtn,
@@ -537,7 +536,6 @@ export default function ClientReview() {
                             )}
                         </Pressable>
 
-                        {/* ✅ igual "Ver detalhes" da Home (sem ícone) */}
                         <Pressable
                             style={[
                                 S.secondaryHomeBtn,
@@ -581,6 +579,8 @@ export default function ClientReview() {
         [insets.top]
     );
 
+    const listPadBottom = useMemo(() => 28 + insets.bottom, [insets.bottom]);
+
     return (
         <ScreenGate dataReady={dataReady} skeleton={<HistorySkeleton />}>
             <View style={S.page}>
@@ -614,22 +614,30 @@ export default function ClientReview() {
                     </View>
                 </View>
 
-                <SectionList
-                    sections={sections}
-                    keyExtractor={keyExtractor}
+                <KeyboardAwareSectionList
+                    sections={sections as any}
+                    keyExtractor={keyExtractor as any}
                     renderItem={renderItem as any}
                     renderSectionHeader={renderSectionHeader as any}
                     stickySectionHeadersEnabled={false}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={[
                         S.listContent,
-                        { paddingTop: listPadTop },
+                        {
+                            paddingTop: listPadTop,
+                            paddingBottom: listPadBottom,
+                        },
                     ]}
                     style={S.list}
-                    removeClippedSubviews
+                    removeClippedSubviews={false}
                     initialNumToRender={10}
                     maxToRenderPerBatch={12}
                     windowSize={9}
+                    keyboardDismissMode="on-drag"
+                    keyboardShouldPersistTaps="always"
+                    enableOnAndroid
+                    extraScrollHeight={16}
+                    keyboardOpeningTime={0}
                 />
             </View>
         </ScreenGate>
@@ -809,7 +817,6 @@ const S = StyleSheet.create({
         fontWeight: '600',
     },
 
-    // ✅ Botão principal igual ao "Ver todos os produtos" (Home)
     primaryHomeBtn: {
         height: 44,
         borderRadius: 999,
@@ -825,7 +832,6 @@ const S = StyleSheet.create({
         fontWeight: '700',
     },
 
-    // ✅ Botão secundário igual ao "Ver detalhes" (Home)
     secondaryHomeBtn: {
         marginTop: 12,
         height: 40,

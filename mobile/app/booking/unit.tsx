@@ -114,7 +114,6 @@ export default function BookingUnit() {
     const [units, setUnits] = useState<Unit[]>([]);
     const [currentUnitId, setCurrentUnitId] = useState<string | null>(null);
 
-    // ✅ gate: sempre libera depois do primeiro ciclo (mesmo que bypass navegue)
     const didBootRef = useRef(false);
     const [dataReady, setDataReady] = useState(false);
 
@@ -129,10 +128,10 @@ export default function BookingUnit() {
 
     const goBack = useCallback(() => router.back(), [router]);
 
-    const goService = useCallback(
+    const goProfessional = useCallback(
         (u: Unit, replace?: boolean) => {
             const nav = {
-                pathname: '/booking/service',
+                pathname: '/booking/professional',
                 params: {
                     unitId: u.id,
                     unitName: u.name,
@@ -141,10 +140,10 @@ export default function BookingUnit() {
             } as const;
 
             if (__DEV__) {
-                console.log('[booking/unit] goService:', {
+                console.log('[booking/unit] goProfessional:', {
                     unitId: u.id,
                     unitName: u.name,
-                    goEdit: isEdit,
+                    isEdit,
                     appointmentId: isEdit ? appointmentId : undefined,
                     replace: !!replace,
                 });
@@ -190,16 +189,10 @@ export default function BookingUnit() {
 
             setCurrentUnitId(res.appointment.unitId ?? null);
         } catch (err: any) {
-            console.log(
-                '[booking/unit][edit] error:',
-                err?.data ?? err?.message ?? err
-            );
-
             const msg =
                 err?.data?.error ||
                 err?.message ||
                 'Não foi possível carregar o agendamento para edição.';
-
             Alert.alert('Erro', String(msg));
             router.back();
         }
@@ -220,37 +213,31 @@ export default function BookingUnit() {
 
             if (__DEV__) console.log('[booking/unit] units:', list.length);
 
-            // ✅ bypass: 1 unidade
+            // ✅ bypass: 1 unidade -> PROFESSIONAL
             if (list.length === 1) {
-                goService(list[0], true);
+                goProfessional(list[0], true);
                 return;
             }
 
-            // ✅ bypass: edit com unit atual
+            // ✅ bypass: edit com unit atual -> PROFESSIONAL
             if (isEdit && currentUnitId) {
                 const current = list.find((u) => u.id === currentUnitId);
                 if (current) {
-                    goService(current, true);
+                    goProfessional(current, true);
                     return;
                 }
             }
         } catch (err: any) {
-            console.log(
-                '[booking/unit] error:',
-                err?.data ?? err?.message ?? err
-            );
-
             const msg =
                 err?.data?.error ||
                 err?.message ||
                 'Não foi possível carregar as unidades. Tente novamente.';
-
             Alert.alert('Erro', String(msg));
             setUnits([]);
         } finally {
             setLoading(false);
         }
-    }, [currentUnitId, goService, isEdit]);
+    }, [currentUnitId, goProfessional, isEdit]);
 
     useEffect(() => {
         let alive = true;
@@ -277,11 +264,11 @@ export default function BookingUnit() {
         ({ item, index }: ListRenderItemInfo<Unit>) => (
             <UnitRow
                 item={item}
-                onPress={() => goService(item)}
+                onPress={() => goProfessional(item)}
                 showDivider={index < units.length - 1}
             />
         ),
-        [goService, units.length]
+        [goProfessional, units.length]
     );
 
     return (
@@ -317,7 +304,6 @@ export default function BookingUnit() {
                 />
                 <View style={{ height: TOP_OFFSET }} />
 
-                {/* ⬛ darkShell com raio (agora aparece pq o fundo atrás é branco) */}
                 <View style={S.darkShell}>
                     <View style={S.darkInner}>
                         <View style={S.heroCard}>
@@ -381,7 +367,6 @@ export default function BookingUnit() {
 }
 
 const S = StyleSheet.create({
-    // ✅ CHAVE: fundo branco atrás do darkShell (pra recorte aparecer)
     page: { flex: 1, backgroundColor: UI.colors.white },
 
     fixedTop: { position: 'absolute', left: 0, right: 0, top: 0, zIndex: 999 },
@@ -427,7 +412,6 @@ const S = StyleSheet.create({
         paddingBottom: UI.spacing.screenX,
     },
 
-    // ⚠️ card NÃO mexe (mantive o que você tinha antes do pedido do “tema”)
     heroCard: {
         marginTop: 14,
         backgroundColor: 'rgba(124,108,255,0.22)',

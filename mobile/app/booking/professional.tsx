@@ -26,66 +26,45 @@ import { UI } from '../../src/theme/client-theme';
 import { api } from '../../src/services/api';
 
 import { ScreenGate } from '../../src/components/layout/ScreenGate';
-import { BookingProfessionalSkeleton } from '../../src/components/loading/BookingProfessionalSkeleton';
+import { BookingServiceSkeleton } from '../../src/components/loading/BookingServiceSkeleton';
 
 const STICKY_ROW_H = 74;
 
-type Barber = {
+type Professional = {
     id: string;
     name: string;
-    imageUrl?: string | null; // ✅ NOVO
-};
-
-type BarbersResponse = {
-    ok?: boolean;
-    barbers?: Barber[];
-    error?: string;
-};
-
-const BarberAvatar = memo(function BarberAvatar({
-    imageUrl,
-}: {
     imageUrl?: string | null;
-}) {
-    const [failed, setFailed] = useState(false);
+};
 
-    const uri = useMemo(() => String(imageUrl ?? '').trim(), [imageUrl]);
+type AppointmentGetResponse = {
+    ok: boolean;
+    appointment: {
+        id: string;
+        status: string;
 
-    // ✅ importante: se a URL mudar, tenta carregar de novo
-    useEffect(() => {
-        setFailed(false);
-    }, [uri]);
+        unitId: string | null;
+        unitName: string | null;
 
-    const canShowImage = !!uri && !failed;
+        serviceId: string | null;
+        serviceName: string | null;
 
-    return (
-        <View style={S.avatarWrap}>
-            {canShowImage ? (
-                <Image
-                    source={{ uri }}
-                    style={S.avatarImg}
-                    onError={() => setFailed(true)}
-                />
-            ) : (
-                <View style={S.avatarFallback}>
-                    <FontAwesome
-                        name="user"
-                        size={18}
-                        color={UI.brand.primary}
-                    />
-                </View>
-            )}
-        </View>
-    );
-});
+        barberId: string | null; // legado (profissional)
+        barberName: string | null;
 
-const BarberRow = memo(function BarberRow({
+        dateISO: string;
+        startTime: string;
+
+        canReschedule?: boolean;
+    };
+};
+
+const ProfessionalRow = memo(function ProfessionalRow({
     item,
     onPress,
     showDivider,
     isCurrent,
 }: {
-    item: Barber;
+    item: Professional;
     onPress: () => void;
     showDivider: boolean;
     isCurrent: boolean;
@@ -93,16 +72,23 @@ const BarberRow = memo(function BarberRow({
     return (
         <Pressable onPress={onPress} style={S.row}>
             <View style={S.rowLeft}>
-                <BarberAvatar imageUrl={item.imageUrl} />
+                <View style={S.avatar}>
+                    {item.imageUrl ? (
+                        <Image
+                            source={{ uri: item.imageUrl }}
+                            style={S.avatarImg}
+                        />
+                    ) : (
+                        <FontAwesome
+                            name="user"
+                            size={16}
+                            color={UI.brand.primary}
+                        />
+                    )}
+                </View>
 
                 <View style={{ flex: 1 }}>
-                    <View
-                        style={{
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            gap: 8,
-                        }}
-                    >
+                    <View style={S.rowTitleLine}>
                         <Text style={S.rowTitle} numberOfLines={1}>
                             {item.name}
                         </Text>
@@ -115,9 +101,7 @@ const BarberRow = memo(function BarberRow({
                     </View>
 
                     <Text style={S.rowMeta}>
-                        {isCurrent
-                            ? 'Profissional atual'
-                            : 'Toque para escolher'}
+                        Toque para escolher o profissional
                     </Text>
                 </View>
             </View>
@@ -139,37 +123,18 @@ export default function BookingProfessional() {
     const params = useLocalSearchParams<{
         unitId?: string;
         unitName?: string;
-        serviceId?: string;
-        serviceName?: string;
-        serviceDurationMinutes?: string;
 
         mode?: string;
         appointmentId?: string;
-
-        currentBarberId?: string;
-        currentScheduleAt?: string;
-        currentDateISO?: string;
-        currentStartTime?: string;
     }>();
 
-    const unitId = useMemo(() => String(params.unitId ?? ''), [params.unitId]);
+    const unitId = useMemo(
+        () => String(params.unitId ?? '').trim(),
+        [params.unitId]
+    );
     const unitName = useMemo(
-        () => String(params.unitName ?? ''),
+        () => String(params.unitName ?? '').trim(),
         [params.unitName]
-    );
-
-    const serviceId = useMemo(
-        () => String(params.serviceId ?? ''),
-        [params.serviceId]
-    );
-    const serviceName = useMemo(
-        () => String(params.serviceName ?? ''),
-        [params.serviceName]
-    );
-
-    const serviceDurationMinutes = useMemo(
-        () => String(params.serviceDurationMinutes ?? ''),
-        [params.serviceDurationMinutes]
     );
 
     const isEdit = String(params.mode ?? '') === 'edit';
@@ -178,172 +143,215 @@ export default function BookingProfessional() {
         [params.appointmentId]
     );
 
-    const currentBarberId = useMemo(
-        () => String(params.currentBarberId ?? '').trim(),
-        [params.currentBarberId]
-    );
-    const currentScheduleAt = useMemo(
-        () => String(params.currentScheduleAt ?? '').trim(),
-        [params.currentScheduleAt]
-    );
-    const currentDateISO = useMemo(
-        () => String(params.currentDateISO ?? '').trim(),
-        [params.currentDateISO]
-    );
-    const currentStartTime = useMemo(
-        () => String(params.currentStartTime ?? '').trim(),
-        [params.currentStartTime]
-    );
-
     const [loading, setLoading] = useState(true);
-    const [barbers, setBarbers] = useState<Barber[]>([]);
+    const [professionals, setProfessionals] = useState<Professional[]>([]);
 
-    const didBarbersRef = useRef(false);
+    const [currentProfessionalId, setCurrentProfessionalId] =
+        useState<string>('');
+    const [currentServiceId, setCurrentServiceId] = useState<string>('');
+
+    const didEditRef = useRef(false);
+    const didListRef = useRef(false);
     const [dataReady, setDataReady] = useState(false);
 
     const TOP_OFFSET = insets.top + STICKY_ROW_H;
-
     const safeTopStyle = useMemo(
         () => ({ height: insets.top, backgroundColor: UI.brand.primary }),
         [insets.top]
     );
-
     const topBounceHeight = useMemo(() => TOP_OFFSET + 1400, [TOP_OFFSET]);
 
     const goBack = useCallback(() => router.back(), [router]);
 
-    const goTime = useCallback(
-        (b: Barber, replace?: boolean) => {
-            const nav = {
-                pathname: '/booking/time',
-                params: {
-                    unitId,
-                    unitName,
-                    serviceId,
-                    serviceName,
-                    barberId: b.id,
-                    barberName: b.name,
+    const recomputeReady = useCallback(() => {
+        const ok = (isEdit ? didEditRef.current : true) && didListRef.current;
+        if (ok) setDataReady(true);
+    }, [isEdit]);
 
-                    ...(serviceDurationMinutes
-                        ? { serviceDurationMinutes }
-                        : {}),
+    const fetchCurrentAppointmentIfNeeded = useCallback(async () => {
+        if (!isEdit) return;
 
-                    ...(isEdit ? { mode: 'edit', appointmentId } : {}),
+        if (!appointmentId) {
+            Alert.alert('Ops', 'appointmentId ausente no modo alterar.');
+            router.back();
+            return;
+        }
 
-                    ...(isEdit
-                        ? {
-                              currentBarberId: currentBarberId || '',
-                              currentScheduleAt: currentScheduleAt || '',
-                              currentDateISO: currentDateISO || '',
-                              currentStartTime: currentStartTime || '',
-                          }
-                        : {}),
-                },
-            } as const;
-
-            if (replace) router.replace(nav);
-            else router.push(nav);
-        },
-        [
-            appointmentId,
-            currentBarberId,
-            currentDateISO,
-            currentScheduleAt,
-            currentStartTime,
-            isEdit,
-            router,
-            serviceDurationMinutes,
-            serviceId,
-            serviceName,
-            unitId,
-            unitName,
-        ]
-    );
-
-    const fetchBarbers = useCallback(async () => {
         try {
-            if (!unitId || !serviceId) {
+            const res = await api.get<AppointmentGetResponse>(
+                `/api/mobile/me/appointments/${encodeURIComponent(
+                    appointmentId
+                )}`
+            );
+
+            if (!res?.ok || !res?.appointment) {
                 Alert.alert(
-                    'Ops',
-                    'Parâmetros do agendamento estão incompletos.'
+                    'Erro',
+                    'Não foi possível carregar o agendamento para edição.'
                 );
                 router.back();
                 return;
             }
 
+            if (res.appointment.canReschedule === false) {
+                Alert.alert(
+                    'Não é possível alterar',
+                    'Este agendamento não pode ser alterado agora.'
+                );
+                router.back();
+                return;
+            }
+
+            // legado -> profissional atual
+            setCurrentProfessionalId(
+                String(res.appointment.barberId ?? '').trim()
+            );
+            setCurrentServiceId(String(res.appointment.serviceId ?? '').trim());
+        } catch (err: any) {
+            const msg =
+                err?.data?.error ||
+                err?.message ||
+                'Não foi possível carregar o agendamento para edição.';
+            Alert.alert('Erro', String(msg));
+            router.back();
+        } finally {
+            didEditRef.current = true;
+            recomputeReady();
+        }
+    }, [appointmentId, isEdit, recomputeReady, router]);
+
+    const fetchProfessionals = useCallback(async () => {
+        if (!unitId) {
+            Alert.alert(
+                'Ops',
+                'Unidade não informada. Volte e tente novamente.'
+            );
+            router.back();
+            return;
+        }
+
+        try {
             setLoading(true);
 
-            const res = await api.get<BarbersResponse>(
-                `/api/mobile/barbers?unitId=${encodeURIComponent(
-                    unitId
-                )}&serviceId=${encodeURIComponent(serviceId)}`
-            );
+            // ✅ novo: só depende de unitId
+            const res = await api.get<{
+                ok: boolean;
+                professionals: Professional[];
+            }>(`/api/mobile/professional?unitId=${encodeURIComponent(unitId)}`);
 
-            if ((res as any)?.error)
-                throw new Error(String((res as any).error));
+            const list = (res?.professionals ?? [])
+                .slice()
+                .sort((a, b) =>
+                    String(a?.name ?? '').localeCompare(String(b?.name ?? ''))
+                );
 
-            const list: Barber[] = res?.barbers ?? [];
-            setBarbers(list);
+            setProfessionals(list);
+
+            // ✅ bypass: se tiver só 1
+            if (list.length === 1) {
+                router.replace({
+                    pathname: '/booking/service',
+                    params: {
+                        unitId,
+                        unitName,
+                        professionalId: list[0].id,
+                        professionalName: list[0].name,
+                        ...(isEdit ? { mode: 'edit', appointmentId } : {}),
+                    },
+                });
+                return;
+            }
+
+            // ✅ bypass: edit com profissional atual (se existir na lista)
+            if (isEdit && currentProfessionalId) {
+                const cur = list.find((p) => p.id === currentProfessionalId);
+                if (cur) {
+                    router.replace({
+                        pathname: '/booking/service',
+                        params: {
+                            unitId,
+                            unitName,
+                            professionalId: cur.id,
+                            professionalName: cur.name,
+                            mode: 'edit',
+                            appointmentId,
+                        },
+                    });
+                    return;
+                }
+            }
         } catch (err: any) {
             console.log(
                 '[booking/professional] error:',
                 err?.data ?? err?.message ?? err
             );
-
-            const msg = String(err?.message ?? '');
-            if (
-                msg.toLowerCase().includes('não autorizado') ||
-                err?.status === 401
-            ) {
-                Alert.alert('Sessão expirada', 'Faça login novamente.');
-                setBarbers([]);
-                return;
-            }
-
-            Alert.alert(
-                'Erro',
-                'Não foi possível carregar os profissionais. Tente novamente.'
-            );
-            setBarbers([]);
+            Alert.alert('Erro', 'Não foi possível carregar os profissionais.');
+            setProfessionals([]);
         } finally {
             setLoading(false);
-            didBarbersRef.current = true;
-            setDataReady(true);
+            didListRef.current = true;
+            recomputeReady();
         }
-    }, [router, serviceId, unitId]);
+    }, [
+        appointmentId,
+        currentProfessionalId,
+        isEdit,
+        recomputeReady,
+        router,
+        unitId,
+        unitName,
+    ]);
 
     useEffect(() => {
-        fetchBarbers();
-    }, [fetchBarbers]);
+        let alive = true;
 
-    useEffect(() => {
-        if (loading) return;
-        if (!barbers || barbers.length !== 1) return;
-        goTime(barbers[0], true);
-    }, [barbers, goTime, loading]);
+        (async () => {
+            if (isEdit) await fetchCurrentAppointmentIfNeeded();
+            if (!alive) return;
+            await fetchProfessionals();
+        })();
 
-    const key = useCallback((item: Barber) => item.id, []);
+        return () => {
+            alive = false;
+        };
+    }, [fetchCurrentAppointmentIfNeeded, fetchProfessionals, isEdit]);
+
+    const goService = useCallback(
+        (p: Professional) => {
+            router.push({
+                pathname: '/booking/service',
+                params: {
+                    unitId,
+                    unitName,
+                    professionalId: p.id,
+                    professionalName: p.name,
+                    ...(isEdit ? { mode: 'edit', appointmentId } : {}),
+                },
+            });
+        },
+        [appointmentId, isEdit, router, unitId, unitName]
+    );
+
+    const key = useCallback((item: Professional) => item.id, []);
     const render = useCallback(
-        ({ item, index }: ListRenderItemInfo<Barber>) => (
-            <BarberRow
+        ({ item, index }: ListRenderItemInfo<Professional>) => (
+            <ProfessionalRow
                 item={item}
-                isCurrent={!!currentBarberId && item.id === currentBarberId}
-                onPress={() => goTime(item)}
-                showDivider={index < barbers.length - 1}
+                isCurrent={
+                    !!currentProfessionalId && item.id === currentProfessionalId
+                }
+                onPress={() => goService(item)}
+                showDivider={index < professionals.length - 1}
             />
         ),
-        [barbers.length, currentBarberId, goTime]
+        [currentProfessionalId, goService, professionals.length]
     );
 
     return (
-        <ScreenGate
-            dataReady={dataReady || didBarbersRef.current}
-            skeleton={<BookingProfessionalSkeleton />}
-        >
+        <ScreenGate dataReady={dataReady} skeleton={<BookingServiceSkeleton />}>
             <View style={S.page}>
                 <View style={S.fixedTop}>
                     <View style={safeTopStyle} />
-
                     <View style={S.stickyRow}>
                         <Pressable
                             onPress={goBack}
@@ -377,10 +385,8 @@ export default function BookingProfessional() {
                             <Text style={S.heroTitle}>
                                 Escolha o profissional
                             </Text>
-
                             <Text style={S.heroDesc}>
                                 {unitName ? `Unidade: ${unitName}` : ' '}
-                                {serviceName ? `\nServiço: ${serviceName}` : ''}
                             </Text>
                         </View>
                     </View>
@@ -388,35 +394,24 @@ export default function BookingProfessional() {
 
                 <View style={S.whiteArea}>
                     <View style={S.whiteContent}>
-                        <Text style={S.sectionTitle}>Profissionais</Text>
-
                         {loading ? (
                             <View style={S.centerBox}>
                                 <ActivityIndicator />
                                 <Text style={S.centerText}>Carregando…</Text>
                             </View>
-                        ) : barbers.length === 0 ? (
+                        ) : professionals.length === 0 ? (
                             <View style={S.centerBox}>
                                 <Text style={S.emptyTitle}>
                                     Nenhum profissional disponível
                                 </Text>
                                 <Text style={S.centerText}>
                                     Não encontramos profissionais ativos para
-                                    esse serviço.
+                                    essa unidade.
                                 </Text>
-
-                                <Pressable
-                                    style={S.secondaryBtn}
-                                    onPress={fetchBarbers}
-                                >
-                                    <Text style={S.secondaryBtnText}>
-                                        Tentar novamente
-                                    </Text>
-                                </Pressable>
                             </View>
                         ) : (
                             <FlatList
-                                data={barbers}
+                                data={professionals}
                                 keyExtractor={key}
                                 renderItem={render}
                                 showsVerticalScrollIndicator={false}
@@ -433,13 +428,7 @@ export default function BookingProfessional() {
 const S = StyleSheet.create({
     page: { flex: 1, backgroundColor: UI.colors.white },
 
-    fixedTop: {
-        position: 'absolute',
-        left: 0,
-        right: 0,
-        top: 0,
-        zIndex: 999,
-    },
+    fixedTop: { position: 'absolute', left: 0, right: 0, top: 0, zIndex: 999 },
 
     stickyRow: {
         height: STICKY_ROW_H,
@@ -454,11 +443,11 @@ const S = StyleSheet.create({
         width: 42,
         height: 42,
         borderRadius: 21,
+        backgroundColor: UI.brand.primary,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: UI.brand.primary,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.22)',
+        borderColor: 'rgba(255,255,255,0.25)',
     },
 
     title: { color: UI.colors.text, fontSize: 16, fontWeight: '700' },
@@ -477,6 +466,7 @@ const S = StyleSheet.create({
         borderBottomRightRadius: 28,
         overflow: 'hidden',
     },
+
     darkInner: {
         paddingHorizontal: UI.spacing.screenX,
         paddingBottom: UI.spacing.screenX,
@@ -506,13 +496,6 @@ const S = StyleSheet.create({
         flex: 1,
     },
 
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 12,
-        color: UI.brand.primaryText,
-    },
-
     centerBox: { paddingVertical: 18, alignItems: 'center', gap: 10 },
     centerText: {
         color: 'rgba(0,0,0,0.55)',
@@ -526,17 +509,6 @@ const S = StyleSheet.create({
         textAlign: 'center',
     },
 
-    secondaryBtn: {
-        marginTop: 8,
-        height: 52,
-        borderRadius: 999,
-        backgroundColor: 'rgba(0,0,0,0.06)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: 18,
-    },
-    secondaryBtnText: { color: UI.brand.primaryText, fontWeight: '700' },
-
     row: {
         paddingVertical: 16,
         flexDirection: 'row',
@@ -546,29 +518,18 @@ const S = StyleSheet.create({
     },
     rowLeft: { flexDirection: 'row', gap: 12, flex: 1, alignItems: 'center' },
 
-    // ✅ Avatar no padrão do Profile (borda + primary) e com retry se URL mudar
-    avatarWrap: {
-        width: 50,
-        height: 50,
+    avatar: {
+        width: 75,
+        height: 75,
         borderRadius: 12,
-        overflow: 'hidden',
-        borderWidth: 2,
-        borderColor: UI.brand.primary,
-        backgroundColor: 'rgba(124,108,255,0.12)',
-    },
-    avatarImg: {
-        width: 50,
-        height: 50,
-        borderRadius: 12,
-    },
-    avatarFallback: {
-        width: 50,
-        height: 50,
-        borderRadius: 12,
+        backgroundColor: 'rgba(124,108,255)',
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'hidden',
     },
+    avatarImg: { width: 70, height: 70, borderRadius: 12 },
 
+    rowTitleLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     rowTitle: { fontWeight: '700', color: UI.brand.primaryText, fontSize: 14 },
     rowMeta: { marginTop: 3, fontSize: 12, color: 'rgba(0,0,0,0.55)' },
 

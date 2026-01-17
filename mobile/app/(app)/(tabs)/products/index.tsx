@@ -418,8 +418,6 @@ const FeaturedCarousel = memo(function FeaturedCarousel({
                     <View style={S.featureRow}>
                         <View style={S.featureLeft}>
                             <View style={S.featureTopLine}>
-                                <Text style={S.featureKicker}>Destaques</Text>
-
                                 {/* ✅ ANIVERSÁRIO NÃO APARECE AQUI (só no topo) */}
                                 {item.badge?.label ? (
                                     <View style={[S.featureBadge]}>
@@ -572,6 +570,69 @@ const FeaturedCarousel = memo(function FeaturedCarousel({
         </View>
     );
 });
+
+// ✅ normaliza url de imagem vinda da API:
+// - aceita http/https
+// - se vier "/uploads/..." vira "<API_BASE_URL>/uploads/..."
+// - se vier "uploads/..." também vira "<API_BASE_URL>/uploads/..."
+// - se vier vazia, retorna null
+function normalizeApiImageUrl(raw: unknown): string | null {
+    const s = String(raw ?? '').trim();
+    if (!s) return null;
+
+    const lower = s.toLowerCase();
+    const isHttp = lower.startsWith('http://') || lower.startsWith('https://');
+
+    // helper: host do "mundo real" (mesmo que defaults.baseURL seja null)
+    const getRealHostOrigin = () => {
+        try {
+            // axios: tenta montar uma uri completa
+            const full = (api as any)?.getUri
+                ? (api as any).getUri({ url: '/api/health' })
+                : null;
+
+            if (typeof full === 'string' && full.includes('://')) {
+                const u = new URL(full);
+                return `${u.protocol}//${u.host}`; // ex: https://xxxx.ngrok-free.app
+            }
+        } catch {}
+
+        // fallback manual (se nada der certo)
+        // 👇 TROQUE para seu host/IP/NGROK se necessário
+        return null as string | null;
+    };
+
+    // 1) se já é absoluta, mas é localhost -> reescreve
+    if (isHttp) {
+        try {
+            const u = new URL(s);
+            const host = u.hostname;
+
+            if (host === 'localhost' || host === '127.0.0.1') {
+                const real = getRealHostOrigin();
+                if (!real) return s; // não piora
+                return `${real}${u.pathname}${u.search}`;
+            }
+
+            return s;
+        } catch {
+            return s;
+        }
+    }
+
+    // 2) se é relativa, tenta usar baseURL (se existir)
+    const baseFromApi =
+        (api as any)?.defaults?.baseURL ||
+        (api as any)?.defaults?.baseUrl ||
+        '';
+
+    const base = String(baseFromApi ?? '').trim();
+    if (!base) return null;
+
+    const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
+    const path = s.startsWith('/') ? s : `/${s}`;
+    return `${cleanBase}${path}`;
+}
 
 type ProductsHeaderProps = {
     topBounceHeight: number;
@@ -1314,7 +1375,7 @@ export default function Products() {
             const mapped: Product[] = all
                 .map((p) => {
                     const image: string =
-                        p.imageUrl ||
+                        normalizeApiImageUrl(p.imageUrl) ||
                         'https://picsum.photos/seed/product-placeholder/600/420';
 
                     const basePrice = safeNumber((p as any)?.basePrice, NaN);
@@ -1411,11 +1472,40 @@ export default function Products() {
 
             const res = (await api.get('/api/mobile/products/featured')) as {
                 items?: FeaturedApiProduct[];
+                products?: FeaturedApiProduct[];
             };
 
-            const list: FeaturedApiProduct[] = Array.isArray(res?.items)
-                ? res.items
-                : [];
+            const list: FeaturedApiProduct[] = Array.isArray(
+                (res as any)?.items
+            )
+                ? ((res as any).items as FeaturedApiProduct[])
+                : Array.isArray((res as any)?.products)
+                  ? ((res as any).products as FeaturedApiProduct[])
+                  : [];
+
+            // ============================
+            // 🔎 DEBUG (1 vez por fetch)
+            // ============================
+            try {
+                const baseURL =
+                    (api as any)?.defaults?.baseURL ||
+                    (api as any)?.defaults?.baseUrl ||
+                    null;
+
+                const first = list?.[0] ?? null;
+
+                console.log('[featured] baseURL:', baseURL);
+                console.log('[featured] count:', list.length);
+                console.log('[featured] first raw:', first);
+                console.log(
+                    '[featured] first imageUrl:',
+                    (first as any)?.imageUrl ?? null
+                );
+                console.log(
+                    '[featured] first normalized:',
+                    normalizeApiImageUrl((first as any)?.imageUrl)
+                );
+            } catch {}
 
             const mapped: FeaturedProduct[] = list
                 .map((p) => {
@@ -1450,10 +1540,15 @@ export default function Products() {
                         ? finalPrice
                         : safeNumber(p.price, 0);
 
+                    // ✅ imagem: normaliza + fallback pra garantir que algo apareça
+                    const img =
+                        normalizeApiImageUrl((p as any)?.imageUrl) ||
+                        'https://picsum.photos/seed/featured-placeholder/600/420';
+
                     return {
-                        id: String(p.id),
-                        title: String(p.name ?? 'Produto'),
-                        image: p.imageUrl ? String(p.imageUrl) : null,
+                        id: String((p as any)?.id ?? ''),
+                        title: String((p as any)?.name ?? 'Produto'),
+                        image: img,
 
                         price: final,
                         basePrice: Number.isFinite(basePrice)
@@ -1465,7 +1560,9 @@ export default function Products() {
                         hasDiscount,
                         badge: badge?.label ? badge : null,
 
-                        unitName: p.unitName ? String(p.unitName) : undefined,
+                        unitName: (p as any)?.unitName
+                            ? String((p as any).unitName)
+                            : undefined,
                     };
                 })
                 .filter((p) => !!p.id);
@@ -2285,14 +2382,14 @@ const S = StyleSheet.create({
     featureTitle: {
         color: UI.colors.text,
         fontSize: 20,
-        fontWeight: '900',
+        fontWeight: '500',
         marginTop: 8,
     },
 
     featurePrice: {
         color: UI.colors.text,
         fontSize: 18,
-        fontWeight: '900',
+        fontWeight: '500',
     },
 
     featureOldPrice: {
