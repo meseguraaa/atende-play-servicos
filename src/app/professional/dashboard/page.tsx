@@ -22,9 +22,12 @@ type SearchParamsShape = {
     month?: string; // yyyy-MM (filtro do MÊS)
 };
 
+/**
+ * ✅ Next (versões recentes) pode tipar `searchParams` como Promise nos tipos gerados.
+ * Para evitar conflito com `.next/dev/types/...`, tratamos como Promise<any>.
+ */
 type PageProps = {
-    // ✅ Next (App Router) pode entregar searchParams como Promise
-    searchParams?: Promise<SearchParamsShape> | SearchParamsShape;
+    searchParams?: Promise<any>;
 };
 
 function normalizeString(v: unknown): string {
@@ -148,10 +151,8 @@ function safeAdd(a: number, b: number) {
 export default async function ProfessionalDashboardPage({
     searchParams,
 }: PageProps) {
-    // ✅ Next 15: searchParams pode ser Promise -> unwrap aqui
-    const sp = (await Promise.resolve(searchParams)) as
-        | SearchParamsShape
-        | undefined;
+    // ✅ Unwrap do Next (searchParams pode vir como Promise)
+    const sp = (await searchParams) as SearchParamsShape | undefined;
 
     // ✅ sessão do profissional no SERVER
     const session = await requireProfessionalSession();

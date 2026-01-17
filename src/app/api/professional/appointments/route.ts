@@ -98,9 +98,12 @@ export async function GET(request: Request) {
         }
 
         const url = new URL(request.url);
-        const dateParam = url.searchParams.get('date');
+        const dateParam = url.searchParams.get('date'); // string | null
 
-        const ymd = parseDateParam(dateParam) ?? getSaoPauloTodayYmd();
+        // ✅ Normaliza para o tipo esperado (string | undefined)
+        const dateParamSafe = dateParam ?? undefined;
+
+        const ymd = parseDateParam(dateParamSafe) ?? getSaoPauloTodayYmd();
         const { startUtc, endUtc } = buildSaoPauloDayUtcRange(ymd);
 
         const appointments = await prisma.appointment.findMany({
