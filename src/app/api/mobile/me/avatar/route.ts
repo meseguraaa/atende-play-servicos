@@ -68,11 +68,20 @@ export async function POST(req: Request) {
 
     let auth: MobileTokenPayload;
     try {
-        const payload = await verifyAppJwt(bearer);
+        const payload = (await verifyAppJwt(bearer)) as any;
+
+        const sub =
+            typeof payload?.sub === 'string' ? String(payload.sub).trim() : '';
+        if (!sub) {
+            return NextResponse.json(
+                { error: 'invalid_token' },
+                { status: 401 }
+            );
+        }
 
         const companyId =
-            typeof (payload as any)?.companyId === 'string'
-                ? String((payload as any).companyId).trim()
+            typeof payload?.companyId === 'string'
+                ? String(payload.companyId).trim()
                 : '';
 
         if (!companyId) {
@@ -83,8 +92,8 @@ export async function POST(req: Request) {
         }
 
         auth = {
-            sub: payload.sub,
-            role: (payload as any)?.role,
+            sub,
+            role: payload?.role,
             companyId,
         };
     } catch (err) {
