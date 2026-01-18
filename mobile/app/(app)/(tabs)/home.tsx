@@ -495,10 +495,12 @@ export default function Home() {
         [user?.name, user?.email]
     );
 
-    const avatarUrl = useMemo(
-        () => user?.image || 'https://i.pravatar.cc/200?img=12',
-        [user?.image]
-    );
+    const avatarUrl = useMemo(() => {
+        const raw = String(user?.image ?? '').trim();
+        return raw.length ? raw : null; // null = sem foto (cadastro manual)
+    }, [user?.image]);
+
+    const hasAvatar = useMemo(() => !!avatarUrl, [avatarUrl]);
 
     // ✅ helper: sempre envia x-company-id nas requests (tenant-safe)
     const withTenantHeaders = useCallback(() => {
@@ -1403,10 +1405,21 @@ export default function Home() {
 
                     <View style={S.stickyRow}>
                         <View style={S.profileRow}>
-                            <Image
-                                source={{ uri: avatarUrl }}
-                                style={S.avatar}
-                            />
+                            {hasAvatar ? (
+                                <Image
+                                    source={{ uri: avatarUrl as string }}
+                                    style={S.avatar}
+                                />
+                            ) : (
+                                <View style={S.avatarFallback}>
+                                    <FontAwesome
+                                        name="user"
+                                        size={18}
+                                        color={UI.colors.white}
+                                    />
+                                </View>
+                            )}
+
                             <View>
                                 <Text style={S.hello}>Olá,</Text>
                                 <Text style={S.name} numberOfLines={1}>
@@ -1962,5 +1975,15 @@ const S = StyleSheet.create({
         fontSize: 13,
         fontWeight: '600',
         textAlign: 'center',
+    },
+    avatarFallback: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        backgroundColor: UI.brand.primary,
+        borderWidth: 2,
+        borderColor: UI.brand.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });

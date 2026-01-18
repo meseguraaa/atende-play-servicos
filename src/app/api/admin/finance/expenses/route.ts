@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma';
 import { requireAdminForModuleApi } from '@/lib/admin-permissions';
 import { endOfMonth, format, isValid, parse, startOfMonth } from 'date-fns';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 type CreateExpensePayload = {
     month: string; // "yyyy-MM"
     unitId: string; // obrigatório
@@ -85,10 +88,13 @@ export async function POST(req: Request) {
     const month = String(body?.month || '').trim();
     const unitId = String(body?.unitId || '').trim();
     const description = String(body?.description || '').trim();
-    const amount = Number(body?.amount);
+
+    const amountNum = Number(body?.amount);
     const isRecurring = Boolean(body?.isRecurring);
+
     const recurringDayRaw =
         body?.recurringDay != null ? Number(body.recurringDay) : undefined;
+
     const dueDateRaw =
         body?.dueDate != null ? String(body.dueDate).trim() : undefined;
 
@@ -101,9 +107,12 @@ export async function POST(req: Request) {
 
     if (!description) return jsonErr('description_required', 400);
 
-    if (!Number.isFinite(amount) || amount <= 0) {
+    if (!Number.isFinite(amountNum) || amountNum <= 0) {
         return jsonErr('amount_invalid', 400);
     }
+
+    // ✅ fixa 2 casas só depois de validar
+    const amountFixed = amountNum.toFixed(2); // Prisma Decimal aceita string
 
     // validações por modo
     if (isRecurring) {
@@ -134,7 +143,7 @@ export async function POST(req: Request) {
     const canSeeAllUnits = !!session?.canSeeAllUnits;
 
     if (!canSeeAllUnits) {
-        // Preferência: valida por AdminUnitAccess (mais correto do que prender em "unitId do token")
+        // Preferência: valida por AdminUnitAccess
         if (userId) {
             const access = await prisma.adminUnitAccess.findFirst({
                 where: { companyId, userId, unitId },
@@ -169,7 +178,6 @@ export async function POST(req: Request) {
             dayClamped
         );
     } else {
-        // dueDateRaw já validado e vem "yyyy-MM-dd"
         const parsed = parseDueDateParam(dueDateRaw!);
         if (!parsed) return jsonErr('due_date_invalid', 400);
 
@@ -212,7 +220,7 @@ export async function POST(req: Request) {
                     unitId,
                     description,
                     category,
-                    amount: amount.toFixed(2), // Prisma Decimal aceita string
+                    amount: amountFixed,
                     dueDate,
                     isRecurring,
                     isPaid: false,
@@ -228,7 +236,8 @@ export async function POST(req: Request) {
         });
 
         return jsonOk(result, { status: result.created ? 201 : 200 });
-    } catch {
+    } catch (err) {
+        console.error('[POST /api/admin/finance/expenses] internal_error', err);
         return jsonErr('internal_error', 500);
     }
 }

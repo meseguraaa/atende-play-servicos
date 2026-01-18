@@ -29,6 +29,7 @@ model Company {
   expenses                         Expense[]
   orderItems                       OrderItem[]
   orders                           Order[]
+  passwordResetTokens              PasswordResetToken[]
   planServices                     PlanService[]
   plans                            Plan[]
   productDiscountByLevels          ProductDiscountByLevel[]
@@ -99,6 +100,7 @@ model User {
   customerLevelStates    CustomerLevelState[]
   orders                 Order[]
   professional           Professional?
+  passwordResetTokens    PasswordResetToken[]
 }
 
 model Account {
@@ -918,6 +920,32 @@ model AnalyticsEvent {
   @@index([name, createdAt])
   @@map("analytics_events")
 }
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  companyId String
+  userId    String
+
+  // ✅ nunca guardar o token puro
+  tokenHash String   @unique
+
+  // ✅ expira rápido
+  expiresAt DateTime
+
+  // ✅ impede reuso
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, userId])
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
 
 enum Role {
   CLIENT

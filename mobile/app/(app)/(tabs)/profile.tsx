@@ -27,7 +27,8 @@ import { ProfileSkeleton } from '../../../src/components/loading/ProfileSkeleton
 const STICKY_ROW_H = 74;
 const IOS_ACCESSORY_ID = 'profileEmptyAccessory';
 
-const AVATAR_PLACEHOLDER = 'https://i.pravatar.cc/200?img=12';
+// ✅ removemos placeholder de imagem externa (agora fallback é ícone)
+const AVATAR_PLACEHOLDER = '';
 
 /* ===========================
  * Máscaras (sem libs)
@@ -128,6 +129,17 @@ function birthBRToISO(b: string): string | null {
 
     const pad2 = (n: number) => String(n).padStart(2, '0');
     return `${yyyy}-${pad2(mm)}-${pad2(dd)}`;
+}
+
+/* ===========================
+ * ✅ Avatar helpers
+ * ===========================*/
+function normalizeImageUrl(v: unknown): string {
+    const s = String(v ?? '').trim();
+    if (!s) return '';
+    // evita usar "null", "undefined", etc. como URL
+    if (s === 'null' || s === 'undefined') return '';
+    return s;
 }
 
 /* ===========================
@@ -317,7 +329,9 @@ export default function Profile() {
 
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
-    const [avatar, setAvatar] = useState(AVATAR_PLACEHOLDER);
+
+    // ✅ agora avatar pode ser vazio; quando vazio, renderiza fallback com ícone
+    const [avatar, setAvatar] = useState<string>(AVATAR_PLACEHOLDER);
 
     const [phone, setPhone] = useState('');
     const [birth, setBirth] = useState('');
@@ -430,6 +444,10 @@ export default function Profile() {
         return `Para continuar usando o app, informe ${parts.join(' e ')}.`;
     }, [missingFields]);
 
+    // ✅ regra: se tem URL válida (ex: Google), mostra imagem. Se não, mostra ícone.
+    const avatarUrl = useMemo(() => normalizeImageUrl(avatar), [avatar]);
+    const hasAvatar = useMemo(() => Boolean(avatarUrl), [avatarUrl]);
+
     async function forceLogoutToLogin() {
         try {
             await signOut();
@@ -455,7 +473,10 @@ export default function Profile() {
 
                 setName(u.name ?? '');
                 setEmail(u.email ?? '');
-                setAvatar(u.image?.trim() ? u.image : AVATAR_PLACEHOLDER);
+
+                // ✅ se vier do Google (ou tiver foto), usa.
+                // ✅ se vier de cadastro manual (sem foto), fica vazio e cai no fallback.
+                setAvatar(normalizeImageUrl(u.image));
 
                 const maskedPhone = u.phone ? maskPhone(u.phone) : '';
                 setPhone(maskedPhone);
@@ -483,7 +504,7 @@ export default function Profile() {
                 );
             } catch {
                 Alert.alert('Erro', 'Não foi possível carregar seus dados.');
-                setAvatar(AVATAR_PLACEHOLDER);
+                setAvatar('');
             } finally {
                 if (!alive) return;
                 setLoadingMe(false);
@@ -716,17 +737,20 @@ export default function Profile() {
                                 <View style={S.heroCard}>
                                     <View style={S.profileHeroRow}>
                                         <View style={S.avatarWrap}>
-                                            <Image
-                                                source={{ uri: avatar }}
-                                                style={S.avatarBig}
-                                            />
-                                            <View style={S.avatarBadge}>
-                                                <FontAwesome
-                                                    name="user"
-                                                    size={12}
-                                                    color={UI.colors.white}
+                                            {hasAvatar ? (
+                                                <Image
+                                                    source={{ uri: avatarUrl }}
+                                                    style={S.avatarBig}
                                                 />
-                                            </View>
+                                            ) : (
+                                                <View style={S.avatarFallback}>
+                                                    <FontAwesome
+                                                        name="user"
+                                                        size={32}
+                                                        color={UI.colors.white}
+                                                    />
+                                                </View>
+                                            )}
                                         </View>
 
                                         <View style={S.heroTextCol}>
@@ -979,6 +1003,19 @@ const S = StyleSheet.create({
         borderWidth: 2,
         borderColor: UI.brand.primary,
     },
+
+    // ✅ fallback: círculo brand + ícone branco (igual profissional sem foto)
+    avatarFallback: {
+        width: 74,
+        height: 74,
+        borderRadius: 22,
+        borderWidth: 2,
+        borderColor: UI.brand.primary,
+        backgroundColor: UI.brand.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
     avatarBadge: {
         position: 'absolute',
         right: -6,

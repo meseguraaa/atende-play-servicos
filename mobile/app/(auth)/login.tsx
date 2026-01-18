@@ -8,12 +8,16 @@ import {
     Platform,
     Alert,
     ImageBackground,
+    TextInput,
+    KeyboardAvoidingView,
+    ScrollView,
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as AuthSession from 'expo-auth-session';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { FontAwesome5, AntDesign } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 import { UI, styles } from '../../src/theme/client-theme';
 import { useAuth } from '../../src/auth/auth-context';
@@ -24,29 +28,15 @@ const API_BASE_URL =
     process.env.EXPO_PUBLIC_API_URL?.trim() ||
     (__DEV__ ? 'http://localhost:3000' : '');
 
-// ✅ companyId obrigatório no fluxo mobile (multi-tenant REAL)
 const COMPANY_ID = process.env.EXPO_PUBLIC_COMPANY_ID?.trim() || '';
 
-// ✅ redirectUri (deep link do app)
-// - Expo Go: exp://.../--/auth
-// - Standalone: <scheme>://auth (dependendo do app.json/app.config)
 const redirectUri = (() => {
     try {
         return AuthSession.makeRedirectUri({ path: 'auth' });
     } catch {
-        // fallback (raro, mas evita crash)
         return 'exp://localhost:8081/--/auth';
     }
 })();
-
-function parseSessionParam(value: string): any | null {
-    try {
-        const decoded = decodeURIComponent(value);
-        return JSON.parse(decoded);
-    } catch {
-        return null;
-    }
-}
 
 function safeParseUrl(raw: string): URL | null {
     try {
@@ -67,74 +57,78 @@ function ensureCompanyIdInSession(session: any, companyId: string) {
         String(session?.company_id ?? '').trim() ||
         String(session?.tenantId ?? '').trim() ||
         String(session?.tenant_id ?? '').trim() ||
-        String(session?.user?.companyId ?? '').trim() ||
-        String(session?.user?.company?.id ?? '').trim() ||
-        String(session?.session?.companyId ?? '').trim() ||
-        String(session?.data?.companyId ?? '').trim();
+        String(session?.user?.companyId ?? '').trim();
 
     if (already) return session;
 
-    const next = { ...session };
+    return {
+        ...session,
+        companyId: cid,
+        user: session.user ? { ...session.user, companyId: cid } : session.user,
+    };
+}
 
-    next.companyId = cid;
+function normalizeEmail(v: string) {
+    return String(v ?? '')
+        .trim()
+        .toLowerCase();
+}
 
-    if (next.user && typeof next.user === 'object') {
-        next.user = { ...next.user, companyId: cid };
-    }
+function mapLoginError(codeOrMsg: string) {
+    const c = String(codeOrMsg || '').trim();
 
-    if (next.session && typeof next.session === 'object') {
-        next.session = { ...next.session, companyId: cid };
-        if (next.session.user && typeof next.session.user === 'object') {
-            next.session.user = { ...next.session.user, companyId: cid };
-        }
-    }
+    if (!c) return 'Não foi possível entrar. Verifique seus dados.';
 
-    if (next.data && typeof next.data === 'object') {
-        next.data = { ...next.data, companyId: cid };
-        if (next.data.user && typeof next.data.user === 'object') {
-            next.data.user = { ...next.data.user, companyId: cid };
-        }
-    }
+    // códigos do backend
+    if (c === 'missing_company_id') return 'Empresa não informada.';
+    if (c === 'missing_email') return 'Informe seu email.';
+    if (c === 'missing_password') return 'Informe sua senha.';
+    if (c === 'invalid_credentials') return 'Email ou senha inválidos.';
+    if (c === 'user_inactive') return 'Usuário inativo.';
+    if (c === 'company_not_allowed')
+        return 'Você não tem acesso a esta empresa.';
+    if (c === 'company_not_found') return 'Empresa não encontrada.';
+    if (c === 'company_inactive') return 'Empresa inativa.';
+    if (c === 'password_login_not_enabled')
+        return 'Este usuário não tem senha cadastrada. Entre com Google ou redefina sua senha.';
 
-    return next;
+    // mensagens genéricas
+    return c;
+}
+
+function parseBoolish(v: string | null): boolean {
+    const s = String(v ?? '').trim();
+    if (!s) return false;
+    return s === '1' || s.toLowerCase() === 'true' || s.toLowerCase() === 'yes';
 }
 
 export default function Login() {
     const insets = useSafeAreaInsets();
+    const router = useRouter();
     const { signIn, refreshMe } = useAuth();
 
     const [loading, setLoading] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPass, setShowPass] = useState(false);
 
     const apiOk = useMemo(() => Boolean(API_BASE_URL), []);
     const companyOk = useMemo(() => Boolean(COMPANY_ID), []);
+
+    const emailOk = useMemo(() => normalizeEmail(email).length > 3, [email]);
+    const passOk = useMemo(
+        () => String(password ?? '').length >= 1,
+        [password]
+    );
 
     async function handleGoogleLogin() {
         if (loading) return;
 
         try {
-            if (!apiOk) {
-                Alert.alert(
-                    'Login',
-                    'API do app não configurada (EXPO_PUBLIC_API_URL).'
-                );
-                return;
-            }
-
-            if (!companyOk) {
-                Alert.alert(
-                    'Login',
-                    'Aplicativo sem empresa configurada (EXPO_PUBLIC_COMPANY_ID).'
-                );
-                return;
-            }
+            if (!apiOk || !companyOk) return;
 
             setLoading(true);
 
-            /**
-             * ✅ Fluxo: /api/mobile/auth/google/start
-             * ⚠️ IMPORTANTE: não faça encode manual no redirect_uri.
-             * URLSearchParams já codifica e evita o bug exp%253A... (double-encode).
-             */
             const start = new URL(
                 `${API_BASE_URL}/api/mobile/auth/google/start`
             );
@@ -144,95 +138,138 @@ export default function Login() {
             const result = await WebBrowser.openAuthSessionAsync(
                 start.toString(),
                 String(redirectUri),
-                {
-                    // ✅ iOS: melhora dev/test (cookies menos “grudados”)
-                    preferEphemeralSession: Platform.OS === 'ios',
-                }
+                { preferEphemeralSession: Platform.OS === 'ios' }
             );
 
-            // usuário cancelou/fechou
             if (result.type !== 'success' || !result.url) return;
 
             const url = safeParseUrl(result.url);
-            if (!url) {
-                Alert.alert(
-                    'Login',
-                    'Retorno inválido do login. Tente novamente.'
-                );
-                return;
-            }
+            if (!url) return;
 
-            const error = url.searchParams.get('error');
-            const message = url.searchParams.get('message');
+            // ✅ auth-redirect devolve token JWT e params extras
+            const token = String(url.searchParams.get('token') || '').trim();
+            const companyId =
+                String(url.searchParams.get('companyId') || '').trim() ||
+                COMPANY_ID;
+
+            const error = String(url.searchParams.get('error') || '').trim();
+            const message = String(
+                url.searchParams.get('message') || ''
+            ).trim();
 
             if (error) {
+                Alert.alert('Login', message || mapLoginError(error));
+                return;
+            }
+
+            if (!token) {
                 Alert.alert(
                     'Login',
-                    message || `Não foi possível autenticar (${error}).`
+                    'Não recebemos o token do login. Tente novamente.'
                 );
                 return;
             }
 
-            // ✅ payload do /api/mobile/auth-redirect
-            const tokenParam = url.searchParams.get('token');
-
-            // compat: se algum fluxo ainda devolver "session"
-            const sessionParam = url.searchParams.get('session');
-
-            if (tokenParam) {
-                const parsed = parseSessionParam(tokenParam);
-                if (!parsed) {
-                    Alert.alert(
-                        'Login',
-                        'Token inválido retornado pelo login. Tente novamente.'
-                    );
-                    return;
-                }
-
-                const payload = ensureCompanyIdInSession(parsed, COMPANY_ID);
-
-                await signIn(JSON.stringify(payload));
-
-                try {
-                    await refreshMe();
-                } catch {
-                    // ok
-                }
-                return;
-            }
-
-            if (sessionParam) {
-                const parsed = parseSessionParam(sessionParam);
-                if (!parsed) {
-                    Alert.alert(
-                        'Login',
-                        'Sessão inválida retornada pelo login. Tente novamente.'
-                    );
-                    return;
-                }
-
-                const session = ensureCompanyIdInSession(parsed, COMPANY_ID);
-
-                await signIn(JSON.stringify(session));
-
-                try {
-                    await refreshMe();
-                } catch {
-                    // ok
-                }
-                return;
-            }
-
-            Alert.alert(
-                'Login',
-                'Não recebemos token do login. Tente novamente.'
+            const profile_complete = parseBoolish(
+                url.searchParams.get('profile_complete')
             );
+
+            // ✅ payload compatível com o que suas rotas mobile esperam
+            const payload = ensureCompanyIdInSession(
+                {
+                    token,
+                    companyId,
+                    profile_complete,
+                },
+                companyId
+            );
+
+            await signIn(JSON.stringify(payload));
+            await refreshMe();
         } catch {
             Alert.alert('Login', 'Erro inesperado ao autenticar.');
         } finally {
             setLoading(false);
         }
     }
+
+    async function handleEmailLogin() {
+        if (loading) return;
+
+        const e = normalizeEmail(email);
+        const p = String(password ?? '');
+
+        if (!apiOk || !companyOk) return;
+
+        if (!e) {
+            Alert.alert('Login', 'Informe seu email.');
+            return;
+        }
+        if (!p) {
+            Alert.alert('Login', 'Informe sua senha.');
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            const endpoint = `${API_BASE_URL}/api/mobile/auth/login`;
+
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-company-id': COMPANY_ID,
+                },
+                body: JSON.stringify({
+                    email: e,
+                    password: p,
+                    companyId: COMPANY_ID, // pode ser slug também, se quiser
+                }),
+            });
+
+            let json: any = null;
+            try {
+                json = await res.json();
+            } catch {
+                json = null;
+            }
+
+            // ✅ backend pode responder 200 com ok:false
+            const ok = Boolean(res.ok) && Boolean(json?.ok !== false);
+            if (!ok) {
+                const raw =
+                    String(json?.error ?? json?.message ?? '').trim() ||
+                    (res.status ? `HTTP_${res.status}` : '');
+                Alert.alert('Login', mapLoginError(raw));
+                return;
+            }
+
+            const payloadRaw = json?.data ?? json;
+            const payload = ensureCompanyIdInSession(payloadRaw, COMPANY_ID);
+
+            await signIn(JSON.stringify(payload));
+            await refreshMe();
+        } catch {
+            Alert.alert('Login', 'Erro inesperado ao entrar.');
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    function handleForgotPassword() {
+        router.push('/(auth)/forgot-password');
+    }
+
+    function handleGoSignup() {
+        router.push('/(auth)/signup');
+    }
+
+    const keyboardOffset =
+        UI.spacing.headerH + insets.top + (Platform.OS === 'ios' ? 8 : 0);
+
+    const canSignup = apiOk && companyOk && !loading;
+    const canLogin = apiOk && companyOk && emailOk && passOk && !loading;
 
     return (
         <View style={styles.screen}>
@@ -248,7 +285,6 @@ export default function Login() {
                     right: 0,
                     height: insets.top + 2,
                     backgroundColor: UI.brand.primary,
-                    zIndex: 10,
                 }}
             />
 
@@ -259,8 +295,6 @@ export default function Login() {
                     {
                         height: UI.spacing.headerH + insets.top,
                         paddingTop: insets.top,
-                        borderBottomLeftRadius: 14,
-                        borderBottomRightRadius: 14,
                     },
                 ]}
             >
@@ -274,108 +308,278 @@ export default function Login() {
                 </View>
             </View>
 
-            {/* Background */}
             <ImageBackground
                 source={require('../../assets/images/home.png')}
                 resizeMode="cover"
                 style={{ flex: 1 }}
             >
                 <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' }}>
-                    <View
-                        style={[
-                            styles.body,
-                            {
-                                flex: 1,
-                                justifyContent: 'flex-end',
-                                paddingBottom: '25%',
-                            },
-                        ]}
+                    <KeyboardAvoidingView
+                        style={{ flex: 1 }}
+                        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                        keyboardVerticalOffset={keyboardOffset}
                     >
-                        <View style={[styles.card, UI.shadow.card]}>
-                            <Text
+                        <ScrollView
+                            contentContainerStyle={{
+                                flexGrow: 1,
+                                justifyContent: 'flex-end',
+                                paddingTop: 24,
+                                paddingBottom:
+                                    24 + (insets.bottom ? insets.bottom : 0),
+                            }}
+                            keyboardShouldPersistTaps="handled"
+                            keyboardDismissMode={
+                                Platform.OS === 'ios' ? 'interactive' : 'none'
+                            }
+                            showsVerticalScrollIndicator={false}
+                            contentInsetAdjustmentBehavior={
+                                Platform.OS === 'ios' ? 'never' : undefined
+                            }
+                        >
+                            {/* ✅ deixa o padding horizontal no body, pra não duplicar */}
+                            <View
                                 style={[
-                                    styles.title,
+                                    styles.body,
                                     {
-                                        textAlign: 'center',
-                                        fontSize: 26,
-                                        marginBottom: 10,
+                                        paddingBottom: 0,
                                     },
                                 ]}
                             >
-                                Acesse sua conta
-                            </Text>
-
-                            <Text
-                                style={[
-                                    styles.subtitle,
-                                    {
-                                        textAlign: 'center',
-                                        fontSize: 15,
-                                        marginBottom: 18,
-                                    },
-                                ]}
-                            >
-                                Entre com sua conta social
-                            </Text>
-
-                            <View style={styles.providerStack}>
-                                <Pressable
-                                    onPress={handleGoogleLogin}
-                                    disabled={loading}
-                                    style={[
-                                        styles.providerBtnFull,
-                                        loading && { opacity: 0.85 },
-                                    ]}
-                                >
-                                    <View
-                                        style={{
-                                            flexDirection: 'row',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            gap: 12,
-                                        }}
+                                <View style={[styles.card, UI.shadow.card]}>
+                                    <Text
+                                        style={[
+                                            styles.title,
+                                            { textAlign: 'center' },
+                                        ]}
                                     >
-                                        {loading ? (
-                                            <ActivityIndicator
-                                                color={UI.brand.primaryText}
-                                            />
-                                        ) : (
-                                            <AntDesign
-                                                name="google"
-                                                size={22}
-                                                color="#DB4437"
-                                            />
-                                        )}
-                                        <Text
-                                            style={styles.providerBtnFullText}
-                                        >
-                                            Continuar com Google
-                                        </Text>
-                                    </View>
-                                </Pressable>
-                            </View>
+                                        Acesse sua conta
+                                    </Text>
 
-                            {/* dica útil em dev */}
-                            {__DEV__ && (!apiOk || !companyOk) ? (
-                                <View style={{ marginTop: 12 }}>
-                                    {!apiOk ? (
-                                        <Text style={styles.subtitle}>
-                                            Configure EXPO_PUBLIC_API_URL (ex:
-                                            https://xxxx.ngrok-free.dev)
+                                    <View style={{ gap: 10, marginTop: 12 }}>
+                                        <TextInput
+                                            placeholder="Email"
+                                            placeholderTextColor="rgba(255,255,255,0.6)"
+                                            value={email}
+                                            onChangeText={setEmail}
+                                            style={local.input}
+                                            editable={!loading}
+                                            autoCapitalize="none"
+                                            keyboardType="email-address"
+                                            returnKeyType="next"
+                                        />
+
+                                        <View style={{ position: 'relative' }}>
+                                            <TextInput
+                                                placeholder="Senha"
+                                                placeholderTextColor="rgba(255,255,255,0.6)"
+                                                value={password}
+                                                onChangeText={setPassword}
+                                                secureTextEntry={!showPass}
+                                                style={local.input}
+                                                editable={!loading}
+                                                returnKeyType="done"
+                                                onSubmitEditing={() => {
+                                                    if (canLogin) {
+                                                        handleEmailLogin();
+                                                    }
+                                                }}
+                                            />
+
+                                            <Pressable
+                                                onPress={() =>
+                                                    setShowPass((v) => !v)
+                                                }
+                                                style={local.eyeBtn}
+                                                hitSlop={10}
+                                                disabled={loading}
+                                            >
+                                                <FontAwesome5
+                                                    name={
+                                                        showPass
+                                                            ? 'eye-slash'
+                                                            : 'eye'
+                                                    }
+                                                    size={14}
+                                                    color="#fff"
+                                                />
+                                            </Pressable>
+                                        </View>
+
+                                        {/* ✅ BOTÃO ENTRAR */}
+                                        <Pressable
+                                            onPress={handleEmailLogin}
+                                            style={({ pressed }) => [
+                                                local.loginBtn,
+                                                !canLogin && { opacity: 0.55 },
+                                                pressed &&
+                                                    canLogin && {
+                                                        opacity: 0.85,
+                                                    },
+                                            ]}
+                                            disabled={!canLogin}
+                                        >
+                                            {loading ? (
+                                                <ActivityIndicator
+                                                    color={
+                                                        UI.brand.primaryText ??
+                                                        UI.colors.white
+                                                    }
+                                                />
+                                            ) : (
+                                                <Text
+                                                    style={local.loginBtnText}
+                                                >
+                                                    Entrar
+                                                </Text>
+                                            )}
+                                        </Pressable>
+
+                                        <Pressable
+                                            onPress={handleForgotPassword}
+                                            style={({ pressed }) => [
+                                                local.forgotBtn,
+                                                pressed && { opacity: 0.85 },
+                                                loading && { opacity: 0.6 },
+                                            ]}
+                                            hitSlop={10}
+                                            disabled={loading}
+                                        >
+                                            <Text style={local.linkText}>
+                                                Esqueci minha senha
+                                            </Text>
+                                        </Pressable>
+                                    </View>
+
+                                    <View style={{ marginVertical: 14 }}>
+                                        <Pressable
+                                            onPress={handleGoogleLogin}
+                                            style={[
+                                                styles.providerBtnFull,
+                                                loading && { opacity: 0.7 },
+                                            ]}
+                                            disabled={loading}
+                                        >
+                                            {loading ? (
+                                                <ActivityIndicator
+                                                    color={
+                                                        UI.brand.primaryText ??
+                                                        UI.colors.white
+                                                    }
+                                                />
+                                            ) : (
+                                                <AntDesign
+                                                    name="google"
+                                                    size={20}
+                                                    color="#DB4437"
+                                                />
+                                            )}
+
+                                            <Text
+                                                style={
+                                                    styles.providerBtnFullText
+                                                }
+                                            >
+                                                Continuar com Google
+                                            </Text>
+                                        </Pressable>
+                                    </View>
+
+                                    {/* ✅ BOTÃO ROXO BRAND */}
+                                    <Pressable
+                                        onPress={handleGoSignup}
+                                        style={({ pressed }) => [
+                                            local.signupBtn,
+                                            !canSignup && { opacity: 0.55 },
+                                            pressed &&
+                                                canSignup && { opacity: 0.85 },
+                                        ]}
+                                        disabled={!canSignup}
+                                    >
+                                        <Text style={local.signupBtnText}>
+                                            Faça seu cadastro
                                         </Text>
-                                    ) : null}
-                                    {!companyOk ? (
-                                        <Text style={styles.subtitle}>
-                                            Configure EXPO_PUBLIC_COMPANY_ID (id
-                                            da empresa no banco)
-                                        </Text>
+                                    </Pressable>
+
+                                    {__DEV__ && (!apiOk || !companyOk) ? (
+                                        <View style={{ marginTop: 12 }}>
+                                            {!apiOk ? (
+                                                <Text style={styles.subtitle}>
+                                                    Configure
+                                                    EXPO_PUBLIC_API_URL
+                                                </Text>
+                                            ) : null}
+                                            {!companyOk ? (
+                                                <Text style={styles.subtitle}>
+                                                    Configure
+                                                    EXPO_PUBLIC_COMPANY_ID
+                                                </Text>
+                                            ) : null}
+                                        </View>
                                     ) : null}
                                 </View>
-                            ) : null}
-                        </View>
-                    </View>
+                            </View>
+                        </ScrollView>
+                    </KeyboardAvoidingView>
                 </View>
             </ImageBackground>
         </View>
     );
 }
+
+const local = {
+    input: {
+        height: 48,
+        borderRadius: 12,
+        paddingHorizontal: 14,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.22)',
+        color: '#fff',
+    },
+    eyeBtn: {
+        position: 'absolute' as const,
+        right: 14,
+        top: 14,
+    },
+
+    forgotBtn: {
+        alignSelf: 'flex-end' as const,
+        marginTop: 8,
+        marginBottom: 12,
+        paddingVertical: 8,
+        paddingHorizontal: 8,
+    },
+    linkText: {
+        color: '#fff',
+        fontSize: 13,
+        textDecorationLine: 'underline' as const,
+    },
+
+    loginBtn: {
+        height: 48,
+        borderRadius: 12,
+        backgroundColor: UI.brand.primary,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+        marginTop: 6,
+    },
+    loginBtnText: {
+        color: UI.colors.white,
+        fontSize: 15,
+        fontWeight: '800' as const,
+        letterSpacing: 0.2,
+    },
+
+    signupBtn: {
+        height: 48,
+        borderRadius: 12,
+        backgroundColor: UI.brand.primary,
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+    },
+    signupBtnText: {
+        color: UI.colors.white,
+        fontSize: 15,
+        fontWeight: '700' as const,
+    },
+};

@@ -151,6 +151,10 @@ function mapAdminHref(link: (typeof ADMIN_MENU)[number]) {
     if (link.menuKey === 'reviews')
         return link.href.replace('/review-tags', '/review-tag');
 
+    // ✅ reports -> report (singular)
+    if (link.menuKey === 'reports')
+        return link.href.replace('/reports', '/report');
+
     return link.href;
 }
 
