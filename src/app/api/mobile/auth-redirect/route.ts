@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import crypto from 'node:crypto';
+import { signAppJwt } from '@/lib/app-jwt';
 
 export const dynamic = 'force-dynamic';
 
@@ -89,11 +90,6 @@ function readCompanyKey(url: URL): string {
 /**
  * ✅ Monta URL final anexando params com segurança (funciona bem com deep links).
  * Evita quebrar quando o baseUrl já tem querystring.
- *
- * Observação: em alguns runtimes, `new URL("agendaplay://...")` pode falhar.
- * Por isso tem fallback que usa concatenação simples quando necessário.
- *
- * Extra: preserva hash (#) no fallback.
  */
 function withParams(baseUrl: string, params: Record<string, string>) {
     try {
@@ -103,7 +99,6 @@ function withParams(baseUrl: string, params: Record<string, string>) {
         }
         return u.toString();
     } catch {
-        // fallback: preserva fragment (#)
         const [noHash, hash] = baseUrl.split('#');
         const sep = noHash.includes('?') ? '&' : '?';
         const qs = Object.entries(params)
@@ -165,9 +160,21 @@ async function tryGetNextAuthToken(
     }
 }
 
-// -----------------------------
-// ✅ JWT HS256 inline (substitui "@/lib/app-jwt")
-// -----------------------------
+/**
+ * ✅ SID (fallback sem NextAuth cookie)
+ * Formato: base64url(payload).base64url(hmac(payload))
+ * Obs: assina com um segredo "compartilhado" (APP_JWT_SECRET ou NEXTAUTH_SECRET)
+ */
+function getSharedSecretForSid(): string {
+    return (
+        process.env.APP_JWT_SECRET?.trim() ||
+        process.env.MOBILE_JWT_SECRET?.trim() ||
+        process.env.JWT_SECRET?.trim() ||
+        process.env.NEXTAUTH_SECRET?.trim() ||
+        ''
+    );
+}
+
 function base64UrlEncode(input: Buffer | string) {
     const buf = typeof input === 'string' ? Buffer.from(input) : input;
     return buf
@@ -183,10 +190,6 @@ function base64UrlDecodeToBuffer(input: string) {
         .replace(/_/g, '/');
     const pad = s.length % 4 === 0 ? '' : '='.repeat(4 - (s.length % 4));
     return Buffer.from(`${s}${pad}`, 'base64');
-}
-
-function base64UrlEncodeJson(obj: unknown) {
-    return base64UrlEncode(Buffer.from(JSON.stringify(obj)));
 }
 
 function signHs256(secret: string, data: string) {
@@ -209,53 +212,8 @@ function timingSafeEq(a: string, b: string) {
     return crypto.timingSafeEqual(ab, bb);
 }
 
-function getAppJwtSecret() {
-    return (
-        process.env.APP_JWT_SECRET?.trim() ||
-        process.env.MOBILE_JWT_SECRET?.trim() ||
-        process.env.JWT_SECRET?.trim() ||
-        process.env.NEXTAUTH_SECRET?.trim() ||
-        ''
-    );
-}
-
-async function signAppJwt(payload: {
-    sub: string;
-    role: AppRole;
-    companyId: string;
-    profile_complete: boolean;
-}): Promise<string> {
-    const secret = getAppJwtSecret();
-    if (!secret) throw new Error('missing_app_jwt_secret');
-
-    const header = { alg: 'HS256', typ: 'JWT' as const };
-
-    const now = Math.floor(Date.now() / 1000);
-    const exp = now + 60 * 60 * 24 * 30; // 30 dias
-
-    const body = {
-        sub: payload.sub,
-        role: payload.role,
-        companyId: payload.companyId,
-        profile_complete: payload.profile_complete,
-        iat: now,
-        exp,
-    };
-
-    const h = base64UrlEncodeJson(header);
-    const b = base64UrlEncodeJson(body);
-    const data = `${h}.${b}`;
-    const s = signHs256(secret, data);
-
-    return `${data}.${s}`;
-}
-
-/**
- * ✅ SID (fallback sem NextAuth cookie)
- * Formato: base64url(payload).base64url(hmac(payload))
- */
 function verifySid(sid: string): SidPayload | null {
-    const secret = getAppJwtSecret();
+    const secret = getSharedSecretForSid();
     if (!secret) return null;
 
     const raw = String(sid || '').trim();
@@ -298,12 +256,7 @@ export async function GET(req: Request) {
         );
     }
 
-    /**
-     * ⚠️ Importante:
-     * Não faça decodeURIComponent aqui.
-     * Em vários pontos do fluxo você já manda redirect_uri "cru" via URLSearchParams,
-     * e um decode aqui pode corromper a URL (especialmente se tiver % já válido).
-     */
+    // ⚠️ não faz decodeURIComponent aqui
     const redirectUri = String(redirectUriRaw).trim();
 
     if (!isAllowedRedirectUri(redirectUri)) {
@@ -322,10 +275,7 @@ export async function GET(req: Request) {
     }
 
     try {
-        // companyKey preferido: querystring do app
         const requestedCompanyKey = readCompanyKey(url);
-
-        // fallback: DEFAULT_TENANT_SLUG (dev)
         const defaultSlug = String(
             process.env.DEFAULT_TENANT_SLUG || ''
         ).trim();
@@ -338,7 +288,6 @@ export async function GET(req: Request) {
         const sid = String(url.searchParams.get('sid') || '').trim();
         const sidPayload = sid ? verifySid(sid) : null;
 
-        // ✅ se veio sid mas é inválido/expirou e não há NextAuth, devolve erro explícito
         if (sid && !sidPayload && !nextAuthUserId) {
             const message = mapOauthError('invalid_sid');
             return redirect302(
@@ -347,7 +296,6 @@ export async function GET(req: Request) {
         }
 
         const userId = nextAuthUserId || sidPayload?.userId || '';
-
         if (!userId) {
             const message = mapOauthError('not_authenticated');
             return redirect302(
@@ -355,13 +303,12 @@ export async function GET(req: Request) {
             );
         }
 
-        // token companyId (compat) só existe se NextAuth setar (no mobile não confiamos nele)
         const tokenCompanyId =
             typeof nextAuthToken?.companyId === 'string'
                 ? String(nextAuthToken.companyId).trim()
                 : '';
 
-        // ✅ ordem clara: querystring > token (web) > default slug (dev)
+        // ✅ ordem: querystring > token (web) > defaultSlug (dev)
         const companyKey = requestedCompanyKey || tokenCompanyId || defaultSlug;
 
         if (!companyKey) {
@@ -374,7 +321,7 @@ export async function GET(req: Request) {
             );
         }
 
-        // ✅ resolve company por id OU slug (e só ativa)
+        // ✅ resolve company por id OU slug (ativa)
         const company = await prisma.company.findFirst({
             where: {
                 isActive: true,
@@ -407,7 +354,7 @@ export async function GET(req: Request) {
 
         const companyId = company.id;
 
-        // ✅ valida user (existência + isActive + dados necessários)
+        // ✅ valida user
         const dbUser = await prisma.user.findFirst({
             where: { id: userId },
             select: {
@@ -417,7 +364,6 @@ export async function GET(req: Request) {
                 image: true,
                 phone: true,
                 birthday: true,
-                isOwner: true,
                 isActive: true,
             },
         });
@@ -466,35 +412,30 @@ export async function GET(req: Request) {
             membership.role as MemberRole
         );
 
+        // ✅ assina com o helper oficial do projeto (sem profile_complete no payload)
         const appToken = await signAppJwt({
             sub: dbUser.id,
             role: derivedRole,
             companyId: membership.companyId,
-            profile_complete: profileComplete,
+            email: dbUser.email ?? undefined,
+            name: dbUser.name ?? null,
         });
 
-        /**
-         * ✅ Payload enxuto pro deep link (evita URL enorme e bug em alguns devices)
-         * O app já chama refreshMe() depois, então ele pode buscar nome/email/image/etc.
-         */
-        const payload = {
-            appToken,
-            user: {
-                id: dbUser.id,
+        // ✅ devolve no formato simples e compatível pro app
+        return redirect302(
+            withParams(redirectUri, {
+                token: appToken,
                 companyId: membership.companyId,
-                role: derivedRole,
-                profileComplete,
-                lastUnitId: membership.lastUnitId,
-            },
-        };
-
-        const encoded = encodeURIComponent(JSON.stringify(payload));
-        return redirect302(withParams(redirectUri, { token: encoded }));
+                profile_complete: profileComplete ? '1' : '0',
+            })
+        );
     } catch (err: any) {
         const msg = String(err?.message || '');
 
-        // ✅ se faltou segredo do app jwt, devolve erro claro no deep link
-        if (msg === 'missing_app_jwt_secret') {
+        if (
+            msg.includes('APP_JWT_SECRET') ||
+            msg.includes('missing_app_jwt_secret')
+        ) {
             const message = mapOauthError('missing_app_jwt_secret');
             return redirect302(
                 withParams(redirectUri, {

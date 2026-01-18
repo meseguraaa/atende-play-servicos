@@ -81,8 +81,8 @@ const ProfessionalRow = memo(function ProfessionalRow({
                     ) : (
                         <FontAwesome
                             name="user"
-                            size={16}
-                            color={UI.brand.primary}
+                            size={40}
+                            color={UI.colors.white}
                         />
                     )}
                 </View>

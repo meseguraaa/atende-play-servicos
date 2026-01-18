@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { requireAdminForModule } from '@/lib/admin-permissions';
 import AdminFinanceClient, {
     type AdminFinanceSummaryUI,
-    type BarberMonthlyEarningsUI,
+    type ProfessionalMonthlyEarningsUI,
     type ExpenseRowUI,
 } from './admin-finance-client';
 
@@ -66,11 +66,6 @@ function clampDayToMonth(day: number, monthDate: Date): number {
  * ✅ Auto-criação de despesas recorrentes ao entrar no mês:
  * - Busca recorrentes do mês anterior (mesma unidade)
  * - Cria no mês atual o que estiver faltando
- *
- * “Chave” de dedupe (pragmática):
- * companyId + unitId + isRecurring=true + category + description + amount + dueDate(dia dentro do mês)
- *
- * (Sem tabela de "templates", essa é a forma mais segura usando só o schema atual.)
  */
 async function ensureRecurringExpensesForMonth(args: {
     companyId: string;
@@ -175,11 +170,35 @@ async function ensureRecurringExpensesForMonth(args: {
 
     if (toCreate.length === 0) return;
 
-    // 3) Cria em lote (idempotente na prática pelo dedupe acima)
     await prisma.expense.createMany({
         data: toCreate.map((x) => x.data),
         skipDuplicates: false,
     });
+}
+
+/* -------------------------------------------------------
+ * Helpers: cálculo de ganhos e faturamento do mês
+ * ------------------------------------------------------*/
+
+function safeNumber(v: unknown): number {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+}
+
+function computeServiceProfessionalEarning(args: {
+    professionalEarningValue: unknown;
+    servicePriceAtTheTime: unknown;
+    professionalPercentageAtTheTime: unknown;
+}): number {
+    const direct = safeNumber(args.professionalEarningValue);
+    if (direct > 0) return direct;
+
+    const price = safeNumber(args.servicePriceAtTheTime);
+    const pct = safeNumber(args.professionalPercentageAtTheTime);
+
+    if (price > 0 && pct > 0) return (price * pct) / 100;
+
+    return 0;
 }
 
 export default async function AdminFinancePage({
@@ -258,7 +277,7 @@ export default async function AdminFinancePage({
                 monthLabel={monthLabel}
                 monthQuery={monthQuery}
                 summary={summary}
-                barberEarnings={[]}
+                professionalEarnings={[]}
                 expenses={[]}
                 newExpenseDisabled={true}
             />
@@ -314,6 +333,9 @@ export default async function AdminFinancePage({
         currency: 'BRL',
     });
 
+    /* -------------------------------------------------------
+     * DESPESAS
+     * ------------------------------------------------------*/
     const expensesDb = await prisma.expense.findMany({
         where: {
             companyId,
@@ -346,41 +368,184 @@ export default async function AdminFinancePage({
         0
     );
 
-    const netRevenueMonthNumber = 0; // placeholder
+    /* -------------------------------------------------------
+     * FATURAMENTO (pagos no mês)
+     * Serviços: Appointment.checkedOutAt dentro do mês
+     * Produtos: Order COMPLETED atualizado dentro do mês (proxy de "pago")
+     * ------------------------------------------------------*/
+
+    // 1) Profissionais ativos da unidade (para o bloco de cards)
+    const professionalUnits = await prisma.professionalUnit.findMany({
+        where: {
+            companyId,
+            unitId: activeUnitId,
+            isActive: true,
+            professional: { isActive: true },
+        },
+        select: {
+            professional: { select: { id: true, name: true } },
+        },
+        orderBy: { createdAt: 'asc' },
+    });
+
+    const professionalsBase = professionalUnits
+        .map((x) => x.professional)
+        .filter(Boolean);
+
+    const professionalsById = new Map<string, { id: string; name: string }>();
+    for (const p of professionalsBase) {
+        if (!p?.id) continue;
+        professionalsById.set(p.id, { id: p.id, name: p.name });
+    }
+
+    // 2) Serviços pagos no mês (Checkout)
+    const paidAppointments = await prisma.appointment.findMany({
+        where: {
+            companyId,
+            unitId: activeUnitId,
+            checkedOutAt: { gte: monthStart, lte: monthEnd },
+            // evita cancelados
+            status: { not: 'CANCELED' },
+        },
+        select: {
+            professionalId: true,
+            servicePriceAtTheTime: true,
+            professionalPercentageAtTheTime: true,
+            professionalEarningValue: true,
+        },
+    });
+
+    const servicesNetMonthNumber = paidAppointments.reduce((sum, a) => {
+        return sum + safeNumber(a.servicePriceAtTheTime);
+    }, 0);
+
+    // Ganho por profissional (serviços)
+    const servicesEarningsByProfessional = new Map<string, number>();
+    for (const a of paidAppointments) {
+        const pid = String(a.professionalId ?? '').trim();
+        if (!pid) continue;
+
+        const earn = computeServiceProfessionalEarning({
+            professionalEarningValue: a.professionalEarningValue,
+            servicePriceAtTheTime: a.servicePriceAtTheTime,
+            professionalPercentageAtTheTime: a.professionalPercentageAtTheTime,
+        });
+
+        servicesEarningsByProfessional.set(
+            pid,
+            (servicesEarningsByProfessional.get(pid) ?? 0) + earn
+        );
+    }
+
+    // 3) Produtos pagos no mês
+    //    Regra: pedidos COMPLETED cujo updatedAt está dentro do mês
+    //    (não temos completedAt no schema, então updatedAt é o proxy mais pragmático)
+    const completedOrders = await prisma.order.findMany({
+        where: {
+            companyId,
+            unitId: activeUnitId,
+            status: 'COMPLETED',
+            updatedAt: { gte: monthStart, lte: monthEnd },
+        },
+        select: { id: true },
+    });
+
+    const orderIds = completedOrders.map((o) => o.id);
+
+    let productsNetMonthNumber = 0;
+    const productsEarningsByProfessional = new Map<string, number>();
+
+    if (orderIds.length > 0) {
+        const productItems = await prisma.orderItem.findMany({
+            where: {
+                companyId,
+                orderId: { in: orderIds },
+                productId: { not: null },
+            },
+            select: {
+                professionalId: true,
+                totalPrice: true,
+                product: { select: { professionalPercentage: true } },
+            },
+        });
+
+        // Net de produtos (valor total de itens de produto)
+        productsNetMonthNumber = productItems.reduce((sum, it) => {
+            return sum + safeNumber(it.totalPrice);
+        }, 0);
+
+        // Comissão por profissional: totalPrice * product.professionalPercentage/100
+        for (const it of productItems) {
+            const pid = String(it.professionalId ?? '').trim();
+            if (!pid) continue;
+
+            const total = safeNumber(it.totalPrice);
+            const pct = safeNumber(it.product?.professionalPercentage);
+
+            const commission = total > 0 && pct > 0 ? (total * pct) / 100 : 0;
+
+            productsEarningsByProfessional.set(
+                pid,
+                (productsEarningsByProfessional.get(pid) ?? 0) + commission
+            );
+        }
+    }
+
+    // 4) Monta lista UI (inclui profissionais da unidade, mesmo com 0)
+    const allProfessionalIds = new Set<string>([
+        ...Array.from(professionalsById.keys()),
+        ...Array.from(servicesEarningsByProfessional.keys()),
+        ...Array.from(productsEarningsByProfessional.keys()),
+    ]);
+
+    const professionalEarnings: ProfessionalMonthlyEarningsUI[] = Array.from(
+        allProfessionalIds
+    )
+        .map((pid) => {
+            const base = professionalsById.get(pid);
+
+            const services = servicesEarningsByProfessional.get(pid) ?? 0;
+            const products = productsEarningsByProfessional.get(pid) ?? 0;
+            const total = services + products;
+
+            return {
+                professionalId: pid,
+                name: base?.name ?? 'Profissional',
+                servicesEarnings: currencyFormatter.format(services),
+                productsEarnings: currencyFormatter.format(products),
+                total: currencyFormatter.format(total),
+            };
+        })
+        // ordem: maior total primeiro
+        .sort((a, b) => {
+            const na = safeNumber(
+                a.total
+                    .replace(/[^\d,.-]/g, '')
+                    .replace('.', '')
+                    .replace(',', '.')
+            );
+            const nb = safeNumber(
+                b.total
+                    .replace(/[^\d,.-]/g, '')
+                    .replace('.', '')
+                    .replace(',', '.')
+            );
+            return nb - na;
+        });
+
+    const netRevenueMonthNumber =
+        servicesNetMonthNumber + productsNetMonthNumber;
+
     const netIncomeNumber = netRevenueMonthNumber - totalExpensesNumber;
 
     const summary: AdminFinanceSummaryUI = {
         netRevenueMonth: currencyFormatter.format(netRevenueMonthNumber),
-        servicesNetMonth: currencyFormatter.format(0),
-        productsNetMonth: currencyFormatter.format(0),
+        servicesNetMonth: currencyFormatter.format(servicesNetMonthNumber),
+        productsNetMonth: currencyFormatter.format(productsNetMonthNumber),
         totalExpenses: currencyFormatter.format(totalExpensesNumber),
         netIncome: currencyFormatter.format(netIncomeNumber),
         netIncomeIsPositive: netIncomeNumber >= 0,
     };
-
-    const barberEarnings: BarberMonthlyEarningsUI[] = [
-        {
-            barberId: 'b1',
-            name: 'Bruno Leal',
-            servicesEarnings: 'R$ 2.150,00',
-            productsEarnings: 'R$ 320,00',
-            total: 'R$ 2.470,00',
-        },
-        {
-            barberId: 'b2',
-            name: 'Rafael Souza',
-            servicesEarnings: 'R$ 1.780,00',
-            productsEarnings: 'R$ 190,00',
-            total: 'R$ 1.970,00',
-        },
-        {
-            barberId: 'b3',
-            name: 'João Pedro',
-            servicesEarnings: 'R$ 1.420,00',
-            productsEarnings: 'R$ 410,00',
-            total: 'R$ 1.830,00',
-        },
-    ];
 
     return (
         <AdminFinanceClient
@@ -388,7 +553,7 @@ export default async function AdminFinancePage({
             monthLabel={monthLabel}
             monthQuery={monthQuery}
             summary={summary}
-            barberEarnings={barberEarnings}
+            professionalEarnings={professionalEarnings}
             expenses={expenses}
             newExpenseDisabled={newExpenseDisabled}
         />

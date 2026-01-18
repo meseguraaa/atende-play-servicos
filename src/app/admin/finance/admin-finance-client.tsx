@@ -25,6 +25,22 @@ export type AdminFinanceSummaryUI = {
     netIncomeIsPositive: boolean;
 };
 
+/**
+ * ✅ Baseado no schema atual:
+ * - Professional.id (professionalId)
+ * - ganhos de serviços e comissão de produtos
+ */
+export type ProfessionalMonthlyEarningsUI = {
+    professionalId: string;
+    name: string;
+    servicesEarnings: string;
+    productsEarnings: string;
+    total: string;
+};
+
+/**
+ * ✅ Compat/legado (caso alguma parte do server ainda use "barber")
+ */
 export type BarberMonthlyEarningsUI = {
     barberId: string;
     name: string;
@@ -48,7 +64,18 @@ type AdminFinanceClientProps = {
     monthLabel: string;
     monthQuery: string;
     summary: AdminFinanceSummaryUI;
-    barberEarnings: BarberMonthlyEarningsUI[];
+
+    /**
+     * ✅ Novo: faturamento por profissional
+     * Pode vir undefined se o server ainda não estiver populando.
+     */
+    professionalEarnings?: ProfessionalMonthlyEarningsUI[];
+
+    /**
+     * ✅ Legado: se o server ainda manda barberEarnings, não quebra.
+     */
+    barberEarnings?: BarberMonthlyEarningsUI[];
+
     expenses: ExpenseRowUI[];
     newExpenseDisabled?: boolean;
 
@@ -66,10 +93,25 @@ export default function AdminFinanceClient({
     monthLabel,
     monthQuery,
     summary,
+    professionalEarnings,
     barberEarnings,
     expenses,
     newExpenseDisabled,
 }: AdminFinanceClientProps) {
+    // ✅ Normaliza lista (não deixa undefined nunca)
+    const normalizedProfessionalEarnings: ProfessionalMonthlyEarningsUI[] =
+        Array.isArray(professionalEarnings)
+            ? professionalEarnings
+            : Array.isArray(barberEarnings)
+              ? barberEarnings.map((b) => ({
+                    professionalId: b.barberId,
+                    name: b.name,
+                    servicesEarnings: b.servicesEarnings,
+                    productsEarnings: b.productsEarnings,
+                    total: b.total,
+                }))
+              : [];
+
     return (
         <div className="space-y-6 max-w-7xl">
             <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -154,7 +196,9 @@ export default function AdminFinanceClient({
                 </div>
             </section>
 
-            <BarberMonthlyEarningsSection barbersEarnings={barberEarnings} />
+            <ProfessionalMonthlyEarningsSection
+                professionalsEarnings={normalizedProfessionalEarnings}
+            />
 
             {/* HEADER DO CADASTRO + BOTÃO */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -211,56 +255,71 @@ export default function AdminFinanceClient({
     );
 }
 
-/* ========= SEÇÃO: FATURAMENTO POR BARBEIRO ========= */
+/* ========= SEÇÃO: FATURAMENTO POR PROFISSIONAL ========= */
 
-function BarberMonthlyEarningsSection({
-    barbersEarnings,
+function ProfessionalMonthlyEarningsSection({
+    professionalsEarnings,
 }: {
-    barbersEarnings: BarberMonthlyEarningsUI[];
+    professionalsEarnings: ProfessionalMonthlyEarningsUI[];
 }) {
+    // ✅ extra safety (mesmo que chamem errado)
+    const list = Array.isArray(professionalsEarnings)
+        ? professionalsEarnings
+        : [];
+
     return (
         <section className="space-y-3">
             <div>
                 <h2 className="text-subtitle text-content-primary">
-                    Faturamento por barbeiro (mês)
+                    Faturamento por profissional (mês)
                 </h2>
                 <p className="text-paragraph-small text-content-secondary">
-                    Valores recebidos pelos barbeiros em serviços e comissões de
-                    produtos (pagos no mês).
+                    Valores recebidos em serviços e comissões de produtos (pagos
+                    no mês).
                 </p>
             </div>
 
-            {barbersEarnings.length === 0 ? (
+            {list.length === 0 ? (
                 <p className="text-paragraph-small text-content-secondary">
-                    Nenhum barbeiro ativo cadastrado.
+                    Nenhum profissional ativo cadastrado.
                 </p>
             ) : (
-                <div className="grid gap-4 md:grid-cols-3">
-                    {barbersEarnings.map((barber) => (
+                <div
+                    className="grid gap-4 grid-cols-1 sm:grid-cols-2"
+                    style={{
+                        // ✅ no md+ usa colunas dinâmicas até 5
+                        gridTemplateColumns:
+                            list.length <= 0
+                                ? undefined
+                                : `repeat(${Math.min(5, list.length)}, minmax(0, 1fr))`,
+                    }}
+                >
+                    {list.map((p) => (
                         <div
-                            key={barber.barberId}
+                            key={p.professionalId}
                             className="space-y-2 rounded-xl border border-border-primary bg-background-tertiary px-4 py-3"
                         >
                             <p className="text-label-large text-content-primary">
-                                {barber.name}
+                                {p.name}
                             </p>
+
                             <p className="text-paragraph-small text-content-secondary">
                                 Serviços:{' '}
                                 <span className="font-semibold">
-                                    {barber.servicesEarnings}
+                                    {p.servicesEarnings}
                                 </span>
                             </p>
+
                             <p className="text-paragraph-small text-content-secondary">
                                 Produtos:{' '}
                                 <span className="font-semibold">
-                                    {barber.productsEarnings}
+                                    {p.productsEarnings}
                                 </span>
                             </p>
+
                             <p className="text-paragraph-small text-content-secondary">
-                                Total recebido:{' '}
-                                <span className="font-semibold">
-                                    {barber.total}
-                                </span>
+                                Total:{' '}
+                                <span className="font-semibold">{p.total}</span>
                             </p>
                         </div>
                     ))}

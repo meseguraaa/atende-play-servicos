@@ -961,10 +961,12 @@ export default function Products() {
         [user?.name, user?.email]
     );
 
-    const avatarUrl = useMemo(
-        () => user?.image || 'https://i.pravatar.cc/200?img=12',
-        [user?.image]
-    );
+    const avatarUrl = useMemo(() => {
+        const raw = String(user?.image ?? '').trim();
+        return raw.length ? raw : null; // null = sem foto (cadastro manual)
+    }, [user?.image]);
+
+    const hasAvatar = useMemo(() => !!avatarUrl, [avatarUrl]);
 
     const userLevelLabel = useMemo(() => {
         const raw =
@@ -1840,10 +1842,21 @@ export default function Products() {
                         style={[styles.stickyRowBase, { height: STICKY_ROW_H }]}
                     >
                         <View style={S.profileRow}>
-                            <Image
-                                source={{ uri: avatarUrl }}
-                                style={styles.avatar42}
-                            />
+                            {hasAvatar ? (
+                                <Image
+                                    source={{ uri: avatarUrl as string }}
+                                    style={styles.avatar42}
+                                />
+                            ) : (
+                                <View style={S.avatarFallback42}>
+                                    <FontAwesome
+                                        name="user"
+                                        size={18}
+                                        color={UI.colors.white}
+                                    />
+                                </View>
+                            )}
+
                             <View>
                                 <Text style={S.hello}>Olá,</Text>
                                 <Text style={S.name} numberOfLines={1}>
@@ -2502,5 +2515,15 @@ const S = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.12)',
         borderWidth: 1,
         borderColor: 'rgba(255,255,255,0.12)',
+    },
+    avatarFallback42: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        backgroundColor: UI.brand.primary,
+        borderWidth: 2,
+        borderColor: UI.brand.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });

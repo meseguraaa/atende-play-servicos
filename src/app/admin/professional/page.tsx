@@ -1,12 +1,11 @@
 // src/app/admin/professional/page.tsx
 import type { Metadata } from 'next';
-
 import { prisma } from '@/lib/prisma';
 import { requireAdminForModule } from '@/lib/admin-permissions';
 
 import { Accordion } from '@/components/ui/accordion';
 
-import { ProfessionalRow } from '@/components/admin/professionals/professional-row';
+import { ProfessionalRow } from '@/components/admin/professionals/professional-row/professional-row';
 import { ProfessionalNewDialog } from '@/components/admin/professionals/professional-new-dialog';
 
 export const dynamic = 'force-dynamic';
@@ -35,6 +34,13 @@ type DailyAvailabilityRow = {
     date: Date;
     type: 'DAY_OFF' | 'CUSTOM';
     intervals: { startTime: string; endTime: string }[];
+};
+
+type ProfessionalReviewStats = {
+    avgRating: number;
+    totalReviews: number;
+    ratingsCount: { rating: number; count: number }[];
+    topTags: { label: string; count: number }[];
 };
 
 function buildWeeklySummaryLabel(weekly: WeeklyAvailabilityRow[]): string {
@@ -81,6 +87,55 @@ function buildExceptionsSummaryLabel(daily: DailyAvailabilityRow[]) {
     return parts.join(' • ') || 'Exceções cadastradas';
 }
 
+function computeReviewStats(reviews: Array<{ rating: number; tags?: any[] }>) {
+    if (!reviews || reviews.length === 0) return null;
+
+    const totalReviews = reviews.length;
+    const sumRatings = reviews.reduce((acc, r) => acc + (r.rating ?? 0), 0);
+    const avgRating = totalReviews > 0 ? sumRatings / totalReviews : 0;
+
+    // distribuição 1..5
+    const ratingsCountMap = new Map<number, number>();
+    for (let i = 1; i <= 5; i++) ratingsCountMap.set(i, 0);
+
+    for (const r of reviews) {
+        const val = Math.max(1, Math.min(5, Number(r.rating ?? 0)));
+        ratingsCountMap.set(val, (ratingsCountMap.get(val) ?? 0) + 1);
+    }
+
+    const ratingsCount = Array.from(ratingsCountMap.entries())
+        .map(([rating, count]) => ({ rating, count }))
+        .sort((a, b) => b.rating - a.rating);
+
+    // top tags
+    const tagMap = new Map<string, number>();
+    for (const r of reviews) {
+        for (const rt of r.tags ?? []) {
+            const label = String(rt?.tag?.label ?? '').trim();
+            if (!label) continue;
+            tagMap.set(label, (tagMap.get(label) ?? 0) + 1);
+        }
+    }
+
+    const topTags = Array.from(tagMap.entries())
+        .map(([label, count]) => ({ label, count }))
+        .sort((a, b) =>
+            b.count !== a.count
+                ? b.count - a.count
+                : a.label.localeCompare(b.label, 'pt-BR')
+        )
+        .slice(0, 5);
+
+    const stats: ProfessionalReviewStats = {
+        avgRating,
+        totalReviews,
+        ratingsCount,
+        topTags,
+    };
+
+    return stats;
+}
+
 export default async function AdminProfessionalsPage() {
     const session = await requireAdminForModule('PROFESSIONALS');
 
@@ -104,25 +159,37 @@ export default async function AdminProfessionalsPage() {
         orderBy: [{ isActive: 'desc' }, { name: 'asc' }],
     });
 
-    // ✅ Profissionais + vínculos + disponibilidades (para labels)
+    // ✅ Profissionais + vínculos + disponibilidades + reviews
     const professionals = await prisma.professional.findMany({
         where: { companyId },
         orderBy: [{ isActive: 'desc' }, { name: 'asc' }],
         include: {
+            user: true,
+
             units: {
                 where: { companyId },
                 include: { unit: true },
                 orderBy: { createdAt: 'asc' },
             },
+
             weeklyAvailabilities: {
                 where: { companyId },
                 include: { intervals: true },
                 orderBy: [{ weekday: 'asc' }, { createdAt: 'asc' }],
             },
+
             dailyAvailabilities: {
                 where: { companyId },
                 include: { intervals: true },
                 orderBy: [{ date: 'asc' }, { createdAt: 'asc' }],
+            },
+
+            reviews: {
+                where: { companyId },
+                include: {
+                    tags: { include: { tag: true } },
+                },
+                orderBy: { createdAt: 'desc' },
             },
         },
     });
@@ -161,6 +228,8 @@ export default async function AdminProfessionalsPage() {
             })
         );
 
+        const reviewStats = computeReviewStats(p.reviews as any);
+
         return {
             id: p.id,
             name: p.name,
@@ -170,13 +239,21 @@ export default async function AdminProfessionalsPage() {
             createdAt: p.createdAt,
             updatedAt: p.updatedAt,
             userId: p.userId ?? null,
-            imageUrl: p.imageUrl ?? null,
+
+            // ✅ imagem preferencial: Professional.imageUrl; fallback: User.image
+            imageUrl: p.imageUrl ?? p.user?.image ?? null,
 
             selectedUnitIds,
             linkedUnits,
 
+            // ✅ labels (linha do accordion)
             weeklyScheduleLabel: buildWeeklySummaryLabel(weekly),
             exceptionsLabel: buildExceptionsSummaryLabel(daily),
+
+            // ✅ dados completos (conteúdo do accordion)
+            weeklyAvailabilities: weekly,
+            dailyAvailabilities: daily,
+            reviewStats,
         };
     });
 
@@ -203,6 +280,7 @@ export default async function AdminProfessionalsPage() {
                 <h2 className="text-paragraph-medium text-content-primary">
                     Profissionais ativos
                 </h2>
+
                 <Accordion type="single" collapsible className="space-y-2">
                     {activeRows.length === 0 ? (
                         <p className="text-paragraph-small text-content-secondary px-2">
