@@ -24,7 +24,7 @@ import { apiFetch } from '../../../src/lib/api';
 import { ScreenGate } from '../../../src/components/layout/ScreenGate';
 import { ProfileSkeleton } from '../../../src/components/loading/ProfileSkeleton';
 
-const STICKY_ROW_H = 74;
+const STICKY_ROW_H = 0;
 const IOS_ACCESSORY_ID = 'profileEmptyAccessory';
 
 // ✅ removemos placeholder de imagem externa (agora fallback é ícone)
@@ -297,7 +297,7 @@ const Field = memo(function Field({
                     value={value}
                     placeholder={placeholder}
                     placeholderTextColor={UI.colors.black45}
-                    style={S.input}
+                    style={[S.input, editable === false && S.inputDisabled]}
                     editable={editable}
                     onChangeText={onChangeText}
                     keyboardType={keyboardType}
@@ -358,18 +358,18 @@ export default function Profile() {
     const didMeRef = useRef(false);
     const [dataReady, setDataReady] = useState(false);
 
-    const TOP_OFFSET = insets.top + STICKY_ROW_H;
-    const topBounceHeight = useMemo(() => TOP_OFFSET + 1400, [TOP_OFFSET]);
+    // ✅ topo fixo: safe top + header (importante pro offset do teclado)
+    const TOP_OFFSET = useMemo(() => insets.top + STICKY_ROW_H, [insets.top]);
 
-    const safeTopStyle = useMemo(
-        () => ({ height: insets.top, backgroundColor: UI.brand.primary }),
-        [insets.top]
-    );
+    // ✅ offset do teclado (Android e iOS) para não cobrir campos com header fixo
+    const keyboardOffset = useMemo(() => {
+        if (Platform.OS === 'ios') return TOP_OFFSET;
+        return TOP_OFFSET;
+    }, [TOP_OFFSET]);
 
-    const scrollContentStyle = useMemo(
-        () => [S.scrollContent, { paddingBottom: 28 + insets.bottom }],
-        [insets.bottom]
-    );
+    // ✅ regra: se tem URL válida (ex: Google), mostra imagem. Se não, mostra ícone.
+    const avatarUrl = useMemo(() => normalizeImageUrl(avatar), [avatar]);
+    const hasAvatar = useMemo(() => Boolean(avatarUrl), [avatarUrl]);
 
     // ✅ nível (label curta) + cores do Admin
     const userLevelLabel = useMemo(() => {
@@ -443,10 +443,6 @@ export default function Profile() {
 
         return `Para continuar usando o app, informe ${parts.join(' e ')}.`;
     }, [missingFields]);
-
-    // ✅ regra: se tem URL válida (ex: Google), mostra imagem. Se não, mostra ícone.
-    const avatarUrl = useMemo(() => normalizeImageUrl(avatar), [avatar]);
-    const hasAvatar = useMemo(() => Boolean(avatarUrl), [avatarUrl]);
 
     async function forceLogoutToLogin() {
         try {
@@ -676,10 +672,9 @@ export default function Profile() {
         <ScreenGate dataReady={dataReady} skeleton={<ProfileSkeleton />}>
             <KeyboardAvoidingView
                 style={{ flex: 1 }}
+                enabled
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                keyboardVerticalOffset={
-                    Platform.OS === 'ios' ? STICKY_ROW_H : 0
-                }
+                keyboardVerticalOffset={keyboardOffset}
             >
                 <View style={S.page}>
                     {Platform.OS === 'ios' ? (
@@ -697,7 +692,7 @@ export default function Profile() {
                             }}
                         />
                         <View style={S.stickyRow}>
-                            <Text style={S.title}>Perfil</Text>
+                            {/* ✅ removido "Perfil" para tudo subir */}
                         </View>
                     </View>
 
@@ -705,7 +700,11 @@ export default function Profile() {
                         style={S.scroll}
                         contentContainerStyle={[
                             S.scrollContent,
-                            { paddingBottom: 28 + insets.bottom },
+                            {
+                                paddingBottom:
+                                    (Platform.OS === 'android' ? 44 : 28) +
+                                    insets.bottom,
+                            },
                         ]}
                         showsVerticalScrollIndicator={false}
                         keyboardShouldPersistTaps="handled"
@@ -932,12 +931,7 @@ const S = StyleSheet.create({
         justifyContent: 'center',
     },
 
-    title: {
-        color: UI.colors.text,
-        fontSize: 16,
-        fontWeight: '600',
-        letterSpacing: 0.2,
-    },
+    // ✅ título removido
 
     scroll: { flex: 1, backgroundColor: UI.colors.white },
     scrollContent: { paddingBottom: 28 },
@@ -1140,6 +1134,11 @@ const S = StyleSheet.create({
         paddingVertical: 0,
     },
 
+    // ✅ cinza mais escuro para campos não editáveis (Nome e E-mail)
+    inputReadonly: {
+        color: '#3F3F3F',
+    },
+
     saveBtn: {
         marginTop: 16,
         height: 44,
@@ -1174,5 +1173,8 @@ const S = StyleSheet.create({
 
     levelPillRight: {
         marginLeft: 'auto',
+    },
+    inputDisabled: {
+        color: '#9CA3AF', // cinza típico de campo desabilitado (estilo iOS / Android)
     },
 });

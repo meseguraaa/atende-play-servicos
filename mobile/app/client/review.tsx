@@ -7,6 +7,8 @@ import {
     TextInput,
     ActivityIndicator,
     Alert,
+    Platform,
+    KeyboardAvoidingView,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter, usePathname } from 'expo-router';
@@ -579,67 +581,91 @@ export default function ClientReview() {
         [insets.top]
     );
 
-    const listPadBottom = useMemo(() => 28 + insets.bottom, [insets.bottom]);
+    // ✅ Android: dá um "respiro" extra pra não ficar espremido entre teclado e nav bar
+    const listPadBottom = useMemo(() => {
+        const base = 28 + insets.bottom;
+        return Platform.OS === 'android' ? base + 16 : base;
+    }, [insets.bottom]);
+
+    // ✅ Android: offset da área fixa do topo (safe top + header fixo)
+    const androidKeyboardOffset = useMemo(() => {
+        if (Platform.OS !== 'android') return 0;
+        return insets.top + STICKY_ROW_H;
+    }, [insets.top]);
 
     return (
         <ScreenGate dataReady={dataReady} skeleton={<HistorySkeleton />}>
-            <View style={S.page}>
-                <View style={S.fixedTop}>
-                    <View style={safeTopStyle} />
+            <KeyboardAvoidingView
+                style={{ flex: 1 }}
+                enabled={Platform.OS === 'android'}
+                behavior={Platform.OS === 'android' ? 'height' : undefined}
+                keyboardVerticalOffset={androidKeyboardOffset}
+            >
+                <View style={S.page}>
+                    <View style={S.fixedTop}>
+                        <View style={safeTopStyle} />
 
-                    <View style={S.stickyRow}>
-                        <Pressable style={S.backBtn} onPress={goBack}>
-                            <FontAwesome
-                                name="angle-left"
-                                size={22}
-                                color="#FFFFFF"
-                            />
-                        </Pressable>
-
-                        <View style={S.centerTitleWrap} pointerEvents="none">
-                            <Text style={S.centerTitle}>Avaliação</Text>
-                        </View>
-
-                        <Pressable style={S.refreshBtn} onPress={fetchPending}>
-                            {loading ? (
-                                <ActivityIndicator color="#FFFFFF" />
-                            ) : (
+                        <View style={S.stickyRow}>
+                            <Pressable style={S.backBtn} onPress={goBack}>
                                 <FontAwesome
-                                    name="refresh"
-                                    size={18}
+                                    name="angle-left"
+                                    size={22}
                                     color="#FFFFFF"
                                 />
-                            )}
-                        </Pressable>
-                    </View>
-                </View>
+                            </Pressable>
 
-                <KeyboardAwareSectionList
-                    sections={sections as any}
-                    keyExtractor={keyExtractor as any}
-                    renderItem={renderItem as any}
-                    renderSectionHeader={renderSectionHeader as any}
-                    stickySectionHeadersEnabled={false}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={[
-                        S.listContent,
-                        {
-                            paddingTop: listPadTop,
-                            paddingBottom: listPadBottom,
-                        },
-                    ]}
-                    style={S.list}
-                    removeClippedSubviews={false}
-                    initialNumToRender={10}
-                    maxToRenderPerBatch={12}
-                    windowSize={9}
-                    keyboardDismissMode="on-drag"
-                    keyboardShouldPersistTaps="always"
-                    enableOnAndroid
-                    extraScrollHeight={16}
-                    keyboardOpeningTime={0}
-                />
-            </View>
+                            <View
+                                style={S.centerTitleWrap}
+                                pointerEvents="none"
+                            >
+                                <Text style={S.centerTitle}>Avaliação</Text>
+                            </View>
+
+                            <Pressable
+                                style={S.refreshBtn}
+                                onPress={fetchPending}
+                            >
+                                {loading ? (
+                                    <ActivityIndicator color="#FFFFFF" />
+                                ) : (
+                                    <FontAwesome
+                                        name="refresh"
+                                        size={18}
+                                        color="#FFFFFF"
+                                    />
+                                )}
+                            </Pressable>
+                        </View>
+                    </View>
+
+                    <KeyboardAwareSectionList
+                        sections={sections as any}
+                        keyExtractor={keyExtractor as any}
+                        renderItem={renderItem as any}
+                        renderSectionHeader={renderSectionHeader as any}
+                        stickySectionHeadersEnabled={false}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={[
+                            S.listContent,
+                            {
+                                paddingTop: listPadTop,
+                                paddingBottom: listPadBottom,
+                            },
+                        ]}
+                        style={S.list}
+                        removeClippedSubviews={false}
+                        initialNumToRender={10}
+                        maxToRenderPerBatch={12}
+                        windowSize={9}
+                        keyboardDismissMode="on-drag"
+                        keyboardShouldPersistTaps="handled"
+                        enableOnAndroid
+                        extraScrollHeight={Platform.OS === 'android' ? 24 : 16}
+                        keyboardOpeningTime={0}
+                        enableAutomaticScroll
+                    />
+                </View>
+            </KeyboardAvoidingView>
         </ScreenGate>
     );
 }

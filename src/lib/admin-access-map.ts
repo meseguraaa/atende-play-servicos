@@ -10,6 +10,7 @@ export type AdminAccessLike = Partial<
         | 'canAccessServices'
         | 'canAccessReviews'
         | 'canAccessProducts'
+        | 'canAccessPartners'
         | 'canAccessClients'
         | 'canAccessClientLevels'
         | 'canAccessFinance'
@@ -27,6 +28,7 @@ export type AdminMenuKey =
     | 'services'
     | 'reviews'
     | 'products'
+    | 'partners'
     | 'clients'
     | 'clientLevels'
     | 'finance'
@@ -44,6 +46,7 @@ const MENU_TO_ACCESS_FIELD: Record<
     services: 'canAccessServices',
     reviews: 'canAccessReviews',
     products: 'canAccessProducts',
+    partners: 'canAccessPartners',
     clients: 'canAccessClients',
     clientLevels: 'canAccessClientLevels',
     finance: 'canAccessFinance',

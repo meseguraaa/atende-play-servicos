@@ -21,6 +21,10 @@ type AdminAccessLike = {
     canAccessServices: boolean;
     canAccessReviews: boolean;
     canAccessProducts: boolean;
+
+    // ✅ NOVO: Parceiros
+    canAccessPartners: boolean;
+
     canAccessClients: boolean;
     canAccessClientLevels: boolean;
     canAccessFinance: boolean;
@@ -89,8 +93,8 @@ export default async function AdminLayout({
 
     const isOwner = membership.role === 'OWNER';
 
-    // OWNER: mostra tudo no menu
-    // Sub-admin: precisa ter AdminAccess no banco
+    // ✅ OWNER: mostra tudo no menu
+    // ✅ Sub-admin: precisa ter AdminAccess no banco
     const adminAccess: AdminAccessLike | null = isOwner
         ? {
               canAccessDashboard: true,
@@ -101,6 +105,10 @@ export default async function AdminLayout({
               canAccessServices: true,
               canAccessReviews: true,
               canAccessProducts: true,
+
+              // ✅ NOVO: Parceiros
+              canAccessPartners: true,
+
               canAccessClients: true,
               canAccessClientLevels: true,
               canAccessFinance: true,
@@ -117,6 +125,10 @@ export default async function AdminLayout({
                   canAccessServices: true,
                   canAccessReviews: true,
                   canAccessProducts: true,
+
+                  // ✅ NOVO: Parceiros
+                  canAccessPartners: true,
+
                   canAccessClients: true,
                   canAccessClientLevels: true,
                   canAccessFinance: true,
@@ -130,7 +142,6 @@ export default async function AdminLayout({
 
     // ✅ Regra definitiva:
     // Se não houver NENHUM módulo liberado (e habilitado), não entra no /admin.
-    // (E não tenta “forçar” /admin/dashboard).
     if (!isOwner) {
         const firstAllowed = getFirstAllowedEnabledHref(adminAccess);
 
@@ -143,9 +154,6 @@ export default async function AdminLayout({
      * ✅ Unit options para o unit-picker no AdminNav
      * - OWNER: todas as unidades ativas da empresa
      * - Sub-admin: apenas unidades associadas via AdminUnitAccess
-     *
-     * Obs.: não adicionamos "all" agora, pra não deixar usuário selecionar algo
-     * que as páginas ainda não tratam.
      */
     const units = await prisma.unit.findMany({
         where: {

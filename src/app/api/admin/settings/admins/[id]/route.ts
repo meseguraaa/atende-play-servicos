@@ -1,4 +1,3 @@
-// src/app/api/admin/settings/admins/[id]/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminForModuleApi } from '@/lib/admin-permissions';
@@ -12,6 +11,10 @@ type PermissionsPayload = {
     canAccessServices: boolean;
     canAccessReviews: boolean;
     canAccessProducts: boolean;
+
+    // ✅ NOVO
+    canAccessPartners: boolean;
+
     canAccessClients: boolean;
     canAccessClientLevels: boolean;
     canAccessFinance: boolean;
@@ -44,6 +47,10 @@ function normalizePermissions(
         canAccessServices: Boolean(partial?.canAccessServices ?? false),
         canAccessReviews: Boolean(partial?.canAccessReviews ?? false),
         canAccessProducts: Boolean(partial?.canAccessProducts ?? false),
+
+        // ✅ NOVO
+        canAccessPartners: Boolean(partial?.canAccessPartners ?? false),
+
         canAccessClients: Boolean(partial?.canAccessClients ?? true),
         canAccessClientLevels: Boolean(partial?.canAccessClientLevels ?? false),
         canAccessFinance: Boolean(partial?.canAccessFinance ?? false),
@@ -65,6 +72,10 @@ function sanitizePatchPermissions(
         'canAccessServices',
         'canAccessReviews',
         'canAccessProducts',
+
+        // ✅ NOVO
+        'canAccessPartners',
+
         'canAccessClients',
         'canAccessClientLevels',
         'canAccessFinance',
@@ -124,6 +135,13 @@ function mergePermissions(params: {
             p.canAccessProducts !== undefined
                 ? Boolean(p.canAccessProducts)
                 : params.current.canAccessProducts,
+
+        // ✅ NOVO
+        canAccessPartners:
+            p.canAccessPartners !== undefined
+                ? Boolean(p.canAccessPartners)
+                : params.current.canAccessPartners,
+
         canAccessClients:
             p.canAccessClients !== undefined
                 ? Boolean(p.canAccessClients)
@@ -242,6 +260,10 @@ export async function PATCH(req: Request, ctx: RouteCtx) {
                     canAccessServices: true,
                     canAccessReviews: true,
                     canAccessProducts: true,
+
+                    // ✅ NOVO
+                    canAccessPartners: true,
+
                     canAccessClients: true,
                     canAccessClientLevels: true,
                     canAccessFinance: true,
@@ -261,6 +283,10 @@ export async function PATCH(req: Request, ctx: RouteCtx) {
                       canAccessServices: !!currentAccess.canAccessServices,
                       canAccessReviews: !!currentAccess.canAccessReviews,
                       canAccessProducts: !!currentAccess.canAccessProducts,
+
+                      // ✅ NOVO
+                      canAccessPartners: !!currentAccess.canAccessPartners,
+
                       canAccessClients: !!currentAccess.canAccessClients,
                       canAccessClientLevels:
                           !!currentAccess.canAccessClientLevels,

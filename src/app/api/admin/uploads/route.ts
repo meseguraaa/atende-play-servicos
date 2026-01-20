@@ -12,12 +12,22 @@ export const runtime = 'nodejs'; // precisamos de fs (salvar em /public)
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
 
-type UploadModule = 'PRODUCTS' | 'PROFESSIONALS';
-type UploadCategory = 'products' | 'professionals';
+type UploadModule = 'PRODUCTS' | 'PROFESSIONALS' | 'PARTNERS';
+type UploadCategory = 'products' | 'professionals' | 'partners';
 
 const MODULE_TO_CATEGORY: Record<UploadModule, UploadCategory> = {
     PRODUCTS: 'products',
     PROFESSIONALS: 'professionals',
+    PARTNERS: 'partners',
+};
+
+// ✅ resolve TS: requireAdminForModule espera AdminModule (seu app já usa SETTINGS nas rotas de parceiros)
+type AdminModuleLike = Parameters<typeof requireAdminForModule>[0];
+
+const MODULE_TO_PERMISSION: Record<UploadModule, AdminModuleLike> = {
+    PRODUCTS: 'PRODUCTS' as AdminModuleLike,
+    PROFESSIONALS: 'PROFESSIONALS' as AdminModuleLike,
+    PARTNERS: 'SETTINGS' as AdminModuleLike, // ✅ parceiros seguem padrão de SETTINGS
 };
 
 function jsonOk<T>(data: T, init?: ResponseInit) {
@@ -78,6 +88,7 @@ function parseModule(v: unknown): UploadModule | null {
     const raw = normalizeString(v).toUpperCase();
     if (raw === 'PRODUCTS') return 'PRODUCTS';
     if (raw === 'PROFESSIONALS') return 'PROFESSIONALS';
+    if (raw === 'PARTNERS') return 'PARTNERS';
     return null;
 }
 
@@ -85,7 +96,7 @@ function parseModule(v: unknown): UploadModule | null {
  * POST /api/admin/uploads
  * multipart/form-data:
  * - file: File (obrigatório)
- * - module: "PRODUCTS" | "PROFESSIONALS" (obrigatório)
+ * - module: "PRODUCTS" | "PROFESSIONALS" | "PARTNERS" (obrigatório)
  *
  * Salva em:
  * /public/uploads/<companyId>/<category>/<uuid>.<ext>
@@ -101,13 +112,14 @@ export async function POST(request: Request) {
         const module = parseModule(formGet(form, 'module'));
         if (!module) {
             return jsonErr(
-                'Campo "module" é obrigatório e deve ser "PRODUCTS" ou "PROFESSIONALS".',
+                'Campo "module" é obrigatório e deve ser "PRODUCTS", "PROFESSIONALS" ou "PARTNERS".',
                 400
             );
         }
 
-        // 🔒 Permissão conforme o módulo (Caminho A)
-        const session = await requireAdminForModule(module);
+        // 🔒 Permissão conforme o módulo (resolve TS + mantém padrão do app)
+        const permissionModule = MODULE_TO_PERMISSION[module];
+        const session = await requireAdminForModule(permissionModule);
 
         const companyId = normalizeString((session as any)?.companyId);
         if (!companyId) {

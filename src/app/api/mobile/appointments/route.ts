@@ -96,10 +96,23 @@ function isValidPhoneDigits(phoneDigits: string): boolean {
     return phoneDigits.length === 10 || phoneDigits.length === 11;
 }
 
+/**
+ * ✅ Overlap de intervalos [start, end)
+ */
 function intervalsOverlap(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date) {
     return (
         aStart.getTime() < bEnd.getTime() && aEnd.getTime() > bStart.getTime()
     );
+}
+
+function clampDurationMin(v: unknown, fallback = 30) {
+    const n = typeof v === 'number' ? v : Number(v);
+    if (!Number.isFinite(n) || n <= 0) return fallback;
+    return Math.max(1, Math.round(n));
+}
+
+function isThirtyMinuteSlot(d: Date) {
+    return d.getMinutes() % 30 === 0;
 }
 
 async function ensureAvailability(
@@ -108,16 +121,20 @@ async function ensureAvailability(
     professionalId: string,
     durationMinutes: number
 ): Promise<string | null> {
-    const newStart = scheduleAt;
-    const newEnd = addMinutes(scheduleAt, Math.max(0, durationMinutes || 0));
+    // ✅ garante duração válida (evita “0 minutos” matar o bloqueio)
+    const durNew = clampDurationMin(durationMinutes, 30);
 
+    const newStart = scheduleAt;
+    const newEnd = addMinutes(scheduleAt, durNew);
+
+    // Janela suficiente pra pegar conflitos próximos (inclusive atravessando meia-noite)
     const windowStart = addMinutes(newStart, -12 * 60);
     const windowEnd = addMinutes(newEnd, 12 * 60);
 
     const candidates = await prisma.appointment.findMany({
         where: {
             companyId,
-            professionalId, // ✅ novo
+            professionalId,
             status: { not: 'CANCELED' },
             scheduleAt: { gte: windowStart, lte: windowEnd },
         },
@@ -131,10 +148,11 @@ async function ensureAvailability(
 
     for (const appt of candidates) {
         const existingStart = appt.scheduleAt;
-        const existingEnd = addMinutes(
-            existingStart,
-            Math.max(0, appt.service?.durationMinutes ?? 0)
-        );
+
+        // ✅ saneia duração do existente (se vier null / 0, assume 30)
+        const durExisting = clampDurationMin(appt.service?.durationMinutes, 30);
+
+        const existingEnd = addMinutes(existingStart, durExisting);
 
         if (intervalsOverlap(existingStart, existingEnd, newStart, newEnd)) {
             return 'Este profissional já possui um agendamento que conflita com este horário';
@@ -260,6 +278,14 @@ export async function POST(req: Request) {
             );
         }
 
+        // ✅ regra do produto: slots sempre de 30 em 30
+        if (!isThirtyMinuteSlot(scheduleAt)) {
+            return NextResponse.json(
+                { error: 'Horário inválido (use intervalos de 30 minutos).' },
+                { status: 400, headers: corsHeaders() }
+            );
+        }
+
         const unit = await prisma.unit.findFirst({
             where: { id: unitId, companyId },
             select: { id: true, isActive: true },
@@ -309,9 +335,21 @@ export async function POST(req: Request) {
             );
         }
 
+        // ✅ valida que o profissional existe e está ativo no tenant
+        const professional = await prisma.professional.findFirst({
+            where: { id: resolvedProfessionalId, companyId, isActive: true },
+            select: { id: true },
+        });
+        if (!professional) {
+            return NextResponse.json(
+                { error: 'Profissional não encontrado ou inativo' },
+                { status: 404, headers: corsHeaders() }
+            );
+        }
+
         const professionalUnit = await prisma.professionalUnit.findFirst({
             where: {
-                professionalId: resolvedProfessionalId, // ✅ novo
+                professionalId: resolvedProfessionalId,
                 unitId,
                 isActive: true,
                 companyId,
@@ -332,7 +370,7 @@ export async function POST(req: Request) {
                 professionalId: resolvedProfessionalId,
                 serviceId,
                 companyId,
-            }, // ✅ novo
+            },
             select: { id: true },
         });
         if (!sp) {
@@ -384,13 +422,13 @@ export async function POST(req: Request) {
                 scheduleAt,
 
                 serviceId,
-                professionalId: resolvedProfessionalId, // ✅ novo
+                professionalId: resolvedProfessionalId,
                 unitId,
                 clientId,
 
                 servicePriceAtTheTime: service.price,
-                professionalPercentageAtTheTime: service.professionalPercentage, // ✅ novo
-                professionalEarningValue, // ✅ novo
+                professionalPercentageAtTheTime: service.professionalPercentage,
+                professionalEarningValue,
                 status: 'PENDING',
             },
             select: {

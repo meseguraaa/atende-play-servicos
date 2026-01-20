@@ -15,6 +15,7 @@ import {
     FlatList,
     ListRenderItemInfo,
     Alert,
+    ViewToken,
 } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -145,6 +146,15 @@ type Product = {
     imageUrl: string | null;
     unitName: string;
     isOutOfStock: boolean;
+};
+
+type Partner = {
+    id: string;
+    name: string;
+    logoUrl: string | null;
+    discountPct: number;
+    description: string | null;
+    sortOrder?: number | null;
 };
 
 type HistoryItem = {
@@ -301,6 +311,60 @@ function levelChipColors(level: CustomerLevelKey) {
     }
 }
 
+// ✅ normaliza url de imagem vinda da API (mesmo padrão de partners/products)
+function normalizeApiImageUrl(raw: unknown): string | null {
+    const s = String(raw ?? '').trim();
+    if (!s) return null;
+
+    const lower = s.toLowerCase();
+    const isHttp = lower.startsWith('http://') || lower.startsWith('https://');
+
+    const getRealHostOrigin = () => {
+        try {
+            const full = (api as any)?.getUri
+                ? (api as any).getUri({ url: '/api/health' })
+                : null;
+
+            if (typeof full === 'string' && full.includes('://')) {
+                const u = new URL(full);
+                return `${u.protocol}//${u.host}`;
+            }
+        } catch {}
+
+        return null as string | null;
+    };
+
+    if (isHttp) {
+        try {
+            const u = new URL(s);
+            const host = u.hostname;
+
+            if (host === 'localhost' || host === '127.0.0.1') {
+                const real = getRealHostOrigin();
+                if (!real) return s;
+                return `${real}${u.pathname}${u.search}`;
+            }
+
+            return s;
+        } catch {
+            return s;
+        }
+    }
+
+    const baseFromApi =
+        (api as any)?.defaults?.baseURL ||
+        (api as any)?.defaults?.baseUrl ||
+        '';
+
+    const base = String(baseFromApi ?? '').trim();
+    const path = s.startsWith('/') ? s : `/${s}`;
+
+    if (!base) return path;
+
+    const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
+    return `${cleanBase}${path}`;
+}
+
 const ProductCard = memo(function ProductCard({
     item,
     showDivider,
@@ -448,6 +512,80 @@ const ProductCard = memo(function ProductCard({
     );
 });
 
+const PartnerCard = memo(function PartnerCard({
+    item,
+    onPressDetails,
+}: {
+    item: Partner;
+    onPressDetails: (id: string) => void;
+}) {
+    const pct = Number(item.discountPct ?? 0);
+    const pctLabel =
+        Number.isFinite(pct) && pct > 0 ? `${Math.round(pct)}% OFF` : null;
+
+    const goDetails = useCallback(() => {
+        onPressDetails(item.id);
+    }, [item.id, onPressDetails]);
+
+    return (
+        <Pressable
+            onPress={goDetails}
+            style={S.partnerCard}
+            android_ripple={{}}
+        >
+            <View style={{ position: 'relative' }}>
+                <Image
+                    source={{
+                        uri:
+                            item.logoUrl ||
+                            'https://picsum.photos/seed/partner-placeholder/400/300',
+                    }}
+                    style={S.partnerImage}
+                    fadeDuration={0}
+                />
+
+                {pctLabel ? (
+                    <View style={S.partnerPill}>
+                        <Text style={S.partnerPillText} numberOfLines={1}>
+                            {pctLabel}
+                        </Text>
+                    </View>
+                ) : null}
+            </View>
+
+            <View style={S.partnerBody}>
+                <Text style={S.partnerName} numberOfLines={2}>
+                    {item.name}
+                </Text>
+
+                <Text style={S.partnerDesc} numberOfLines={2}>
+                    {item.description || 'Toque para ver detalhes e regras.'}
+                </Text>
+
+                <View style={S.partnerFooter}>
+                    <Pressable
+                        onPress={goDetails}
+                        style={S.detailsBtn}
+                        hitSlop={8}
+                    >
+                        <View style={S.btnCenterRow}>
+                            <Text style={S.detailsBtnText}>Ver parceiro</Text>
+                            <FontAwesome
+                                name="angle-right"
+                                size={18}
+                                color="#141414"
+                                style={{ marginLeft: 8 }}
+                            />
+                        </View>
+                    </Pressable>
+                </View>
+            </View>
+
+            <View style={S.partnerDivider} />
+        </Pressable>
+    );
+});
+
 const HistoryRow = memo(function HistoryRow({
     item,
     showDivider,
@@ -513,6 +651,9 @@ export default function Home() {
 
     const [historyPreview, setHistoryPreview] = useState<HistoryItem[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
+    const [partners, setPartners] = useState<Partner[]>([]);
+    const fetchingPartnersRef = useRef(false);
+    const didPartnersRef = useRef(false);
 
     const [pendingCartOrderId, setPendingCartOrderId] = useState<string | null>(
         null
@@ -545,6 +686,7 @@ export default function Home() {
         didCartRef.current = false;
         didReviewRef.current = false;
         setDataReady(false);
+        didPartnersRef.current = false;
     }, []);
 
     const recomputeReady = useCallback(() => {
@@ -552,8 +694,10 @@ export default function Home() {
             didNextRef.current &&
             didHistoryRef.current &&
             didProductsRef.current &&
+            didPartnersRef.current &&
             didCartRef.current &&
             didReviewRef.current;
+
         if (ok) setDataReady(true);
     }, []);
 
@@ -729,6 +873,89 @@ export default function Home() {
         }
     }, [recomputeReady, withTenantHeaders]);
 
+    const fetchPartnersPreview = useCallback(async () => {
+        if (fetchingPartnersRef.current) return;
+        fetchingPartnersRef.current = true;
+
+        try {
+            const cid = companyIdRef.current;
+
+            const res = (await api.get(
+                '/api/mobile/partners',
+                withTenantHeaders()
+            )) as any;
+
+            const rawList =
+                (Array.isArray(res?.items) ? res.items : null) ??
+                (Array.isArray(res?.partners) ? res.partners : null) ??
+                [];
+
+            const mapped: Partner[] = rawList
+                .map((p: any) => {
+                    const id = String(p?.id ?? '').trim();
+                    if (!id) return null;
+
+                    const sortOrderRaw = Number(p?.sortOrder ?? 100000);
+                    const sortOrder = Number.isFinite(sortOrderRaw)
+                        ? sortOrderRaw
+                        : 100000;
+
+                    return {
+                        id,
+                        name: String(p?.name ?? 'Parceiro'),
+                        // ✅ mesmo padrão da tela de Parceiros: normaliza (inclui baseURL/localhost)
+                        logoUrl: normalizeApiImageUrl(p?.logoUrl) || null,
+                        discountPct: Number(p?.discountPct ?? 0),
+                        description: p?.description
+                            ? String(p.description)
+                            : null,
+                        sortOrder,
+                    };
+                })
+                .filter(Boolean)
+                .sort((a: Partner, b: Partner) => {
+                    const ao = Number(a.sortOrder ?? 100000);
+                    const bo = Number(b.sortOrder ?? 100000);
+
+                    if (ao !== bo) return ao - bo;
+
+                    // desempate estável: nome
+                    const an = String(a.name ?? '').toLowerCase();
+                    const bn = String(b.name ?? '').toLowerCase();
+                    if (an < bn) return -1;
+                    if (an > bn) return 1;
+
+                    // último desempate: id
+                    return String(a.id).localeCompare(String(b.id));
+                })
+                .slice(0, 6) as Partner[];
+
+            setPartners(mapped);
+
+            // analytics de carregamento (opcional mas útil)
+            trackEvent(
+                'partners_loaded',
+                {
+                    page: 'home',
+                    count: Array.isArray(rawList)
+                        ? rawList.length
+                        : mapped.length,
+
+                    placement: 'home_carousel',
+                },
+                undefined,
+                cid
+            );
+        } catch {
+            setPartners([]);
+        } finally {
+            fetchingPartnersRef.current = false;
+
+            didPartnersRef.current = true;
+            recomputeReady();
+        }
+    }, [recomputeReady, withTenantHeaders]);
+
     const fetchPendingCart = useCallback(async () => {
         if (cartFetchingRef.current)
             return { id: null as string | null, count: 0 };
@@ -800,6 +1027,7 @@ export default function Home() {
         didProductsRef.current = true;
         didCartRef.current = true;
         didReviewRef.current = true;
+        didPartnersRef.current = true;
         setDataReady(true);
     }, []);
 
@@ -840,6 +1068,7 @@ export default function Home() {
                 fetchNext();
                 fetchHistoryPreview();
                 fetchProductsPreview();
+                fetchPartnersPreview();
                 fetchPendingCart();
                 fetchPendingReviewCount();
             })();
@@ -901,6 +1130,17 @@ export default function Home() {
         router.push('/products');
     }, [router]);
 
+    const goToPartners = useCallback(() => {
+        const cid = companyIdRef.current;
+        trackEvent(
+            'nav_click',
+            { from: 'home', to: '/partners' },
+            undefined,
+            cid
+        );
+        router.push('/partners');
+    }, [router]);
+
     const goToProductDetails = useCallback(
         (id: string) => {
             const cid = companyIdRef.current;
@@ -918,6 +1158,29 @@ export default function Home() {
 
             router.push({
                 pathname: '/(app)/(tabs)/products/[id]',
+                params: { id },
+            });
+        },
+        [router]
+    );
+
+    const goToPartnerDetails = useCallback(
+        (id: string) => {
+            const cid = companyIdRef.current;
+
+            trackEvent(
+                'partner_click',
+                {
+                    from: 'home',
+                    placement: 'home_carousel',
+                    partnerId: id,
+                },
+                undefined,
+                cid
+            );
+
+            router.push({
+                pathname: '/(app)/(tabs)/partners/[id]',
                 params: { id },
             });
         },
@@ -1072,6 +1335,54 @@ export default function Home() {
         ),
         [goToProductDetails, products.length]
     );
+
+    const seenPartnerIdsRef = useRef<Set<string>>(new Set());
+
+    const keyPartner = useCallback((item: Partner) => item.id, []);
+
+    const renderPartner = useCallback(
+        ({ item }: ListRenderItemInfo<Partner>) => (
+            <PartnerCard item={item} onPressDetails={goToPartnerDetails} />
+        ),
+        [goToPartnerDetails]
+    );
+
+    const onViewablePartnersChanged = useRef(
+        ({ viewableItems }: { viewableItems: Array<ViewToken> }) => {
+            const cid = companyIdRef.current;
+            if (!cid) return;
+
+            try {
+                for (const v of viewableItems) {
+                    const item = v?.item as Partner | undefined;
+                    if (!item?.id) continue;
+                    if (!v?.isViewable) continue;
+
+                    if (!seenPartnerIdsRef.current.has(item.id)) {
+                        seenPartnerIdsRef.current.add(item.id);
+
+                        trackEvent(
+                            'partner_impression',
+                            {
+                                page: 'home',
+                                partnerId: item.id,
+                                placement: 'home_carousel',
+                                hasLogo: !!item.logoUrl,
+                                discountPct: Number(item.discountPct ?? 0),
+                            },
+                            undefined,
+                            cid
+                        );
+                    }
+                }
+            } catch {}
+        }
+    ).current;
+
+    const partnersViewabilityConfig = useRef({
+        itemVisiblePercentThreshold: 60,
+        minimumViewTime: 250,
+    }).current;
 
     const renderHistory = useCallback(
         ({ item, index }: ListRenderItemInfo<HistoryItem>) => (
@@ -1271,7 +1582,7 @@ export default function Home() {
                                     <Text style={S.emptyApptText}>
                                         {nextLoading
                                             ? 'Carregando seu próximo horário…'
-                                            : 'Reserve agora mesmo o seu horário com a gente!'}
+                                            : 'Agende seu horário.'}
                                     </Text>
 
                                     <View style={S.actionsRow}>
@@ -1283,7 +1594,7 @@ export default function Home() {
                                             <Text style={S.actionText}>
                                                 {nextLoading
                                                     ? 'Aguarde…'
-                                                    : 'Novo agendamento'}
+                                                    : 'NOVO AGENDAMENTO'}
                                             </Text>
                                         </Pressable>
                                     </View>
@@ -1333,6 +1644,56 @@ export default function Home() {
                                 />
                             </View>
                         </Pressable>
+
+                        <View style={[S.sectionTitleSpacing]}>
+                            <Text style={S.sectionTitle}>Parceiros</Text>
+
+                            {partners.length === 0 ? (
+                                <View style={{ paddingVertical: 10 }}>
+                                    <Text style={S.emptyProductsText}>
+                                        Nenhum parceiro disponível no momento.
+                                    </Text>
+                                </View>
+                            ) : (
+                                <>
+                                    <FlatList
+                                        data={partners}
+                                        keyExtractor={keyPartner}
+                                        renderItem={renderPartner}
+                                        horizontal
+                                        showsHorizontalScrollIndicator={false}
+                                        removeClippedSubviews
+                                        initialNumToRender={3}
+                                        maxToRenderPerBatch={4}
+                                        windowSize={5}
+                                        viewabilityConfig={
+                                            partnersViewabilityConfig
+                                        }
+                                        onViewableItemsChanged={
+                                            onViewablePartnersChanged
+                                        }
+                                    />
+
+                                    {/* ✅ Botão igual ao de Produtos */}
+                                    <Pressable
+                                        style={S.allProductsBtn}
+                                        onPress={goToPartners}
+                                    >
+                                        <View style={S.btnCenterRow}>
+                                            <Text style={S.allProductsBtnText}>
+                                                Ver todos os parceiros
+                                            </Text>
+                                            <FontAwesome
+                                                name="angle-right"
+                                                size={18}
+                                                color="#FFFFFF"
+                                                style={{ marginLeft: 8 }}
+                                            />
+                                        </View>
+                                    </Pressable>
+                                </>
+                            )}
+                        </View>
 
                         <View
                             style={[S.historyHeaderRow, S.sectionTitleSpacing]}
@@ -1388,7 +1749,8 @@ export default function Home() {
         );
 
         Alert.alert(
-            'Parabéns pra você! 🎂 \nAproveite os descontos especiais para aniversariantes.'
+            'Parabéns pra você! 🎂',
+            'Aproveite os descontos especiais\npara aniversariantes!'
         );
     }, [birthdayBadgeLabel]);
 
@@ -1724,20 +2086,20 @@ const S = StyleSheet.create({
     actionsRow: { flexDirection: 'row', gap: 10 },
     actionBtn: {
         flex: 1,
-        backgroundColor: UI.brand.primary,
+        backgroundColor: '#00ff3c',
         borderRadius: 999,
         paddingVertical: 12,
         alignItems: 'center',
         borderWidth: 1,
         borderColor: UI.colors.cardBorder,
     },
-    actionText: { color: UI.colors.text, fontWeight: '700' },
+    actionText: { color: '#000', fontWeight: '700', fontSize: 17 },
 
     emptyApptBox: { padding: 5, gap: 14 },
 
     emptyApptText: {
         color: UI.colors.text,
-        fontSize: 13,
+        fontSize: 17,
         fontWeight: '500',
         lineHeight: 18,
         textAlign: 'center',
@@ -1985,5 +2347,75 @@ const S = StyleSheet.create({
         borderColor: UI.brand.primary,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+
+    partnersHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+        marginBottom: 12,
+    },
+
+    partnerCard: {
+        width: 220,
+        marginRight: 18,
+        paddingRight: 18,
+        position: 'relative',
+    },
+
+    partnerImage: {
+        height: 140,
+        borderRadius: UI.radius.input,
+        marginBottom: 12,
+        backgroundColor: 'rgba(0,0,0,0.05)',
+    },
+
+    partnerPill: {
+        position: 'absolute',
+        left: 10,
+        top: 10,
+        maxWidth: 175,
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        backgroundColor: 'rgba(20,20,20,0.92)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.22)',
+    },
+
+    partnerPillText: {
+        color: '#FFFFFF',
+        fontSize: 12,
+        fontWeight: '800',
+        letterSpacing: 0.2,
+    },
+
+    partnerBody: { flex: 1, minHeight: 128 },
+
+    partnerName: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: UI.brand.primaryText,
+    },
+
+    partnerDesc: {
+        marginTop: 6,
+        fontSize: 12,
+        fontWeight: '700',
+        color: 'rgba(0,0,0,0.55)',
+        lineHeight: 16,
+        minHeight: 32,
+    },
+
+    partnerFooter: { marginTop: 10, flex: 1, justifyContent: 'flex-end' },
+
+    partnerDivider: {
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: 1,
+        backgroundColor: 'rgba(0,0,0,0.10)',
     },
 });

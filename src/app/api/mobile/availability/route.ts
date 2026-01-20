@@ -85,9 +85,27 @@ function timeToMinutes(hhmmStr: string) {
     return Number(m[1]) * 60 + Number(m[2]);
 }
 
+function clampDurationMin(v: unknown, fallback = 30) {
+    const n = Number(v);
+    if (!Number.isFinite(n) || n <= 0) return fallback;
+    return Math.max(1, Math.round(n));
+}
+
+/**
+ * ✅ Overlap de intervalos [start, end)
+ */
+function intervalsOverlapMin(
+    aStart: number,
+    aEnd: number,
+    bStart: number,
+    bEnd: number
+) {
+    return aStart < bEnd && aEnd > bStart;
+}
+
 function buildSlotsForInterval(args: {
     startTime: string; // HH:mm
-    endTime: string; // HH:mm  (fim do expediente, não último slot)
+    endTime: string; // HH:mm (fim do expediente, não último slot)
     durationMin: number;
     stepMin: number;
 }) {
@@ -144,7 +162,7 @@ function getWeekdayInSaoPaulo(date: Date) {
 }
 
 /**
- * ✅ Range UTC do "dia em São Paulo" (serve pra daily availability e conflitos).
+ * ✅ Range UTC do "dia em São Paulo"
  */
 function buildSaoPauloDayUtcRange(dateISO: string) {
     const d = new Date(dateISO);
@@ -206,7 +224,7 @@ function normalizeIntervals(list: Interval[]) {
 }
 
 /**
- * ✅ Interseção de intervalos (prof ∩ unidade), retornando lista de overlaps.
+ * ✅ Interseção de intervalos (prof ∩ unidade)
  */
 function intersectIntervals(prof: Interval[], unit: Interval[]): Interval[] {
     const A = normalizeIntervals(prof);
@@ -239,6 +257,35 @@ function intersectIntervals(prof: Interval[], unit: Interval[]): Interval[] {
     return out;
 }
 
+/**
+ * ✅ Extrai HH:mm em São Paulo (independente do timezone do servidor)
+ */
+function getHHMMInSaoPaulo(d: Date) {
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Sao_Paulo',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    }).formatToParts(d);
+
+    const get = (type: string) =>
+        parts.find((p) => p.type === type)?.value ?? '';
+
+    const hh = get('hour');
+    const mm = get('minute');
+
+    const h = Number(hh);
+    const m = Number(mm);
+
+    if (!Number.isFinite(h) || !Number.isFinite(m)) return '';
+    return `${pad2(h)}:${pad2(m)}`;
+}
+
+function getMinutesInSaoPaulo(d: Date) {
+    const s = getHHMMInSaoPaulo(d);
+    return timeToMinutes(s);
+}
+
 export async function GET(req: Request) {
     const headers = corsHeaders();
 
@@ -246,7 +293,7 @@ export async function GET(req: Request) {
         const payload = await requireMobileAuth(req);
         const companyId = payload.companyId;
 
-        // ✅ Mantém padrão do app: só cliente consulta disponibilidade do fluxo mobile
+        // ✅ padrão: só CLIENT consulta disponibilidade no fluxo mobile
         if (payload.role && payload.role !== 'CLIENT') {
             return NextResponse.json(
                 { ok: false, error: 'Sem permissão' },
@@ -345,6 +392,12 @@ export async function GET(req: Request) {
                 { status: 400, headers }
             );
         }
+
+        // ✅ normaliza duração do serviço selecionado
+        serviceDurationInMinutes = clampDurationMin(
+            serviceDurationInMinutes,
+            30
+        );
 
         const profUnit = await prisma.professionalUnit.findFirst({
             where: {
@@ -517,8 +570,7 @@ export async function GET(req: Request) {
         }
 
         /* ---------------------------------------------------------
-         * 4) Gera slots por intervalo (já respeitando unidade)
-         *    ✅ agora com "latestStart = end - duration"
+         * 4) Gera slots por intervalo
          * ---------------------------------------------------------*/
         const slotSet = new Set<string>();
 
@@ -527,7 +579,7 @@ export async function GET(req: Request) {
                 startTime: it.startTime,
                 endTime: it.endTime,
                 durationMin: serviceDurationInMinutes,
-                stepMin: 30,
+                stepMin: 30, // ✅ fixo (seu app é sempre 30 em 30)
             });
             for (const s of intervalSlots) slotSet.add(s);
         }
@@ -537,7 +589,7 @@ export async function GET(req: Request) {
         );
 
         /* ---------------------------------------------------------
-         * 5) Remove conflitos (appointments no dia SP)
+         * 5) Remove conflitos por INTERVALO (appointments no dia SP)
          * ---------------------------------------------------------*/
         const conflicts = await prisma.appointment.findMany({
             where: {
@@ -548,14 +600,52 @@ export async function GET(req: Request) {
                 scheduleAt: { gte: dayStartUtc, lte: dayEndUtc },
                 ...(appointmentId ? { id: { not: appointmentId } } : {}),
             } as any,
-            select: { scheduleAt: true },
+            select: {
+                id: true,
+                scheduleAt: true,
+                service: { select: { durationMinutes: true } },
+            },
+            orderBy: { scheduleAt: 'asc' },
         });
 
-        const blocked = new Set<string>(
-            conflicts.map((a) => hhmm(new Date(a.scheduleAt as any)))
-        );
+        const busy = (conflicts ?? [])
+            .map((a: any) => {
+                const startMin = getMinutesInSaoPaulo(new Date(a.scheduleAt));
+                const durMin = clampDurationMin(
+                    a?.service?.durationMinutes ?? 30,
+                    30
+                );
+                const endMin = startMin + durMin;
 
-        slots = slots.filter((t) => !blocked.has(t));
+                if (!Number.isFinite(startMin) || startMin < 0) return null;
+                if (!Number.isFinite(endMin) || endMin <= startMin) return null;
+
+                return { startMin, endMin };
+            })
+            .filter(Boolean) as { startMin: number; endMin: number }[];
+
+        if (busy.length) {
+            slots = slots.filter((t) => {
+                const startMin = timeToMinutes(normalizeHHMM(t));
+                if (!Number.isFinite(startMin)) return false;
+
+                const endMin = startMin + serviceDurationInMinutes;
+
+                for (const b of busy) {
+                    if (
+                        intervalsOverlapMin(
+                            startMin,
+                            endMin,
+                            b.startMin,
+                            b.endMin
+                        )
+                    ) {
+                        return false;
+                    }
+                }
+                return true;
+            });
+        }
 
         /* ---------------------------------------------------------
          * 6) Em edição: manter horário atual visível
@@ -603,6 +693,7 @@ export async function GET(req: Request) {
                     professionalAvailabilitySource: profSource,
                     unitAvailabilitySource: unitSource,
                     effectiveIntervals,
+                    busyCount: busy.length,
                     hasAvailability: slots.length > 0,
                 },
             },

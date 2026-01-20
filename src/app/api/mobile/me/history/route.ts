@@ -65,7 +65,7 @@ async function requireMobileAuth(req: Request): Promise<MobileTokenPayload> {
     const headerCompanyId = normalizeCompanyIdFromHeader(req);
 
     const companyId = tokenCompanyId || headerCompanyId;
-    if (!companyId) throw new Error('companyId_missing');
+    if (!companyId) throw new Error('companyid_missing');
 
     // ✅ anti-spoof: user precisa ter membership nesse companyId
     const membership = await prisma.companyMember.findFirst({
@@ -82,6 +82,32 @@ async function requireMobileAuth(req: Request): Promise<MobileTokenPayload> {
         name: (payload as any).name ?? null,
         companyId,
     };
+}
+
+/* ---------------------------------------------------------
+ * ✅ Expiração on-demand (sem cron)
+ * - cancela pedidos PENDING_CHECKIN vencidos
+ * - faz sumir da sacolinha (view=bag)
+ * - entra no histórico como CANCELED (view=history)
+ * ---------------------------------------------------------*/
+async function expirePendingOrdersForClient(args: {
+    companyId: string;
+    clientId: string;
+}) {
+    const now = new Date();
+
+    await prisma.order.updateMany({
+        where: {
+            companyId: args.companyId,
+            clientId: args.clientId,
+            status: 'PENDING_CHECKIN',
+            reservedUntil: { not: null, lte: now },
+        },
+        data: {
+            status: 'CANCELED',
+            expiredAt: now,
+        },
+    });
 }
 
 function formatPreviewDate(d: Date) {
@@ -157,6 +183,9 @@ export async function GET(req: Request) {
 
         const clientId = me.sub;
         const companyId = me.companyId;
+
+        // ✅ Passo 1 do histórico: expirar pedidos vencidos (on-demand)
+        await expirePendingOrdersForClient({ companyId, clientId });
 
         const [doneAppointments, canceledAppointments, orders, reviewedAppts] =
             await Promise.all([
@@ -421,6 +450,7 @@ export async function GET(req: Request) {
             lower.includes('jwt') ||
             lower.includes('signature') ||
             lower.includes('companyid_missing') ||
+            lower.includes('companyId_missing') ||
             lower.includes('forbidden_company');
 
         return NextResponse.json(

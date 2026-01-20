@@ -59,7 +59,7 @@ type CartOrder = {
     id: string;
     status: string;
     createdAt: string;
-    reservedUntil: string | null;
+    reservedUntil: string | null; // ✅ vencimento pronto do backend
     totalAmount: number;
     unitId: string;
     unitName: string;
@@ -81,7 +81,6 @@ type CartResponse = {
 function formatMoneySmartBRL(value: number) {
     const v = Number(value ?? 0);
     const safe = Number.isFinite(v) ? v : 0;
-
     const isInt = Math.abs(safe - Math.round(safe)) < 1e-9;
 
     try {
@@ -191,7 +190,6 @@ export default function CartScreen() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
     const pathname = usePathname();
-
     const params = useLocalSearchParams<{
         orderId?: string | string[];
         id?: string | string[];
@@ -206,8 +204,9 @@ export default function CartScreen() {
     const [loading, setLoading] = useState(true);
     const [order, setOrder] = useState<CartOrder | null>(null);
     const [failed, setFailed] = useState(false);
-
     const [dataReady, setDataReady] = useState(false);
+
+    const [removingId, setRemovingId] = useState<string>('');
 
     const goBack = useCallback(() => {
         router.back();
@@ -227,14 +226,11 @@ export default function CartScreen() {
 
     // ✅ page_viewed (dedupe por foco)
     const lastViewedKeyRef = useRef<string>('');
-
     const trackPageViewed = useCallback(() => {
         const page = normalizePage(pathname || '/');
         const key = `${page}|${orderId || 'no-order'}`;
-
         if (lastViewedKeyRef.current === key) return;
         lastViewedKeyRef.current = key;
-
         try {
             trackEvent('page_viewed', {
                 page,
@@ -266,8 +262,8 @@ export default function CartScreen() {
             const direct = (res?.order ??
                 res?.item ??
                 null) as CartOrder | null;
-
             const list = (res?.orders ?? res?.items ?? []) as CartOrder[];
+
             const fromList =
                 Array.isArray(list) && list.length
                     ? (list.find((o) => String(o?.id) === String(orderId)) ??
@@ -347,7 +343,65 @@ export default function CartScreen() {
         return s === 'CANCELED';
     }, [order?.status]);
 
+    // ✅ remove item (por produto)
+    const removeItemFromCart = useCallback(
+        async (item: CartItem) => {
+            if (!order || !isPendingPickup) return;
+            if (!item?.id) return;
+            if (removingId) return;
+
+            Alert.alert(
+                'Remover item',
+                'Tem certeza que deseja remover este produto da sua reserva?',
+                [
+                    { text: 'Cancelar', style: 'cancel' },
+                    {
+                        text: 'Remover',
+                        style: 'destructive',
+                        onPress: async () => {
+                            try {
+                                setRemovingId(String(item.id));
+
+                                // ✅ endpoint esperado (ajuste aqui se o seu for diferente)
+                                const res: any = await api.delete(
+                                    `/api/mobile/cart/items/${encodeURIComponent(
+                                        String(item.id)
+                                    )}`
+                                );
+
+                                if (!res?.ok) {
+                                    throw new Error(
+                                        res?.error || 'remove_failed'
+                                    );
+                                }
+
+                                // recarrega pedido e total
+                                await load();
+                            } catch (e: any) {
+                                console.log(
+                                    '[cart] remove item error:',
+                                    e?.data ?? e?.message ?? e
+                                );
+                                Alert.alert(
+                                    'Ops',
+                                    'Não foi possível remover esse item agora.'
+                                );
+                            } finally {
+                                setRemovingId('');
+                            }
+                        },
+                    },
+                ]
+            );
+        },
+        [order, isPendingPickup, removingId, load]
+    );
+
     const Header = useMemo(() => {
+        const reservedUntilLabel = order?.reservedUntil
+            ? formatDateTimeBR(order.reservedUntil)
+            : '—';
+
         return (
             <View style={S.listHeader}>
                 {!orderId ? (
@@ -409,6 +463,33 @@ export default function CartScreen() {
                                 label="Reservado em"
                                 value={formatDateTimeBR(order.createdAt)}
                             />
+
+                            {/* ✅ EXIBIÇÃO DO VENCIMENTO (sem contagem regressiva) */}
+                            {isPendingPickup ? (
+                                <View style={S.expireBox}>
+                                    <View style={S.expireTop}>
+                                        <View style={S.expireIcon}>
+                                            <FontAwesome
+                                                name="hourglass-end"
+                                                size={14}
+                                                color={UI.brand.primaryText}
+                                            />
+                                        </View>
+                                        <Text style={S.expireTitle}>
+                                            Retire até
+                                        </Text>
+                                        <Text style={S.expireValue}>
+                                            {reservedUntilLabel}
+                                        </Text>
+                                    </View>
+                                    <Text style={S.expireText}>
+                                        Após esse prazo, a reserva expira e o
+                                        pedido é cancelado automaticamente. Ele
+                                        sai da sacolinha e aparece no seu
+                                        histórico como cancelado.
+                                    </Text>
+                                </View>
+                            ) : null}
                         </View>
 
                         {isCompleted || isCanceled ? (
@@ -421,13 +502,11 @@ export default function CartScreen() {
                                             : 'Este pedido foi cancelado'}
                                     </Text>
                                 </View>
-
                                 <Text style={S.statusText}>
                                     {isCompleted
                                         ? 'Quando fizer o checkout, ele sai da sacolinha e aparece no seu histórico.'
                                         : 'Se precisar, você pode fazer uma nova reserva na lista de produtos.'}
                                 </Text>
-
                                 <View
                                     style={{
                                         flexDirection: 'row',
@@ -443,7 +522,6 @@ export default function CartScreen() {
                                             Ir pra Home
                                         </Text>
                                     </Pressable>
-
                                     {isCompleted ? (
                                         <Pressable
                                             style={[S.primaryBtn, { flex: 1 }]}
@@ -483,96 +561,137 @@ export default function CartScreen() {
         goHome,
         isCompleted,
         isCanceled,
+        isPendingPickup,
     ]);
 
-    const renderItem = useCallback(({ item }: { item: CartItem }) => {
-        const name = item.product?.name ?? 'Produto';
-        const category = item.product?.category ?? null;
+    const renderItem = useCallback(
+        ({ item }: { item: CartItem }) => {
+            const name = item.product?.name ?? 'Produto';
+            const category = item.product?.category ?? null;
 
-        // ✅ resolve URL absoluto (igual tela de produtos)
-        const imageUri = resolveImageUri(item.product?.imageUrl);
+            // ✅ resolve URL absoluto (igual tela de produtos)
+            const imageUri = resolveImageUri(item.product?.imageUrl);
 
-        // ✅ visibilidade do motor (com fallback)
-        const base = Number(item.product?.basePrice ?? NaN);
-        const final = Number.isFinite(Number(item.product?.finalPrice))
-            ? Number(item.product?.finalPrice)
-            : Number(item.unitPrice); // fallback: preço salvo no item
+            // ✅ visibilidade do motor (com fallback)
+            const base = Number(item.product?.basePrice ?? NaN);
+            const final = Number.isFinite(Number(item.product?.finalPrice))
+                ? Number(item.product?.finalPrice)
+                : Number(item.unitPrice); // fallback: preço salvo no item
 
-        const hasDiscount =
-            typeof item.product?.hasDiscount === 'boolean'
-                ? item.product.hasDiscount
-                : Number.isFinite(base) &&
-                  Number.isFinite(final) &&
-                  final < base;
+            const hasDiscount =
+                typeof item.product?.hasDiscount === 'boolean'
+                    ? item.product.hasDiscount
+                    : Number.isFinite(base) &&
+                      Number.isFinite(final) &&
+                      final < base;
 
-        const badge = item.product?.badge ?? null;
+            const badge = item.product?.badge ?? null;
 
-        const lineTotal = Number(item.totalPrice); // já vem calculado no backend
+            const lineTotal = Number(item.totalPrice); // já vem calculado no backend
 
-        return (
-            <View style={S.itemCard}>
-                <View style={S.itemImageWrap}>
-                    {imageUri ? (
-                        <Image
-                            source={{ uri: imageUri }}
-                            style={S.itemImage}
-                            resizeMode="cover"
-                        />
-                    ) : (
-                        <View style={S.itemImagePlaceholder}>
-                            <FontAwesome
-                                name="image"
-                                size={18}
-                                color={UI.colors.black45}
+            const canRemove = !!order && isPendingPickup;
+            const isRemovingThis = removingId === String(item.id);
+
+            return (
+                <View style={S.itemCard}>
+                    <View style={S.itemImageWrap}>
+                        {imageUri ? (
+                            <Image
+                                source={{ uri: imageUri }}
+                                style={S.itemImage}
+                                resizeMode="cover"
                             />
-                        </View>
-                    )}
-                </View>
-
-                <View style={{ flex: 1 }}>
-                    <View style={S.itemTopRow}>
-                        <Text style={S.itemName} numberOfLines={2}>
-                            {name}
-                        </Text>
-
-                        {badge ? (
-                            <View style={S.badgePill}>
-                                <Text style={S.badgePillText} numberOfLines={1}>
-                                    {badge.label}
-                                </Text>
+                        ) : (
+                            <View style={S.itemImagePlaceholder}>
+                                <FontAwesome
+                                    name="image"
+                                    size={18}
+                                    color={UI.colors.black45}
+                                />
                             </View>
-                        ) : null}
+                        )}
                     </View>
 
-                    {category ? (
-                        <Text style={S.itemMeta} numberOfLines={1}>
-                            {category}
-                        </Text>
-                    ) : null}
+                    <View style={{ flex: 1 }}>
+                        <View style={S.itemTopRow}>
+                            <Text style={S.itemName} numberOfLines={2}>
+                                {name}
+                            </Text>
 
-                    {/* preços */}
-                    <View style={S.pricesRow}>
-                        <Text style={S.unitFinalPrice}>
-                            {formatMoneySmartBRL(final)}
-                        </Text>
+                            {badge ? (
+                                <View style={S.badgePill}>
+                                    <Text
+                                        style={S.badgePillText}
+                                        numberOfLines={1}
+                                    >
+                                        {badge.label}
+                                    </Text>
+                                </View>
+                            ) : null}
+                        </View>
 
-                        {hasDiscount && Number.isFinite(base) ? (
-                            <Text style={S.unitBasePrice}>
-                                {formatMoneySmartBRL(base)}
+                        {category ? (
+                            <Text style={S.itemMeta} numberOfLines={1}>
+                                {category}
                             </Text>
                         ) : null}
-                    </View>
 
-                    <View style={S.itemBottomRow}>
-                        <Text style={S.itemQty}>Qtd: {item.quantity}</Text>
-                        <Text style={S.itemPrice}>
-                            {formatMoneySmartBRL(lineTotal)}
-                        </Text>
+                        {/* preços */}
+                        <View style={S.pricesRow}>
+                            <Text style={S.unitFinalPrice}>
+                                {formatMoneySmartBRL(final)}
+                            </Text>
+                            {hasDiscount && Number.isFinite(base) ? (
+                                <Text style={S.unitBasePrice}>
+                                    {formatMoneySmartBRL(base)}
+                                </Text>
+                            ) : null}
+                        </View>
+
+                        <View style={S.itemBottomRow}>
+                            <Text style={S.itemQty}>Qtd: {item.quantity}</Text>
+
+                            <View style={S.itemActionsRow}>
+                                {canRemove ? (
+                                    <Pressable
+                                        style={[
+                                            S.removeBtn,
+                                            isRemovingThis
+                                                ? S.removeBtnDisabled
+                                                : null,
+                                        ]}
+                                        onPress={() => removeItemFromCart(item)}
+                                        disabled={isRemovingThis}
+                                        hitSlop={10}
+                                    >
+                                        {isRemovingThis ? (
+                                            <ActivityIndicator />
+                                        ) : (
+                                            <>
+                                                <FontAwesome
+                                                    name="trash"
+                                                    size={14}
+                                                    color={UI.colors.white}
+                                                />
+                                                <Text style={S.removeBtnText}>
+                                                    Remover
+                                                </Text>
+                                            </>
+                                        )}
+                                    </Pressable>
+                                ) : null}
+
+                                <Text style={S.itemPrice}>
+                                    {formatMoneySmartBRL(lineTotal)}
+                                </Text>
+                            </View>
+                        </View>
                     </View>
                 </View>
-            </View>
-        );
-    }, []);
+            );
+        },
+        [order, isPendingPickup, removingId, removeItemFromCart]
+    );
 
     const onPressEntendi = useCallback(() => {
         Alert.alert(
@@ -587,7 +706,6 @@ export default function CartScreen() {
             <View style={S.page}>
                 <View style={S.fixedTop}>
                     <View style={safeTopStyle} />
-
                     <View style={S.stickyRow}>
                         <Pressable style={S.backBtn} onPress={goBack}>
                             <FontAwesome
@@ -668,7 +786,10 @@ export default function CartScreen() {
 }
 
 const S = StyleSheet.create({
-    page: { flex: 1, backgroundColor: UI.colors.bg },
+    page: {
+        flex: 1,
+        backgroundColor: UI.colors.bg,
+    },
 
     fixedTop: {
         position: 'absolute',
@@ -712,6 +833,7 @@ const S = StyleSheet.create({
     },
 
     list: { flex: 1, backgroundColor: UI.colors.white },
+
     listContent: { paddingBottom: 140 },
 
     listHeader: {
@@ -777,6 +899,52 @@ const S = StyleSheet.create({
         color: UI.colors.black,
     },
 
+    // ✅ bloco de vencimento
+    expireBox: {
+        marginTop: 2,
+        borderRadius: 14,
+        backgroundColor: UI.colors.black05,
+        borderWidth: 1,
+        borderColor: UI.colors.black10,
+        padding: 10,
+        gap: 8,
+    },
+
+    expireTop: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+
+    expireIcon: {
+        width: 26,
+        height: 26,
+        borderRadius: 10,
+        backgroundColor: 'rgba(0,0,0,0.06)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    expireTitle: {
+        fontSize: 12,
+        fontWeight: '900',
+        color: UI.brand.primaryText,
+    },
+
+    expireValue: {
+        marginLeft: 'auto',
+        fontSize: 12,
+        fontWeight: '900',
+        color: UI.brand.primaryText,
+    },
+
+    expireText: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: 'rgba(0,0,0,0.55)',
+        lineHeight: 17,
+    },
+
     sectionHeader: {
         paddingTop: 18,
         paddingBottom: 10,
@@ -796,11 +964,7 @@ const S = StyleSheet.create({
         color: 'rgba(0,0,0,0.50)',
     },
 
-    statusBox: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-    },
+    statusBox: { flexDirection: 'row', alignItems: 'center', gap: 10 },
 
     statusDot: {
         width: 10,
@@ -920,7 +1084,39 @@ const S = StyleSheet.create({
 
     itemQty: { fontSize: 12, color: UI.colors.black45, fontWeight: '700' },
 
-    itemPrice: { fontSize: 13, fontWeight: '900', color: UI.brand.primaryText },
+    itemActionsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginLeft: 'auto',
+    },
+
+    removeBtn: {
+        height: 32,
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        backgroundColor: '#141414',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+    },
+
+    removeBtnDisabled: {
+        opacity: 0.55,
+    },
+
+    removeBtnText: {
+        color: UI.colors.white,
+        fontSize: 12,
+        fontWeight: '800',
+    },
+
+    itemPrice: {
+        fontSize: 13,
+        fontWeight: '900',
+        color: UI.brand.primaryText,
+    },
 
     footer: {
         position: 'absolute',
@@ -986,11 +1182,7 @@ const S = StyleSheet.create({
         justifyContent: 'center',
     },
 
-    allProductsBtnText: {
-        color: '#FFFFFF',
-        fontSize: 14,
-        fontWeight: '700',
-    },
+    allProductsBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
 
     btnCenterRow: {
         flexDirection: 'row',

@@ -13,6 +13,7 @@ export type AdminModule =
     | 'SERVICES'
     | 'REVIEWS'
     | 'PRODUCTS'
+    | 'PARTNERS'
     | 'CLIENTS'
     | 'CLIENT_LEVELS'
     | 'FINANCE'
@@ -42,6 +43,7 @@ type AdminAccessFlag =
     | 'canAccessServices'
     | 'canAccessReviews'
     | 'canAccessProducts'
+    | 'canAccessPartners'
     | 'canAccessClients'
     | 'canAccessClientLevels'
     | 'canAccessFinance'
@@ -57,6 +59,7 @@ const ADMIN_ACCESS_SELECT: AdminAccessSelect = {
     canAccessServices: true,
     canAccessReviews: true,
     canAccessProducts: true,
+    canAccessPartners: true,
     canAccessClients: true,
     canAccessClientLevels: true,
     canAccessFinance: true,
@@ -81,6 +84,8 @@ function moduleToAccessField(module: AdminModule): AdminAccessFlag | null {
             return 'canAccessReviews';
         case 'PRODUCTS':
             return 'canAccessProducts';
+        case 'PARTNERS':
+            return 'canAccessPartners';
         case 'CLIENTS':
             return 'canAccessClients';
         case 'CLIENT_LEVELS':
@@ -196,26 +201,25 @@ type ModuleRoute = { module: AdminModule; href: string };
 /**
  * ✅ Ordem de “melhor destino” quando falta permissão.
  *
- * IMPORTANTE:
- * - NÃO colocamos DASHBOARD em primeiro, porque se o usuário tiver dashboard liberado,
- *   qualquer falta de permissão jogaria sempre pra lá e pareceria que "todo link vai pro dashboard".
- * - Dashboard vira fallback "final" (se for a única coisa liberada).
+ * Mantemos DASHBOARD por último (se for o único liberado, vira fallback final).
+ * O restante segue a ordem do menu que você pediu.
  */
 const FALLBACK_ROUTES: ModuleRoute[] = [
     { module: 'APPOINTMENTS', href: '/admin/appointments' },
     { module: 'CHECKOUT', href: '/admin/checkout' },
-    { module: 'FINANCE', href: '/admin/finance' },
-    { module: 'CLIENTS', href: '/admin/clients' },
-    { module: 'CLIENT_LEVELS', href: '/admin/client-levels' },
-    { module: 'PRODUCTS', href: '/admin/products' },
-    { module: 'SERVICES', href: '/admin/services' },
     {
         module: 'PROFESSIONALS',
         // ✅ FIX: rota correta (plural)
         href: '/admin/professionals',
     },
+    { module: 'SERVICES', href: '/admin/services' },
+    { module: 'PRODUCTS', href: '/admin/products' },
+    { module: 'PARTNERS', href: '/admin/partners' },
+    { module: 'CLIENTS', href: '/admin/clients' },
+    { module: 'CLIENT_LEVELS', href: '/admin/client-levels' },
     { module: 'REVIEWS', href: '/admin/review-tags' },
     { module: 'REPORTS', href: '/admin/reports' },
+    { module: 'FINANCE', href: '/admin/finance' },
     { module: 'SETTINGS', href: '/admin/setting' },
     // deixa dashboard por último
     { module: 'DASHBOARD', href: '/admin/dashboard' },

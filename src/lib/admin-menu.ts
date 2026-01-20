@@ -39,7 +39,6 @@ function isEnabled(menuKey: AdminMenuKey): boolean {
 
 /**
  * ✅ Fonte única do menu (ordem + href + key).
- * O "enabled" permite desativar módulo temporariamente e ter fallback automático.
  */
 export const ADMIN_MENU: AdminMenuItem[] = [
     {
@@ -47,12 +46,6 @@ export const ADMIN_MENU: AdminMenuItem[] = [
         label: 'Dashboard',
         menuKey: 'dashboard',
         enabled: isEnabled('dashboard'),
-    },
-    {
-        href: '/admin/reports',
-        label: 'Relatórios',
-        menuKey: 'reports',
-        enabled: isEnabled('reports'),
     },
     {
         href: '/admin/appointments',
@@ -67,7 +60,6 @@ export const ADMIN_MENU: AdminMenuItem[] = [
         enabled: isEnabled('checkout'),
     },
     {
-        // ✅ FIX: rota correta (plural)
         href: '/admin/professionals',
         label: 'Profissionais',
         menuKey: 'professionals',
@@ -80,16 +72,17 @@ export const ADMIN_MENU: AdminMenuItem[] = [
         enabled: isEnabled('services'),
     },
     {
-        href: '/admin/review-tags',
-        label: 'Avaliação',
-        menuKey: 'reviews',
-        enabled: isEnabled('reviews'),
-    },
-    {
         href: '/admin/products',
         label: 'Produtos',
         menuKey: 'products',
         enabled: isEnabled('products'),
+    },
+    {
+        // ✅ NOVO: Parceiros
+        href: '/admin/partners',
+        label: 'Parceiros',
+        menuKey: 'partners',
+        enabled: isEnabled('partners'),
     },
     {
         href: '/admin/clients',
@@ -102,6 +95,18 @@ export const ADMIN_MENU: AdminMenuItem[] = [
         label: 'Nível de Cliente',
         menuKey: 'clientLevels',
         enabled: isEnabled('clientLevels'),
+    },
+    {
+        href: '/admin/review-tags',
+        label: 'Avaliação',
+        menuKey: 'reviews',
+        enabled: isEnabled('reviews'),
+    },
+    {
+        href: '/admin/reports',
+        label: 'Relatórios',
+        menuKey: 'reports',
+        enabled: isEnabled('reports'),
     },
     {
         href: '/admin/finance',
@@ -118,7 +123,7 @@ export const ADMIN_MENU: AdminMenuItem[] = [
 ];
 
 /**
- * Helper: retorna o próximo href "válido" (enabled) na ordem do menu.
+ * Helper: retorna o primeiro href habilitado na ordem do menu.
  */
 export function getFirstEnabledAdminHref(): string | null {
     return ADMIN_MENU.find((i) => i.enabled)?.href ?? null;

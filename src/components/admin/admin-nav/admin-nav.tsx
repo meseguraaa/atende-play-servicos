@@ -19,6 +19,7 @@ import {
     BarChart3,
     Building2,
     Medal,
+    Handshake,
 } from 'lucide-react';
 
 import { canAccess } from '@/lib/admin-access-map';
@@ -42,6 +43,7 @@ type AdminAccessLike = Partial<
         | 'canAccessServices'
         | 'canAccessReviews'
         | 'canAccessProducts'
+        | 'canAccessPartners'
         | 'canAccessClients'
         | 'canAccessClientLevels'
         | 'canAccessFinance'
@@ -57,7 +59,19 @@ export type UnitOption = {
 
 export type AdminNavProps = {
     className?: string;
+
+    /**
+     * Permissões do admin (sub-admin vem do banco).
+     * OWNER normalmente não tem linha em adminAccess, então pode vir null.
+     */
     adminAccess?: AdminAccessLike | null;
+
+    /**
+     * ✅ IMPORTANTE:
+     * O menu precisa saber quando é OWNER, porque o canAccess() é fail-closed.
+     * Se for OWNER, mostramos todos os menus habilitados.
+     */
+    isOwner?: boolean;
 
     /**
      * Se informado, o unit-picker aparece no topo do menu e o `unit` é preservado nos links.
@@ -78,6 +92,7 @@ const ICON_BY_KEY: Record<
     services: ListChecks,
     reviews: Tag,
     products: Package,
+    partners: Handshake,
     clients: Users,
 
     // ✅ “Nível do cliente” com medalha bonita
@@ -147,7 +162,6 @@ function mapAdminHref(link: (typeof ADMIN_MENU)[number]) {
         return link.href.replace('/client-levels', '/client-level');
 
     // ✅ review-tags -> review-tag (singular)
-    // (caso o ADMIN_MENU use /admin/review-tags)
     if (link.menuKey === 'reviews')
         return link.href.replace('/review-tags', '/review-tag');
 
@@ -169,17 +183,42 @@ function isPathActive(pathname: string | null, href: string) {
     return pathname.startsWith(withSlash);
 }
 
+function buildOwnerAccess(): AdminAccessLike {
+    return {
+        canAccessDashboard: true,
+        canAccessReports: true,
+        canAccessCheckout: true,
+        canAccessAppointments: true,
+        canAccessProfessionals: true,
+        canAccessServices: true,
+        canAccessReviews: true,
+        canAccessProducts: true,
+        canAccessPartners: true, // ✅ NOVO
+        canAccessClients: true,
+        canAccessClientLevels: true,
+        canAccessFinance: true,
+        canAccessSettings: true,
+    };
+}
+
 export function AdminNav({
     className,
     adminAccess,
+    isOwner,
     unitOptions,
 }: AdminNavProps) {
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
 
+    // ✅ OWNER: não depende de adminAccess (que pode ser null)
+    const effectiveAccess: AdminAccessLike | null | undefined = isOwner
+        ? buildOwnerAccess()
+        : adminAccess;
+
     const visibleLinks = ADMIN_MENU.filter(
-        (link) => link.enabled && canAccess(adminAccess as any, link.menuKey)
+        (link) =>
+            link.enabled && canAccess(effectiveAccess as any, link.menuKey)
     );
 
     const shouldShowUnitPicker = !!unitOptions?.length;
@@ -237,7 +276,6 @@ export function AdminNav({
             {shouldShowUnitPicker && (
                 <div className="px-2 pb-3">
                     <div className={cn('rounded-xl p-2')}>
-                        {/* Cabeçalho (ícone sempre visível, texto só no hover) */}
                         <div className="flex items-center gap-2 px-2 pb-2">
                             <Building2 className="h-4 w-4 shrink-0 text-content-brand" />
                             <span
@@ -252,7 +290,6 @@ export function AdminNav({
                             </span>
                         </div>
 
-                        {/* Select só aparece quando o menu abre */}
                         <div
                             className={cn(
                                 'opacity-0 -translate-x-1 pointer-events-none',
