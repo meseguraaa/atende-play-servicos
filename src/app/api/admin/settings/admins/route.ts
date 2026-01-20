@@ -13,6 +13,10 @@ type PermissionsPayload = {
     canAccessServices: boolean;
     canAccessReviews: boolean;
     canAccessProducts: boolean;
+
+    // ✅ NOVO: Parceiros
+    canAccessPartners: boolean;
+
     canAccessClients: boolean;
     canAccessClientLevels: boolean;
     canAccessFinance: boolean;
@@ -64,6 +68,10 @@ function normalizePermissions(
         canAccessServices: Boolean(partial?.canAccessServices ?? false),
         canAccessReviews: Boolean(partial?.canAccessReviews ?? false),
         canAccessProducts: Boolean(partial?.canAccessProducts ?? false),
+
+        // ✅ NOVO: Parceiros
+        canAccessPartners: Boolean(partial?.canAccessPartners ?? false),
+
         canAccessClients: Boolean(partial?.canAccessClients ?? true),
         canAccessClientLevels: Boolean(partial?.canAccessClientLevels ?? false),
         canAccessFinance: Boolean(partial?.canAccessFinance ?? false),
@@ -123,6 +131,10 @@ export async function GET() {
                       canAccessServices: true,
                       canAccessReviews: true,
                       canAccessProducts: true,
+
+                      // ✅ NOVO: Parceiros
+                      canAccessPartners: true,
+
                       canAccessClients: true,
                       canAccessClientLevels: true,
                       canAccessFinance: true,
@@ -143,6 +155,10 @@ export async function GET() {
                 canAccessServices: !!a.canAccessServices,
                 canAccessReviews: !!a.canAccessReviews,
                 canAccessProducts: !!a.canAccessProducts,
+
+                // ✅ NOVO: Parceiros
+                canAccessPartners: !!a.canAccessPartners,
+
                 canAccessClients: !!a.canAccessClients,
                 canAccessClientLevels: !!a.canAccessClientLevels,
                 canAccessFinance: !!a.canAccessFinance,
@@ -167,6 +183,10 @@ export async function GET() {
                                   canAccessServices: true,
                                   canAccessReviews: true,
                                   canAccessProducts: true,
+
+                                  // ✅ OWNER vê parceiros também
+                                  canAccessPartners: true,
+
                                   canAccessClients: true,
                                   canAccessClientLevels: true,
                                   canAccessFinance: true,

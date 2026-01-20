@@ -113,6 +113,104 @@ async function requireMobileAuth(req: Request): Promise<MobileTokenPayload> {
 }
 
 /* ---------------------------------------------------------
+ * ✅ Expiração on-demand (sem cron)
+ * - Se venceu: cancela o pedido automaticamente
+ * - Reverte estoque uma única vez (inventoryRevertedAt)
+ * ---------------------------------------------------------*/
+async function expireOrderIfNeeded(args: {
+    companyId: string;
+    clientId: string;
+    orderId: string;
+}) {
+    const now = new Date();
+
+    // pega o mínimo necessário (barato)
+    const o = await prisma.order.findFirst({
+        where: {
+            id: args.orderId,
+            companyId: args.companyId,
+            clientId: args.clientId,
+        },
+        select: {
+            id: true,
+            status: true,
+            reservedUntil: true,
+            inventoryRevertedAt: true,
+            items: {
+                select: {
+                    id: true,
+                    productId: true,
+                    quantity: true,
+                },
+            },
+        },
+    });
+
+    if (!o?.id) return null; // não existe ou não pertence ao cliente
+
+    const status = String(o.status ?? '')
+        .toUpperCase()
+        .trim();
+    const reservedUntil =
+        o.reservedUntil instanceof Date ? o.reservedUntil : null;
+
+    const shouldExpire =
+        status === 'PENDING_CHECKIN' &&
+        !!reservedUntil &&
+        reservedUntil.getTime() <= now.getTime();
+
+    if (!shouldExpire) return o;
+
+    // ✅ cancela e reverte estoque (1x) em transação
+    await prisma.$transaction(async (tx) => {
+        // Reverte estoque só se ainda não revertido
+        if (!o.inventoryRevertedAt) {
+            const productItems = (o.items ?? []).filter(
+                (it) => it.productId && Number(it.quantity ?? 0) > 0
+            );
+
+            for (const it of productItems) {
+                const pid = String(it.productId);
+                const qty = Math.max(1, Number(it.quantity ?? 1));
+
+                // incrementa stockQuantity
+                await tx.product.update({
+                    where: { id: pid },
+                    data: {
+                        stockQuantity: { increment: qty },
+                    },
+                });
+            }
+
+            await tx.order.update({
+                where: { id: o.id },
+                data: {
+                    inventoryRevertedAt: now,
+                },
+                select: { id: true },
+            });
+        }
+
+        // Cancela o pedido e marca expiração
+        await tx.order.update({
+            where: { id: o.id },
+            data: {
+                status: 'CANCELED',
+                expiredAt: now,
+            },
+            select: { id: true },
+        });
+    });
+
+    // retorna um “snapshot” simples, mas o GET abaixo vai buscar o pedido completo de novo
+    return {
+        ...o,
+        status: 'CANCELED',
+        expiredAt: now,
+    };
+}
+
+/* ---------------------------------------------------------
  * 🔥 MOTOR DE PREÇO (Mobile) - DESCONTO (%)
  * (mesmo padrão do /products)
  * ---------------------------------------------------------*/
@@ -362,6 +460,14 @@ export async function GET(
             );
         }
 
+        // ✅ Passo 1: expira on-demand (sem cron)
+        await expireOrderIfNeeded({
+            companyId,
+            clientId: auth.sub,
+            orderId,
+        });
+
+        // ✅ agora busca o pedido “já consistente”
         const o = await prisma.order.findFirst({
             where: {
                 id: orderId,

@@ -1,0 +1,477 @@
+// src/app/api/admin/partners/[partnerId]/route.ts
+import { NextResponse } from 'next/server';
+
+import { prisma } from '@/lib/prisma';
+import { requireAdminForModuleApi } from '@/lib/admin-permissions';
+
+export const dynamic = 'force-dynamic';
+
+type PartnerVisibilityMode = 'ALL' | 'SELECTED';
+
+type UpdatePartnerPayload = {
+    name?: string;
+
+    // ✅ upload já existe
+    logoUrl?: string | null;
+    logoKey?: string | null;
+
+    discountPct?: number | string;
+
+    description?: string | null;
+    rules?: string | null;
+
+    ctaUrl?: string;
+    ctaLabel?: string | null;
+
+    isActive?: boolean; // (não usado aqui, mas deixo compat)
+    visibilityMode?: PartnerVisibilityMode;
+    sortOrder?: number | string;
+
+    // ✅ usado quando visibilityMode = SELECTED
+    companyIds?: string[];
+};
+
+type PatchPayload =
+    | {
+          toggleActive: true;
+      }
+    | {
+          update: UpdatePartnerPayload;
+      };
+
+function jsonOk<T>(data: T, init?: ResponseInit) {
+    return NextResponse.json({ ok: true, data } as const, init);
+}
+
+function jsonErr(error: string, status = 400) {
+    return NextResponse.json({ ok: false, error } as const, { status });
+}
+
+function normalizeString(raw: unknown) {
+    const s = String(raw ?? '').trim();
+    return s.length ? s : '';
+}
+
+function normalizeNullableString(raw: unknown) {
+    const s = String(raw ?? '').trim();
+    return s.length ? s : null;
+}
+
+function toInt(
+    raw: unknown,
+    fallback: number,
+    opts?: { min?: number; max?: number }
+) {
+    const n =
+        typeof raw === 'number'
+            ? raw
+            : Number(
+                  String(raw ?? '')
+                      .trim()
+                      .replace(',', '.')
+              );
+
+    if (!Number.isFinite(n)) return fallback;
+    const i = Math.floor(n);
+    const min = opts?.min ?? -Infinity;
+    const max = opts?.max ?? Infinity;
+    return Math.max(min, Math.min(max, i));
+}
+
+function isValidLogoUrl(logoUrl: string) {
+    const s = String(logoUrl ?? '').trim();
+    if (!s) return false;
+
+    const lowered = s.toLowerCase();
+    if (lowered.startsWith('javascript:')) return false;
+    if (lowered.startsWith('data:')) return false;
+
+    // dev/prod: nosso endpoint retorna /uploads/...
+    if (s.startsWith('/uploads/')) return true;
+
+    // fallback: URL absoluta
+    if (lowered.startsWith('http://') || lowered.startsWith('https://'))
+        return true;
+
+    return false;
+}
+
+function normalizeCtaUrl(raw: unknown): string | null {
+    const s = String(raw ?? '').trim();
+    if (!s) return null;
+
+    const lower = s.toLowerCase();
+
+    // bloqueios óbvios
+    if (lower.startsWith('javascript:')) return null;
+    if (lower.startsWith('data:')) return null;
+
+    if (lower.startsWith('http://') || lower.startsWith('https://')) return s;
+
+    // se vier "www.x.com" sem protocolo
+    if (lower.startsWith('www.')) return `https://${s}`;
+
+    return null;
+}
+
+function normalizeVisibilityMode(raw: unknown): PartnerVisibilityMode {
+    const s = String(raw ?? '')
+        .trim()
+        .toUpperCase();
+
+    return s === 'SELECTED' ? 'SELECTED' : 'ALL';
+}
+
+function normalizeCompanyIds(raw: unknown): string[] {
+    if (!Array.isArray(raw)) return [];
+    const ids = raw.map((v) => String(v ?? '').trim()).filter(Boolean);
+
+    // unique + mantém ordem
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const id of ids) {
+        if (seen.has(id)) continue;
+        seen.add(id);
+        out.push(id);
+    }
+    return out;
+}
+
+/**
+ * GET /api/admin/partners/:partnerId
+ * - retorna o parceiro + companyIds já vinculados (PartnerVisibility)
+ */
+export async function GET(
+    _request: Request,
+    ctx: { params: Promise<{ partnerId: string }> }
+) {
+    // ✅ API: sem redirect, devolve JSON (401/403)
+    const auth = await requireAdminForModuleApi('PARTNERS');
+    if (auth instanceof NextResponse) return auth;
+
+    try {
+        const { partnerId } = await ctx.params;
+        const id = normalizeString(partnerId);
+        if (!id) return jsonErr('partnerId é obrigatório.', 400);
+
+        const partner = await prisma.partner.findFirst({
+            where: { id },
+            select: {
+                id: true,
+                name: true,
+                logoUrl: true,
+                logoKey: true,
+                discountPct: true,
+                description: true,
+                rules: true,
+                ctaUrl: true,
+                ctaLabel: true,
+                isActive: true,
+                visibilityMode: true,
+                sortOrder: true,
+                createdAt: true,
+                updatedAt: true,
+            },
+        });
+
+        if (!partner) return jsonErr('Parceiro não encontrado.', 404);
+
+        const vis = await prisma.partnerVisibility.findMany({
+            where: { partnerId: partner.id, isEnabled: true },
+            select: { companyId: true },
+            orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+        });
+
+        const companyIds = vis.map((v) => v.companyId);
+
+        return jsonOk({
+            partner: {
+                id: partner.id,
+                name: partner.name,
+                logoUrl: partner.logoUrl ?? null,
+                logoKey: partner.logoKey ?? null,
+                discountPct: Number(partner.discountPct ?? 0),
+                description: partner.description ?? null,
+                rules: partner.rules ?? null,
+                ctaUrl: partner.ctaUrl ?? null,
+                ctaLabel: partner.ctaLabel ?? null,
+                isActive: Boolean(partner.isActive),
+                visibilityMode: (partner.visibilityMode ??
+                    'ALL') as PartnerVisibilityMode,
+                sortOrder: Number(partner.sortOrder ?? 100),
+                createdAt: partner.createdAt,
+                updatedAt: partner.updatedAt,
+            },
+            companyIds,
+        });
+    } catch (e) {
+        console.error('[admin partners get] error:', e);
+        return jsonErr('Erro ao acessar parceiro.', 500);
+    }
+}
+
+/**
+ * PATCH /api/admin/partners/:partnerId
+ * - toggleActive: alterna isActive do parceiro
+ * - update: edita campos do parceiro + (opcional) sincroniza visibilidade (PartnerVisibility)
+ */
+export async function PATCH(
+    request: Request,
+    ctx: { params: Promise<{ partnerId: string }> }
+) {
+    // ✅ API: sem redirect, devolve JSON (401/403)
+    const auth = await requireAdminForModuleApi('PARTNERS');
+    if (auth instanceof NextResponse) return auth;
+
+    try {
+        const { partnerId } = await ctx.params;
+        const id = normalizeString(partnerId);
+        if (!id) return jsonErr('partnerId é obrigatório.', 400);
+
+        const body = (await request
+            .json()
+            .catch(() => null)) as PatchPayload | null;
+        if (!body) return jsonErr('Body inválido.', 400);
+
+        const current = await prisma.partner.findFirst({
+            where: { id },
+            select: {
+                id: true,
+                isActive: true,
+
+                name: true,
+                logoUrl: true,
+                logoKey: true,
+
+                discountPct: true,
+                description: true,
+                rules: true,
+
+                ctaUrl: true,
+                ctaLabel: true,
+
+                visibilityMode: true,
+                sortOrder: true,
+            },
+        });
+
+        if (!current) return jsonErr('Parceiro não encontrado.', 404);
+
+        // =========================
+        // TOGGLE ACTIVE
+        // =========================
+        if ('toggleActive' in body && body.toggleActive === true) {
+            const updated = await prisma.partner.update({
+                where: { id: current.id },
+                data: { isActive: !current.isActive },
+                select: { id: true, isActive: true },
+            });
+
+            return jsonOk({ id: updated.id, isActive: updated.isActive });
+        }
+
+        // =========================
+        // UPDATE
+        // =========================
+        if (
+            !('update' in body) ||
+            !body.update ||
+            typeof body.update !== 'object'
+        ) {
+            return jsonErr('Patch inválido.', 400);
+        }
+
+        const u = body.update;
+
+        const name =
+            u.name !== undefined ? normalizeString(u.name) : current.name;
+
+        const logoUrl =
+            u.logoUrl !== undefined
+                ? normalizeNullableString(u.logoUrl)
+                : (current.logoUrl ?? null);
+
+        const logoKey =
+            u.logoKey !== undefined
+                ? normalizeNullableString(u.logoKey)
+                : (current.logoKey ?? null);
+
+        const discountPct = toInt(
+            u.discountPct !== undefined ? u.discountPct : current.discountPct,
+            0,
+            { min: 0, max: 100 }
+        );
+
+        const description =
+            u.description !== undefined
+                ? normalizeNullableString(u.description)
+                : (current.description ?? null);
+
+        const rules =
+            u.rules !== undefined
+                ? normalizeNullableString(u.rules)
+                : (current.rules ?? null);
+
+        const ctaUrl =
+            u.ctaUrl !== undefined
+                ? normalizeCtaUrl(u.ctaUrl)
+                : normalizeCtaUrl(current.ctaUrl);
+
+        const ctaLabel =
+            u.ctaLabel !== undefined
+                ? normalizeNullableString(u.ctaLabel)
+                : (current.ctaLabel ?? null);
+
+        const visibilityMode =
+            u.visibilityMode !== undefined
+                ? normalizeVisibilityMode(u.visibilityMode)
+                : (String(
+                      current.visibilityMode ?? 'ALL'
+                  ) as PartnerVisibilityMode);
+
+        const sortOrder = toInt(
+            u.sortOrder !== undefined ? u.sortOrder : current.sortOrder,
+            100,
+            { min: 0, max: 100000 }
+        );
+
+        const hasCompanyIds = u.companyIds !== undefined;
+        const companyIds = hasCompanyIds
+            ? normalizeCompanyIds(u.companyIds)
+            : [];
+
+        if (!name) return jsonErr('Nome é obrigatório.', 400);
+
+        if (!logoUrl) return jsonErr('logoUrl é obrigatório.', 400);
+        if (!isValidLogoUrl(logoUrl)) {
+            return jsonErr(
+                'logoUrl inválida. Envie uma imagem (upload) ou forneça uma URL http(s) válida.',
+                400
+            );
+        }
+
+        if (!ctaUrl) {
+            return jsonErr(
+                'ctaUrl inválida. Informe uma URL http(s) (ou começando com www.).',
+                400
+            );
+        }
+
+        // ✅ regra do SELECTED: só valida se o payload está tentando mexer nos vínculos
+        if (
+            hasCompanyIds &&
+            visibilityMode === 'SELECTED' &&
+            companyIds.length === 0
+        ) {
+            return jsonErr(
+                'Em SELECTED, você precisa selecionar pelo menos 1 empresa.',
+                400
+            );
+        }
+
+        const result = await prisma.$transaction(async (tx) => {
+            const partnerUpdated = await tx.partner.update({
+                where: { id: current.id },
+                data: {
+                    name,
+                    logoUrl,
+                    logoKey,
+                    discountPct,
+                    description,
+                    rules,
+                    ctaUrl,
+                    ctaLabel: ctaLabel || 'Ativar cashback e ir pra loja',
+                    visibilityMode: visibilityMode as any,
+                    sortOrder,
+                },
+                select: {
+                    id: true,
+                    isActive: true,
+
+                    name: true,
+                    logoUrl: true,
+                    logoKey: true,
+
+                    discountPct: true,
+                    description: true,
+                    rules: true,
+
+                    ctaUrl: true,
+                    ctaLabel: true,
+
+                    visibilityMode: true,
+                    sortOrder: true,
+                    updatedAt: true,
+                },
+            });
+
+            // ✅ sincroniza vínculos somente se o payload trouxe companyIds
+            if (hasCompanyIds) {
+                if (visibilityMode === 'ALL') {
+                    await tx.partnerVisibility.deleteMany({
+                        where: { partnerId: partnerUpdated.id },
+                    });
+
+                    return { partnerUpdated, companyIds: [] as string[] };
+                }
+
+                await tx.partnerVisibility.deleteMany({
+                    where: { partnerId: partnerUpdated.id },
+                });
+
+                if (companyIds.length) {
+                    await tx.partnerVisibility.createMany({
+                        data: companyIds.map((companyId) => ({
+                            partnerId: partnerUpdated.id,
+                            companyId,
+                            isEnabled: true,
+                        })),
+                        skipDuplicates: true,
+                    });
+                }
+
+                return { partnerUpdated, companyIds };
+            }
+
+            // não mexe nos vínculos
+            return { partnerUpdated, companyIds: null as string[] | null };
+        });
+
+        // se não sincronizou, devolve os ids atuais (pra ajudar o EDIT sem “piscar”)
+        let effectiveCompanyIds: string[] = [];
+        if (Array.isArray(result.companyIds)) {
+            effectiveCompanyIds = result.companyIds;
+        } else {
+            const vis = await prisma.partnerVisibility.findMany({
+                where: { partnerId: result.partnerUpdated.id, isEnabled: true },
+                select: { companyId: true },
+                orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+            });
+            effectiveCompanyIds = vis.map((v) => v.companyId);
+        }
+
+        return jsonOk({
+            id: result.partnerUpdated.id,
+            partner: {
+                id: result.partnerUpdated.id,
+                name: result.partnerUpdated.name,
+                logoUrl: result.partnerUpdated.logoUrl ?? null,
+                logoKey: result.partnerUpdated.logoKey ?? null,
+                discountPct: Number(result.partnerUpdated.discountPct ?? 0),
+                description: result.partnerUpdated.description ?? null,
+                rules: result.partnerUpdated.rules ?? null,
+                ctaUrl: result.partnerUpdated.ctaUrl ?? null,
+                ctaLabel: result.partnerUpdated.ctaLabel ?? null,
+                isActive: Boolean(result.partnerUpdated.isActive),
+                visibilityMode: (result.partnerUpdated.visibilityMode ??
+                    'ALL') as PartnerVisibilityMode,
+                sortOrder: Number(result.partnerUpdated.sortOrder ?? 100),
+                updatedAt: result.partnerUpdated.updatedAt,
+            },
+            companyIds: effectiveCompanyIds,
+        });
+    } catch (e) {
+        console.error('[admin partners patch] error:', e);
+        return jsonErr('Erro ao editar parceiro.', 500);
+    }
+}

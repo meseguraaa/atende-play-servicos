@@ -562,12 +562,7 @@ export function ServiceNewDialog() {
                             <div className="rounded-lg border border-border-primary bg-background-tertiary p-2">
                                 <div className="mb-2 flex items-center gap-2 px-1 text-paragraph-small text-content-secondary">
                                     <Users className="h-4 w-4 text-content-brand" />
-                                    <span>
-                                        Selecione {selectedCount || 0}{' '}
-                                        {selectedCount === 1
-                                            ? 'profissional'
-                                            : 'profissionais'}
-                                    </span>
+                                    <span>Selecione os profissionais</span>
                                 </div>
 
                                 {loading ? (

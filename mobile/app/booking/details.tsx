@@ -169,7 +169,7 @@ export default function BookingDetails() {
         );
     }, [params.barberName, params.professionalName]);
 
-    // ✅ compat: backend atual ainda espera barberId
+    // ✅ compat: backend antigo usava barberId
     const barberIdCompat = professionalId;
 
     const isEdit = useMemo(
@@ -355,32 +355,42 @@ export default function BookingDetails() {
             // EDITAR (RESCHEDULE)
             // ==========================
             if (isEdit) {
+                // ✅ backend novo: PATCH /api/mobile/me/appointments/:id/edit
+                // mandando dateISO + startTime (fonte de verdade do fluxo)
                 const payload = {
                     unitId,
                     serviceId,
 
-                    // ✅ novo padrão (pra UI/logs)
+                    // ✅ novo padrão
                     professionalId,
 
-                    // ✅ compat backend atual
+                    // ✅ compat / legado (se o backend quiser reaproveitar)
                     barberId: barberIdCompat,
 
+                    dateISO: effectiveDateISO,
+                    startTime: effectiveStartTime,
+
+                    // mantém também o scheduleAt por compat/debug (opcional)
                     scheduleAt,
                 };
 
                 if (__DEV__) {
                     console.log(
-                        `[booking/details] POST /api/mobile/me/appointments/${appointmentId}/reschedule payload:`,
+                        `[booking/details] PATCH /api/mobile/me/appointments/${appointmentId}/edit payload:`,
                         payload
                     );
                 }
 
-                await api.post(
+                const res = await api.patch(
                     `/api/mobile/me/appointments/${encodeURIComponent(
                         appointmentId
-                    )}/reschedule`,
+                    )}/edit`,
                     payload
                 );
+
+                if (res?.ok === false) {
+                    throw { status: 409, data: res };
+                }
 
                 Alert.alert(
                     'Alterado! ✅',
@@ -424,7 +434,11 @@ export default function BookingDetails() {
                 );
             }
 
-            await api.post(`/api/mobile/appointments`, payload);
+            const res = await api.post(`/api/mobile/appointments`, payload);
+
+            if (res?.ok === false) {
+                throw { status: 400, data: res };
+            }
 
             Alert.alert(
                 'Agendado! ✅',
@@ -443,14 +457,21 @@ export default function BookingDetails() {
             );
 
             const status = err?.status;
-            const serverMsg = err?.data?.error;
+            const serverMsg =
+                err?.data?.error ??
+                err?.data?.message ??
+                err?.data?.data?.error ??
+                err?.data?.data?.message;
 
             if (
                 isEdit &&
                 (status === 409 ||
                     String(serverMsg || '')
                         .toLowerCase()
-                        .includes('dispon'))
+                        .includes('conflit') ||
+                    String(serverMsg || '')
+                        .toLowerCase()
+                        .includes('indispon'))
             ) {
                 Alert.alert(
                     'Horário indisponível',
@@ -658,6 +679,7 @@ const S = StyleSheet.create({
         borderBottomRightRadius: 28,
         overflow: 'hidden',
     },
+
     darkInner: {
         paddingHorizontal: UI.spacing.screenX,
         paddingBottom: UI.spacing.screenX,
@@ -671,6 +693,7 @@ const S = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(124,108,255,0.35)',
     },
+
     heroTitle: { color: UI.colors.text, fontSize: 18, fontWeight: '600' },
     heroDesc: {
         marginTop: 8,

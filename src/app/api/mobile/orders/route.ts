@@ -710,19 +710,31 @@ export async function GET(req: Request) {
         const cursor = (url.searchParams.get('cursor') ?? '').trim();
         const limit = parseLimit(url.searchParams.get('limit'));
 
+        // ✅ status calculado por "view"
+        // bag: sacolinha (pendente)
+        // history: histórico (concluídos + cancelados)
         const status =
             statusRaw ||
             (view === 'bag'
                 ? 'PENDING_CHECKIN'
                 : view === 'history'
-                  ? 'COMPLETED'
+                  ? 'HISTORY' // sentinel
                   : '');
 
         const where: any = {
             companyId,
             clientId: auth.sub,
-            ...(status ? { status } : {}),
         };
+
+        // ✅ aplica filtro de status
+        if (status && status !== 'HISTORY') {
+            where.status = status;
+        }
+
+        // ✅ history = COMPLETED ou CANCELED
+        if (status === 'HISTORY') {
+            where.status = { in: ['COMPLETED', 'CANCELED'] };
+        }
 
         const dbOrders = await prisma.order.findMany({
             where,

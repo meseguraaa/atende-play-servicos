@@ -933,7 +933,9 @@ const ProductsFooter = memo(function ProductsFooter({
             <View style={S.bottomCTA}>
                 <Pressable style={S.goCartBtn} onPress={onGoCart}>
                     <View style={S.btnCenterRow}>
-                        <Text style={S.goCartBtnText}>Ir para o carrinho</Text>
+                        <Text style={S.goCartBtnText}>
+                            Ir para o a sacolinha
+                        </Text>
                         <FontAwesome
                             name="angle-right"
                             size={18}
@@ -1828,7 +1830,8 @@ export default function Products() {
         } catch {}
 
         Alert.alert(
-            'Parabéns pra você! 🎂 \nAproveite os descontos especiais para aniversariantes.'
+            'Parabéns pra você! 🎂',
+            'Aproveite os descontos especiais\npara aniversariantes!'
         );
     }, [birthdayBadgeLabel, pathname, companyId]);
 

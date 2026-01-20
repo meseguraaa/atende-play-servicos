@@ -6,7 +6,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { UI, styles as themeStyles } from '../../theme/client-theme';
 import { ShimmerBlock } from './ShimmerBlock';
 
-const STICKY_ROW_H = 74;
+// ✅ precisa espelhar a tela: header sem linha/título
+const STICKY_ROW_H = 0;
 
 type Props = {
     /**
@@ -32,14 +33,20 @@ function ProfileSkeletonBase({ active = true }: Props) {
             {/* Topo fixo */}
             <View style={S.fixedTop}>
                 <View style={safeTopStyle} />
-                <View style={S.stickyRow}>
-                    <ShimmerBlock
-                        width={84}
-                        height={14}
-                        radius={8}
-                        active={active}
-                    />
-                </View>
+
+                {/* ✅ como não existe mais "Perfil", não renderiza shimmer de título */}
+                {STICKY_ROW_H > 0 ? (
+                    <View style={S.stickyRow}>
+                        <ShimmerBlock
+                            width={84}
+                            height={14}
+                            radius={8}
+                            active={active}
+                        />
+                    </View>
+                ) : (
+                    <View style={S.stickyRow} />
+                )}
             </View>
 
             {/* "Scroll" */}
@@ -69,14 +76,9 @@ function ProfileSkeletonBase({ active = true }: Props) {
                                         radius={22}
                                         active={active}
                                     />
-                                    <View style={S.avatarBadge}>
-                                        <ShimmerBlock
-                                            width={28}
-                                            height={28}
-                                            radius={14}
-                                            active={active}
-                                        />
-                                    </View>
+
+                                    {/* ✅ Na sua tela real não tem badge no avatar.
+                                        Deixei removido para o skeleton ficar fiel. */}
                                 </View>
 
                                 {/* text */}
@@ -272,12 +274,6 @@ const S = StyleSheet.create({
     },
 
     avatarWrap: { position: 'relative' },
-
-    avatarBadge: {
-        position: 'absolute',
-        right: -6,
-        bottom: -6,
-    },
 
     heroTextCol: {
         flex: 1,

@@ -12,7 +12,11 @@ type MobileTokenPayload = {
     profile_complete?: boolean;
 };
 
+// ⚠️ Mantemos a constante, mas NÃO usamos mais como default automático.
+// Ela só serve se você quiser reativar a regra global no futuro.
 const DEFAULT_RESCHEDULE_WINDOW_HOURS = 24;
+
+const SP_TZ = 'America/Sao_Paulo';
 
 function corsHeaders() {
     return {
@@ -66,23 +70,73 @@ function pad2(n: number) {
     return String(n).padStart(2, '0');
 }
 
+/**
+ * ✅ Extrai YYYY-MM-DD + HH:mm em America/Sao_Paulo sem depender do timezone do server.
+ */
+function getSaoPauloParts(scheduleAt: Date) {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone: SP_TZ,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    }).formatToParts(scheduleAt);
+
+    const get = (type: string) =>
+        parts.find((p) => p.type === type)?.value ?? '';
+
+    const y = Number(get('year'));
+    const m = Number(get('month'));
+    const d = Number(get('day'));
+    const hh = Number(get('hour'));
+    const mm = Number(get('minute'));
+
+    return {
+        y,
+        m,
+        d,
+        hh,
+        mm,
+        dateKey: y && m && d ? `${y}-${pad2(m)}-${pad2(d)}` : '',
+        timeHHMM:
+            Number.isFinite(hh) && Number.isFinite(mm)
+                ? `${pad2(hh)}:${pad2(mm)}`
+                : '',
+    };
+}
+
+/**
+ * ✅ dateISO ao meio-dia do DIA EM SÃO PAULO, mas em ISO UTC (como o app espera).
+ * Ex: 2026-01-17 (SP) => 2026-01-17T15:00:00.000Z (porque 12:00 -03 = 15:00Z)
+ */
 function toMobileDateISOAndStartTime(scheduleAt: Date) {
-    // dateISO ao meio-dia local (evita bug de timezone no day picker do app)
-    const dateISO = new Date(
-        scheduleAt.getFullYear(),
-        scheduleAt.getMonth(),
-        scheduleAt.getDate(),
-        12,
-        0,
-        0,
-        0
-    ).toISOString();
+    const sp = getSaoPauloParts(scheduleAt);
 
-    const startTime = `${pad2(scheduleAt.getHours())}:${pad2(
-        scheduleAt.getMinutes()
-    )}`;
+    // fallback bem defensivo
+    if (!sp.dateKey || !sp.timeHHMM) {
+        const dateISO = new Date(
+            scheduleAt.getFullYear(),
+            scheduleAt.getMonth(),
+            scheduleAt.getDate(),
+            12,
+            0,
+            0,
+            0
+        ).toISOString();
 
-    return { dateISO, startTime };
+        const startTime = `${pad2(scheduleAt.getHours())}:${pad2(
+            scheduleAt.getMinutes()
+        )}`;
+
+        return { dateISO, startTime };
+    }
+
+    // 12:00 em SP (-03) => 15:00Z (sem depender do timezone do node)
+    const dateISO = new Date(`${sp.dateKey}T12:00:00-03:00`).toISOString();
+
+    return { dateISO, startTime: sp.timeHHMM };
 }
 
 export async function OPTIONS() {
@@ -150,11 +204,41 @@ export async function GET(
             );
         }
 
-        const windowHours =
-            normalizeWindowHours(appt.service?.cancelLimitHours) ??
-            DEFAULT_RESCHEDULE_WINDOW_HOURS;
+        // ✅ Regra NOVA:
+        // - Se o serviço tiver cancelLimitHours definido e válido => aplica janela.
+        // - Se não tiver => pode remarcar (contanto que não esteja no passado).
+        const configuredWindowHours = normalizeWindowHours(
+            appt.service?.cancelLimitHours
+        );
 
-        const rules = computeCanReschedule(appt.scheduleAt, windowHours);
+        let canReschedule = true;
+        let reason: string | null = null;
+        let diffHours: number | null = null;
+        let windowHoursUsed: number | null = null;
+
+        const now = new Date();
+
+        // Não faz sentido remarcar algo já no passado
+        if (appt.scheduleAt.getTime() <= now.getTime()) {
+            canReschedule = false;
+            reason = 'Este agendamento já passou.';
+        } else if (configuredWindowHours) {
+            const rules = computeCanReschedule(
+                appt.scheduleAt,
+                configuredWindowHours
+            );
+            canReschedule = rules.canReschedule;
+            reason = rules.reason;
+            diffHours = rules.diffHours;
+            windowHoursUsed = rules.windowHours;
+        } else {
+            // Sem janela configurada: fica liberado
+            // Mantemos campos de debug coerentes
+            diffHours =
+                (appt.scheduleAt.getTime() - now.getTime()) / (1000 * 60 * 60);
+            windowHoursUsed = null;
+        }
+
         const mobileParts = toMobileDateISOAndStartTime(appt.scheduleAt);
 
         return NextResponse.json(
@@ -180,13 +264,16 @@ export async function GET(
                     dateISO: mobileParts.dateISO,
                     startTime: mobileParts.startTime,
 
-                    canReschedule: rules.canReschedule,
+                    canReschedule,
                 },
                 rules: {
-                    canReschedule: rules.canReschedule,
-                    reason: rules.reason,
-                    diffHours: rules.diffHours,
-                    windowHours: rules.windowHours,
+                    canReschedule,
+                    reason,
+                    diffHours,
+                    windowHours:
+                        windowHoursUsed ??
+                        configuredWindowHours ??
+                        DEFAULT_RESCHEDULE_WINDOW_HOURS,
                 },
             },
             { status: 200, headers: corsHeaders() }

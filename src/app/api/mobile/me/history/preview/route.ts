@@ -93,6 +93,32 @@ async function requireMobileAuth(req: Request): Promise<MobileTokenPayload> {
     };
 }
 
+/* ---------------------------------------------------------
+ * ✅ Expiração on-demand (preview também!)
+ * - cancela pedidos PENDING_CHECKIN vencidos
+ * - some da sacolinha (view=bag)
+ * - entra no histórico como CANCELED (view=history)
+ * ---------------------------------------------------------*/
+async function expirePendingOrdersForClient(args: {
+    companyId: string;
+    clientId: string;
+}) {
+    const now = new Date();
+
+    await prisma.order.updateMany({
+        where: {
+            companyId: args.companyId,
+            clientId: args.clientId,
+            status: 'PENDING_CHECKIN',
+            reservedUntil: { not: null, lte: now },
+        },
+        data: {
+            status: 'CANCELED',
+            expiredAt: now,
+        },
+    });
+}
+
 function formatPreviewDate(d: Date) {
     if (isToday(d)) return `Hoje às ${format(d, 'HH:mm', { locale: ptBR })}`;
     if (isYesterday(d))
@@ -171,6 +197,9 @@ export async function GET(req: Request) {
 
         const clientId = me.sub;
         const companyId = me.companyId;
+
+        // ✅ Passo 0 do preview: expirar pedidos vencidos (on-demand)
+        await expirePendingOrdersForClient({ companyId, clientId });
 
         const [doneAppointments, canceledAppointments, orders, reviewedAppts] =
             await Promise.all([

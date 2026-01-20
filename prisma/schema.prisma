@@ -47,6 +47,9 @@ model Company {
   unitWeeklyAvailabilities         UnitWeeklyAvailability[]
   units                            Unit[]
 
+  // ✅ NOVO: visibilidade de parceiros por company
+  partnerVisibilities              PartnerVisibility[]
+
   @@index([segment])
   @@map("companies")
 }
@@ -370,8 +373,6 @@ model Professional {
   company               Company                          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user                  User?                            @relation(fields: [userId], references: [id])
   services              ServiceProfessional[]
-
-  // ✅ NOVO: backrelation pra itens de pedido (principalmente produto)
   orderItems            OrderItem[]
 
   @@unique([companyId, email])
@@ -569,15 +570,10 @@ model Product {
   companyId              String
   unitId                 String
   name                   String
-
-  // ✅ URL pública usada pelo app (produção ou dev)
   imageUrl               String
-
-  // ✅ Metadados para ajudar no DEV agora e no storage depois (S3/R2)
   imageKey               String?
   imageMime              String?
   imageSize              Int?
-
   description            String
   price                  Decimal                  @db.Decimal(10, 2)
   professionalPercentage Int
@@ -674,34 +670,28 @@ model Order {
 }
 
 model OrderItem {
-  id         String   @id @default(cuid())
-  companyId  String
-  orderId    String
-  productId  String?
-  serviceId  String?
-
-  // ✅ NOVO: profissional responsável (para venda de produto / comissão)
+  id             String        @id @default(cuid())
+  companyId      String
+  orderId        String
+  productId      String?
+  serviceId      String?
   professionalId String?
   professional   Professional? @relation(fields: [professionalId], references: [id])
-
-  quantity   Int      @default(1)
-  unitPrice  Decimal  @db.Decimal(10, 2)
-  totalPrice Decimal  @db.Decimal(10, 2)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product    Product? @relation(fields: [productId], references: [id])
-  service    Service? @relation(fields: [serviceId], references: [id])
+  quantity       Int           @default(1)
+  unitPrice      Decimal       @db.Decimal(10, 2)
+  totalPrice     Decimal       @db.Decimal(10, 2)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  company        Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  order          Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product        Product?      @relation(fields: [productId], references: [id])
+  service        Service?      @relation(fields: [serviceId], references: [id])
 
   @@index([companyId])
   @@index([orderId])
   @@index([productId])
   @@index([serviceId])
-
-  // ✅ NOVO (recomendado)
   @@index([professionalId])
-
   @@map("order_items")
 }
 
@@ -858,6 +848,7 @@ model AdminAccess {
   canAccessServices      Boolean  @default(false)
   canAccessReviews       Boolean  @default(false)
   canAccessProducts      Boolean  @default(false)
+  canAccessPartners      Boolean  @default(false)
   canAccessClients       Boolean  @default(false)
   canAccessClientLevels  Boolean  @default(false)
   canAccessFinance       Boolean  @default(false)
@@ -925,16 +916,9 @@ model PasswordResetToken {
   id        String   @id @default(cuid())
   companyId String
   userId    String
-
-  // ✅ nunca guardar o token puro
   tokenHash String   @unique
-
-  // ✅ expira rápido
   expiresAt DateTime
-
-  // ✅ impede reuso
   usedAt    DateTime?
-
   createdAt DateTime @default(now())
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -946,6 +930,56 @@ model PasswordResetToken {
   @@map("password_reset_tokens")
 }
 
+/* =========================================================
+ * ✅ NOVO: Parceiros
+ * ========================================================= */
+
+enum PartnerVisibilityMode {
+  ALL
+  SELECTED
+}
+
+model Partner {
+  id             String               @id @default(cuid())
+  name           String
+  logoUrl        String
+  logoKey        String?
+  discountPct    Int                  @default(0) // 10 = 10%
+  description    String?
+  rules          String?
+  ctaUrl         String
+  ctaLabel       String               @default("Ativar cashback e ir pra loja")
+  isActive       Boolean              @default(true)
+  visibilityMode PartnerVisibilityMode @default(ALL)
+  sortOrder      Int                  @default(100)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  companies      PartnerVisibility[]
+
+  @@index([isActive, sortOrder])
+  @@index([visibilityMode])
+  @@map("partners")
+}
+
+model PartnerVisibility {
+  id        String   @id @default(cuid())
+  partnerId String
+  companyId String
+  isEnabled Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([partnerId, companyId])
+  @@index([companyId, isEnabled])
+  @@index([partnerId, isEnabled])
+  @@map("partner_visibilities")
+}
+
+/* ========================================================= */
 
 enum Role {
   CLIENT

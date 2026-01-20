@@ -60,6 +60,10 @@ type PermissionsUI = {
     canAccessServices: boolean;
     canAccessReviews: boolean;
     canAccessProducts: boolean;
+
+    // ✅ NOVO: Parceiros
+    canAccessPartners: boolean;
+
     canAccessClients: boolean;
     canAccessClientLevels: boolean;
     canAccessFinance: boolean;
@@ -272,6 +276,10 @@ function normalizeAdminFromApi(a: AdminApi): AdminUI {
             canAccessServices: !!a.permissions?.canAccessServices,
             canAccessReviews: !!a.permissions?.canAccessReviews,
             canAccessProducts: !!a.permissions?.canAccessProducts,
+
+            // ✅ NOVO
+            canAccessPartners: !!a.permissions?.canAccessPartners,
+
             canAccessClients: !!a.permissions?.canAccessClients,
             canAccessClientLevels: !!a.permissions?.canAccessClientLevels,
             canAccessFinance: !!a.permissions?.canAccessFinance,
@@ -359,6 +367,10 @@ const PERMISSION_LABELS: Record<keyof PermissionsUI, string> = {
     canAccessServices: 'Serviços',
     canAccessReviews: 'Avaliações',
     canAccessProducts: 'Produtos',
+
+    // ✅ NOVO: Parceiros
+    canAccessPartners: 'Parceiros',
+
     canAccessClients: 'Clientes',
     canAccessClientLevels: 'Níveis do Cliente',
     canAccessFinance: 'Financeiro',
@@ -375,6 +387,10 @@ function clonePerms(p: PermissionsUI): PermissionsUI {
         canAccessServices: !!p.canAccessServices,
         canAccessReviews: !!p.canAccessReviews,
         canAccessProducts: !!p.canAccessProducts,
+
+        // ✅ NOVO
+        canAccessPartners: !!p.canAccessPartners,
+
         canAccessClients: !!p.canAccessClients,
         canAccessClientLevels: !!p.canAccessClientLevels,
         canAccessFinance: !!p.canAccessFinance,
@@ -1244,6 +1260,10 @@ export default function AdminSettingsClient() {
         canAccessServices: false,
         canAccessReviews: false,
         canAccessProducts: false,
+
+        // ✅ NOVO
+        canAccessPartners: false,
+
         canAccessClients: true,
         canAccessClientLevels: false,
         canAccessFinance: false,
@@ -1474,6 +1494,10 @@ export default function AdminSettingsClient() {
                 canAccessServices: false,
                 canAccessReviews: false,
                 canAccessProducts: false,
+
+                // ✅ NOVO
+                canAccessPartners: false,
+
                 canAccessClients: true,
                 canAccessClientLevels: false,
                 canAccessFinance: false,
@@ -2441,7 +2465,11 @@ export default function AdminSettingsClient() {
 
                                                 <Button
                                                     type="button"
-                                                    variant="outline"
+                                                    variant={
+                                                        row.isActive
+                                                            ? 'destructive'
+                                                            : 'active'
+                                                    }
                                                     size="sm"
                                                     onClick={() =>
                                                         toggleAdminActive(
