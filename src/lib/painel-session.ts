@@ -50,7 +50,11 @@ async function getTenantSlugFromRequestHeaders(): Promise<string> {
     return slug;
 }
 
-export type PainelRole = 'ADMIN' | 'PROFESSIONAL';
+export type PainelRole =
+    | 'ADMIN'
+    | 'PROFESSIONAL'
+    | 'PLATFORM_OWNER'
+    | 'PLATFORM_STAFF';
 
 export type PainelSessionPayload = {
     sub: string; // userId
@@ -58,14 +62,28 @@ export type PainelSessionPayload = {
     email: string;
     name?: string | null;
 
-    tenantSlug: string;
-    companyId: string;
+    /**
+     * ✅ Tenant-only fields
+     * (Admin/Professional)
+     */
+    tenantSlug?: string;
+    companyId?: string;
 
     unitId?: string | null;
     canSeeAllUnits?: boolean;
 
     professionalId?: string | null;
 };
+
+function isPlatformRole(role: string) {
+    const r = String(role || '').toUpperCase();
+    return r === 'PLATFORM_OWNER' || r === 'PLATFORM_STAFF';
+}
+
+function isTenantRole(role: string) {
+    const r = String(role || '').toUpperCase();
+    return r === 'ADMIN' || r === 'PROFESSIONAL';
+}
 
 async function resolveCompanyByTenantSlug(tenantSlug: string) {
     const company = await prisma.company.findFirst({
@@ -182,6 +200,29 @@ export async function createSessionToken(
     if (!userId) throw new Error('Sem acesso (id ausente).');
     if (!email) throw new Error('Sem acesso (email ausente).');
 
+    const role = String(user.role || '').toUpperCase();
+
+    // ✅ PLATFORM: não depende de tenantSlug/companyId
+    if (isPlatformRole(role)) {
+        const payload: PainelSessionPayload = {
+            sub: userId,
+            role: role as PainelRole,
+            email,
+            name,
+        };
+
+        return await new SignJWT(payload)
+            .setProtectedHeader({ alg: 'HS256' })
+            .setIssuedAt()
+            .setExpirationTime(`${SESSION_MAX_AGE_SECONDS}s`)
+            .sign(getJwtSecretKey());
+    }
+
+    // ✅ Abaixo daqui: tenant-only (ADMIN / PROFESSIONAL)
+    if (!isTenantRole(role)) {
+        throw new Error('permissao');
+    }
+
     // ✅ Tenant vem do host
     const tenantSlug = await getTenantSlugFromRequestHeaders();
 
@@ -189,7 +230,7 @@ export async function createSessionToken(
     const { companyId } = await resolveCompanyByTenantSlug(tenantSlug);
 
     // ===== ADMIN =====
-    if (user.role === 'ADMIN') {
+    if (role === 'ADMIN') {
         const dbUser = await prisma.user.findUnique({
             where: { id: userId },
             select: {
@@ -288,10 +329,6 @@ export async function createSessionToken(
             access = created as any;
         }
 
-        // ✅ IMPORTANTE:
-        // NÃO exigir Dashboard para entrar.
-        // O redirect pós-login (actions.ts) decide para onde ele vai.
-
         const payload: PainelSessionPayload = {
             sub: userId,
             role: 'ADMIN',
@@ -311,7 +348,8 @@ export async function createSessionToken(
     }
 
     // ===== PROFESSIONAL =====
-    if (user.role !== 'PROFESSIONAL') {
+    // role já está validado por isTenantRole, mas mantemos a checagem explícita
+    if (role !== 'PROFESSIONAL') {
         throw new Error('permissao');
     }
 
@@ -352,8 +390,37 @@ export async function verifySessionToken(
         const p = payload as any;
 
         const role = String(p?.role ?? '').toUpperCase();
-        if (role !== 'ADMIN' && role !== 'PROFESSIONAL') return null;
 
+        // ✅ Roles válidos
+        const isValidRole =
+            role === 'ADMIN' ||
+            role === 'PROFESSIONAL' ||
+            role === 'PLATFORM_OWNER' ||
+            role === 'PLATFORM_STAFF';
+
+        if (!isValidRole) return null;
+
+        const base: PainelSessionPayload = {
+            sub: String(p?.sub ?? ''),
+            role: role as PainelRole,
+            email: String(p?.email ?? ''),
+            name: (p?.name ?? null) as string | null,
+            unitId: p?.unitId == null ? null : String(p.unitId),
+            canSeeAllUnits:
+                typeof p?.canSeeAllUnits === 'boolean'
+                    ? p.canSeeAllUnits
+                    : undefined,
+            professionalId:
+                p?.professionalId == null ? null : String(p.professionalId),
+        };
+
+        // ✅ PLATFORM: não exige tenantSlug/companyId
+        if (isPlatformRole(role)) {
+            if (!base.sub || !base.email) return null;
+            return base;
+        }
+
+        // ✅ TENANT (ADMIN/PROFESSIONAL): exige tenantSlug + companyId
         const tenantSlug = String(p?.tenantSlug ?? '')
             .trim()
             .toLowerCase();
@@ -362,19 +429,9 @@ export async function verifySessionToken(
         if (!tenantSlug || !companyId) return null;
 
         return {
-            sub: String(p?.sub ?? ''),
-            role: role as PainelRole,
-            email: String(p?.email ?? ''),
-            name: (p?.name ?? null) as string | null,
+            ...base,
             tenantSlug,
             companyId,
-            unitId: p?.unitId == null ? null : String(p.unitId),
-            canSeeAllUnits:
-                typeof p?.canSeeAllUnits === 'boolean'
-                    ? p.canSeeAllUnits
-                    : undefined,
-            professionalId:
-                p?.professionalId == null ? null : String(p.professionalId),
         };
     } catch {
         return null;

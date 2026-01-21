@@ -34,6 +34,9 @@ function readDisabledKeys(): Set<string> {
 const DISABLED_KEYS = readDisabledKeys();
 
 function isEnabled(menuKey: AdminMenuKey): boolean {
+    // ✅ partners agora é SOMENTE da Plataforma (AtendePlay), não do Admin tenant
+    if (menuKey === 'partners') return false;
+
     return !DISABLED_KEYS.has(String(menuKey));
 }
 
@@ -78,7 +81,7 @@ export const ADMIN_MENU: AdminMenuItem[] = [
         enabled: isEnabled('products'),
     },
     {
-        // ✅ NOVO: Parceiros
+        // ✅ Parceiros desativado no Admin (ficou só na Plataforma)
         href: '/admin/partners',
         label: 'Parceiros',
         menuKey: 'partners',

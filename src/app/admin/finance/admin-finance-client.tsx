@@ -155,10 +155,6 @@ export default function AdminFinanceClient({
                             {summary.productsNetMonth}
                         </span>
                     </p>
-                    <p className="text-paragraph-small text-content-tertiary">
-                        Só entra aqui o que estiver marcado como pago
-                        (Checkout).
-                    </p>
                 </div>
 
                 <div className="space-y-1 rounded-xl border border-border-primary bg-background-tertiary px-4 py-3">
@@ -190,8 +186,7 @@ export default function AdminFinanceClient({
                     </p>
 
                     <p className="text-paragraph-small text-content-secondary">
-                        Faturamento líquido (pagos no mês) menos as despesas do
-                        mês.
+                        Faturamento líquido menos as despesas do mês.
                     </p>
                 </div>
             </section>

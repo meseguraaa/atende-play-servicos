@@ -77,6 +77,11 @@ function pickFirstAdminRouteWithFallback(access: AdminAccessRow | null) {
     return null;
 }
 
+function isPlatformRole(role: string) {
+    const r = String(role || '').toUpperCase();
+    return r === 'PLATFORM_OWNER' || r === 'PLATFORM_STAFF';
+}
+
 export async function loginPainel(formData: FormData) {
     const email = String(formData.get('email') ?? '')
         .trim()
@@ -96,6 +101,12 @@ export async function loginPainel(formData: FormData) {
 
         await createPainelSessionCookie(user);
 
+        // ✅ PLATAFORMA: não depende de tenant nem de AdminAccess
+        if (isPlatformRole(user.role)) {
+            redirect('/plataform/dashboard');
+        }
+
+        // ✅ ADMIN (tenant)
         if (user.role === 'ADMIN') {
             const dbUser = await prisma.user.findUnique({
                 where: { id: user.id },
@@ -137,7 +148,13 @@ export async function loginPainel(formData: FormData) {
             return redirect(nextRoute);
         }
 
-        redirect('/professional/dashboard');
+        // ✅ PROFESSIONAL
+        if (user.role === 'PROFESSIONAL') {
+            redirect('/professional/dashboard');
+        }
+
+        // ✅ Qualquer role inesperado (fail-closed)
+        redirectWithError('permissao');
     } catch (err: any) {
         if (
             err?.message === 'NEXT_REDIRECT' ||

@@ -1,16 +1,16 @@
-// src/app/admin/partners/page.tsx
+// src/app/platform/partners/page.tsx
 import type { Metadata } from 'next';
 import { headers, cookies } from 'next/headers';
 
-import { requireAdminForModule } from '@/lib/admin-permissions';
+import { requirePlatformForModule } from '@/lib/plataform-permissions';
 
-import { PartnerRow } from '@/components/admin/partners/partner-row/partner-row';
-import { PartnerNewDialog } from '@/components/admin/partners/partner-new-dialog/partner-new-dialog';
+import { PartnerRow } from '@/components/plataform/partners/partner-row/partner-row';
+import { PartnerNewDialog } from '@/components/plataform/partners/partner-new-dialog/partner-new-dialog';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-    title: 'Admin | Parceiros',
+    title: 'Plataforma | Parceiros',
 };
 
 export type PartnerForRow = {
@@ -42,21 +42,22 @@ type PartnersApiResponse = {
     error?: string;
 };
 
-function getBaseUrlFromHeaders(h: Headers) {
+// ✅ Tipagem compatível com o ReadonlyHeaders do Next
+function getBaseUrlFromHeaders(h: { get(name: string): string | null }) {
     const host = h.get('x-forwarded-host') ?? h.get('host');
     const proto = h.get('x-forwarded-proto') ?? 'http';
     if (!host) return null;
     return `${proto}://${host}`;
 }
 
-export default async function AdminPartnersPage() {
-    // ✅ mesmo módulo usado na API
-    await requireAdminForModule('SETTINGS');
+export default async function PlatformPartnersPage() {
+    // ✅ Plataforma: acesso controlado pelo seu perfil ATENDEPLAY
+    await requirePlatformForModule('PARTNERS');
 
+    // ✅ No seu Next: headers() e cookies() são Promise
     const h = await headers();
     const baseUrl = getBaseUrlFromHeaders(h);
 
-    // ✅ repassa cookies (sessão) igual em produtos
     const cookieStore = await cookies();
     const cookieHeader = cookieStore
         .getAll()
@@ -67,8 +68,8 @@ export default async function AdminPartnersPage() {
 
     try {
         const url = baseUrl
-            ? `${baseUrl}/api/admin/partners`
-            : '/api/admin/partners';
+            ? `${baseUrl}/api/plataform/partners`
+            : '/api/plataform/partners';
 
         const res = await fetch(url, {
             method: 'GET',

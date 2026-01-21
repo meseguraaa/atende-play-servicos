@@ -40,9 +40,33 @@ function Badge({
     return (
         <span
             title={title}
-            className="inline-flex items-center rounded-full border border-border-primary bg-background-secondary px-2 py-0.5 text-[11px] text-content-secondary"
+            className="inline-flex items-center rounded-md border px-2 py-0.5 text-xs bg-muted/40 border-border-primary text-content-secondary"
         >
             {children}
+        </span>
+    );
+}
+
+function StatusBadge({
+    isActive,
+    title,
+}: {
+    isActive: boolean;
+    title?: string;
+}) {
+    const toneClass = isActive
+        ? 'bg-green-500/15 text-green-600 border-green-500/30'
+        : 'bg-red-500/15 text-red-600 border-red-500/30';
+
+    return (
+        <span
+            title={title}
+            className={[
+                'inline-flex items-center rounded-md border px-2 py-0.5 text-xs',
+                toneClass,
+            ].join(' ')}
+        >
+            {isActive ? 'Ativo' : 'Inativo'}
         </span>
     );
 }
@@ -185,11 +209,9 @@ export function ProductRow({ product }: ProductRowProps) {
                 </span>
             </td>
 
-            {/* STATUS (REMOVIDO badge, mantém texto) */}
+            {/* STATUS (padronizado) */}
             <td className="px-4 py-3">
-                <span className="text-xs text-content-secondary">
-                    {product.isActive ? 'Ativo' : 'Inativo'}
-                </span>
+                <StatusBadge isActive={Boolean(product.isActive)} />
             </td>
 
             {/* AÇÕES */}

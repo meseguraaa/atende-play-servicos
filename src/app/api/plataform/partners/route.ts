@@ -1,10 +1,11 @@
-// src/app/api/admin/partners/route.ts
+// src/app/api/plataform/partners/route.ts
 import { NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/prisma';
-import { requireAdminForModule } from '@/lib/admin-permissions';
+import { requirePlatformForModuleApi } from '@/lib/admin-permissions';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 type PartnerVisibilityMode = 'ALL' | 'SELECTED';
 
@@ -27,7 +28,7 @@ type CreatePartnerPayload = {
     visibilityMode?: PartnerVisibilityMode;
     sortOrder?: number | string;
 
-    // ✅ NEW: empresas selecionadas para SELECTED
+    // ✅ empresas selecionadas para SELECTED
     companyIds?: string[] | null;
 };
 
@@ -127,16 +128,18 @@ function normalizeCompanyIds(raw: unknown): string[] {
 }
 
 /**
- * GET /api/admin/partners
+ * GET /api/plataform/partners
+ * ✅ Rota de PLATAFORMA (AtendePlay):
  * - lista parceiros globais (catálogo)
  * - filtros:
  *   ?q=texto (nome)
  *   ?active=1|0
  */
 export async function GET(request: Request) {
-    try {
-        await requireAdminForModule('SETTINGS');
+    const auth = await requirePlatformForModuleApi('PARTNERS');
+    if (auth instanceof NextResponse) return auth;
 
+    try {
         const url = new URL(request.url);
         const q = String(url.searchParams.get('q') ?? '').trim();
         const activeRaw = String(url.searchParams.get('active') ?? '').trim();
@@ -174,12 +177,23 @@ export async function GET(request: Request) {
                 sortOrder: true,
                 createdAt: true,
                 updatedAt: true,
+
+                // ✅ para UI editar SELECTED
+                companies: {
+                    where: { isEnabled: true },
+                    select: { companyId: true },
+                },
             },
         });
 
         return jsonOk({
             partners: partners.map((p) => {
                 const ctaUrl = normalizeCtaUrl(p.ctaUrl);
+
+                const visibilityMode = normalizeVisibilityMode(
+                    p.visibilityMode
+                );
+
                 return {
                     id: p.id,
                     name: p.name,
@@ -191,27 +205,38 @@ export async function GET(request: Request) {
                     ctaUrl: ctaUrl ?? null,
                     ctaLabel: p.ctaLabel ?? null,
                     isActive: Boolean(p.isActive),
-                    visibilityMode: normalizeVisibilityMode(p.visibilityMode),
-                    sortOrder: toInt(p.sortOrder, 100, { min: 0, max: 100000 }),
+                    visibilityMode,
+                    sortOrder: toInt(p.sortOrder, 100, {
+                        min: 0,
+                        max: 100000,
+                    }),
+                    // ✅ só faz sentido quando SELECTED
+                    companyIds:
+                        visibilityMode === 'SELECTED'
+                            ? p.companies.map((c) => c.companyId)
+                            : [],
                     createdAt: p.createdAt,
                     updatedAt: p.updatedAt,
                 };
             }),
         });
-    } catch {
-        return jsonErr('Sem permissão para acessar Parceiros.', 403);
+    } catch (e) {
+        console.error('[platform partners GET] error:', e);
+        return jsonErr('Erro ao listar parceiros.', 500);
     }
 }
 
 /**
- * POST /api/admin/partners
+ * POST /api/plataform/partners
+ * ✅ Rota de PLATAFORMA (AtendePlay):
  * - cria parceiro
  * - ✅ se visibilityMode=SELECTED, grava vínculos em PartnerVisibility
  */
 export async function POST(request: Request) {
-    try {
-        await requireAdminForModule('SETTINGS');
+    const auth = await requirePlatformForModuleApi('PARTNERS');
+    if (auth instanceof NextResponse) return auth;
 
+    try {
         const body = (await request
             .json()
             .catch(() => null)) as CreatePartnerPayload | null;
@@ -274,7 +299,7 @@ export async function POST(request: Request) {
                 ctaUrl,
                 ctaLabel,
                 isActive,
-                visibilityMode: visibilityMode as any, // compat: teu handler usa string; prisma espera enum
+                visibilityMode: visibilityMode as any, // prisma enum
                 sortOrder,
 
                 ...(visibilityMode === 'SELECTED'
@@ -293,7 +318,7 @@ export async function POST(request: Request) {
 
         return jsonOk({ id: created.id }, { status: 201 });
     } catch (e) {
-        console.error('[admin partners POST] error:', e);
-        return jsonErr('Sem permissão para criar parceiros.', 403);
+        console.error('[platform partners POST] error:', e);
+        return jsonErr('Erro ao criar parceiro.', 500);
     }
 }

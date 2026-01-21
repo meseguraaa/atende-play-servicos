@@ -1,7 +1,7 @@
-// src/app/api/admin/companies/options/route.ts
+// src/app/api/plataform/companies/options/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireAdminForModuleApi } from '@/lib/admin-permissions';
+import { requirePlatformForModuleApi } from '@/lib/admin-permissions';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -19,14 +19,16 @@ function jsonErr(error: string, status = 400) {
 
 /**
  * GET /api/admin/companies/options
- * Lista enxuta de empresas para selects no admin (ex: parceiros SELECTED).
+ * ✅ (AGORA) Rota de PLATAFORMA (AtendePlay)
+ *
+ * Lista enxuta de empresas para selects no painel da plataforma (ex: parceiros SELECTED).
  *
  * Retorno:
  * { ok:true, companies:[{id,name,isActive}], count }
  */
 export async function GET() {
     // ✅ API: bloqueia com JSON (401/403), sem redirect
-    const auth = await requireAdminForModuleApi('PARTNERS');
+    const auth = await requirePlatformForModuleApi('COMPANIES');
     if (auth instanceof NextResponse) return auth;
 
     try {
@@ -44,7 +46,7 @@ export async function GET() {
             { status: 200, headers: { 'Cache-Control': 'no-store' } }
         );
     } catch (e) {
-        console.error('[admin companies options] error:', e);
+        console.error('[platform companies options] error:', e);
         return jsonErr('Erro ao listar empresas.', 500);
     }
 }

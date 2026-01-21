@@ -1,10 +1,11 @@
-// src/app/api/admin/partners/[partnerId]/route.ts
+// src/app/api/plataform/partners/[partnerId]/route.ts
 import { NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/prisma';
-import { requireAdminForModuleApi } from '@/lib/admin-permissions';
+import { requirePlatformForModuleApi } from '@/lib/admin-permissions';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 type PartnerVisibilityMode = 'ALL' | 'SELECTED';
 
@@ -138,15 +139,14 @@ function normalizeCompanyIds(raw: unknown): string[] {
 }
 
 /**
- * GET /api/admin/partners/:partnerId
+ * GET /api/plataform/partners/:partnerId
  * - retorna o parceiro + companyIds já vinculados (PartnerVisibility)
  */
 export async function GET(
     _request: Request,
     ctx: { params: Promise<{ partnerId: string }> }
 ) {
-    // ✅ API: sem redirect, devolve JSON (401/403)
-    const auth = await requireAdminForModuleApi('PARTNERS');
+    const auth = await requirePlatformForModuleApi('PARTNERS');
     if (auth instanceof NextResponse) return auth;
 
     try {
@@ -171,18 +171,18 @@ export async function GET(
                 sortOrder: true,
                 createdAt: true,
                 updatedAt: true,
+                companies: {
+                    where: { isEnabled: true },
+                    select: { companyId: true },
+                    orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
+                },
             },
         });
 
         if (!partner) return jsonErr('Parceiro não encontrado.', 404);
 
-        const vis = await prisma.partnerVisibility.findMany({
-            where: { partnerId: partner.id, isEnabled: true },
-            select: { companyId: true },
-            orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
-        });
-
-        const companyIds = vis.map((v) => v.companyId);
+        const visibilityMode = normalizeVisibilityMode(partner.visibilityMode);
+        const ctaUrl = normalizeCtaUrl(partner.ctaUrl);
 
         return jsonOk({
             partner: {
@@ -190,37 +190,49 @@ export async function GET(
                 name: partner.name,
                 logoUrl: partner.logoUrl ?? null,
                 logoKey: partner.logoKey ?? null,
-                discountPct: Number(partner.discountPct ?? 0),
+                discountPct: toInt(partner.discountPct, 0, {
+                    min: 0,
+                    max: 100,
+                }),
                 description: partner.description ?? null,
                 rules: partner.rules ?? null,
-                ctaUrl: partner.ctaUrl ?? null,
+                ctaUrl: ctaUrl ?? null,
                 ctaLabel: partner.ctaLabel ?? null,
                 isActive: Boolean(partner.isActive),
-                visibilityMode: (partner.visibilityMode ??
-                    'ALL') as PartnerVisibilityMode,
-                sortOrder: Number(partner.sortOrder ?? 100),
+                visibilityMode,
+                sortOrder: toInt(partner.sortOrder, 100, {
+                    min: 0,
+                    max: 100000,
+                }),
                 createdAt: partner.createdAt,
                 updatedAt: partner.updatedAt,
             },
-            companyIds,
+            companyIds:
+                visibilityMode === 'SELECTED'
+                    ? partner.companies.map((v) => v.companyId)
+                    : [],
         });
     } catch (e) {
-        console.error('[admin partners get] error:', e);
+        console.error('[platform partners get] error:', e);
         return jsonErr('Erro ao acessar parceiro.', 500);
     }
 }
 
 /**
- * PATCH /api/admin/partners/:partnerId
+ * PATCH /api/plataform/partners/:partnerId
  * - toggleActive: alterna isActive do parceiro
- * - update: edita campos do parceiro + (opcional) sincroniza visibilidade (PartnerVisibility)
+ * - update: edita campos do parceiro + sincroniza visibilidade (PartnerVisibility)
+ *
+ * Regras:
+ * - Se mudar visibilityMode para ALL: limpa vínculos
+ * - Se mudar visibilityMode para SELECTED: companyIds é obrigatório e não pode ser vazio
+ * - Se só mandar companyIds: sincroniza mantendo SELECTED (ou muda para SELECTED se vier assim)
  */
 export async function PATCH(
     request: Request,
     ctx: { params: Promise<{ partnerId: string }> }
 ) {
-    // ✅ API: sem redirect, devolve JSON (401/403)
-    const auth = await requireAdminForModuleApi('PARTNERS');
+    const auth = await requirePlatformForModuleApi('PARTNERS');
     if (auth instanceof NextResponse) return auth;
 
     try {
@@ -322,12 +334,14 @@ export async function PATCH(
                 ? normalizeNullableString(u.ctaLabel)
                 : (current.ctaLabel ?? null);
 
+        const currentVisibility = normalizeVisibilityMode(
+            current.visibilityMode ?? 'ALL'
+        );
+
         const visibilityMode =
             u.visibilityMode !== undefined
                 ? normalizeVisibilityMode(u.visibilityMode)
-                : (String(
-                      current.visibilityMode ?? 'ALL'
-                  ) as PartnerVisibilityMode);
+                : currentVisibility;
 
         const sortOrder = toInt(
             u.sortOrder !== undefined ? u.sortOrder : current.sortOrder,
@@ -340,6 +354,7 @@ export async function PATCH(
             ? normalizeCompanyIds(u.companyIds)
             : [];
 
+        // validações básicas
         if (!name) return jsonErr('Nome é obrigatório.', 400);
 
         if (!logoUrl) return jsonErr('logoUrl é obrigatório.', 400);
@@ -357,17 +372,31 @@ export async function PATCH(
             );
         }
 
-        // ✅ regra do SELECTED: só valida se o payload está tentando mexer nos vínculos
-        if (
-            hasCompanyIds &&
-            visibilityMode === 'SELECTED' &&
-            companyIds.length === 0
-        ) {
-            return jsonErr(
-                'Em SELECTED, você precisa selecionar pelo menos 1 empresa.',
-                400
-            );
+        // ✅ Se está mudando para SELECTED, companyIds passa a ser obrigatório
+        const isChangingVisibility =
+            u.visibilityMode !== undefined &&
+            visibilityMode !== currentVisibility;
+
+        if (visibilityMode === 'SELECTED') {
+            if (
+                (isChangingVisibility || hasCompanyIds) &&
+                companyIds.length === 0
+            ) {
+                return jsonErr(
+                    'Em SELECTED, você precisa selecionar pelo menos 1 empresa.',
+                    400
+                );
+            }
+            if (isChangingVisibility && !hasCompanyIds) {
+                return jsonErr(
+                    'Ao mudar para SELECTED, envie companyIds com pelo menos 1 empresa.',
+                    400
+                );
+            }
         }
+
+        // ✅ Decide quando sincronizar vínculos:
+        const shouldSyncVisibility = hasCompanyIds || isChangingVisibility;
 
         const result = await prisma.$transaction(async (tx) => {
             const partnerUpdated = await tx.partner.update({
@@ -405,16 +434,15 @@ export async function PATCH(
                 },
             });
 
-            // ✅ sincroniza vínculos somente se o payload trouxe companyIds
-            if (hasCompanyIds) {
+            if (shouldSyncVisibility) {
                 if (visibilityMode === 'ALL') {
                     await tx.partnerVisibility.deleteMany({
                         where: { partnerId: partnerUpdated.id },
                     });
-
                     return { partnerUpdated, companyIds: [] as string[] };
                 }
 
+                // SELECTED
                 await tx.partnerVisibility.deleteMany({
                     where: { partnerId: partnerUpdated.id },
                 });
@@ -433,15 +461,18 @@ export async function PATCH(
                 return { partnerUpdated, companyIds };
             }
 
-            // não mexe nos vínculos
             return { partnerUpdated, companyIds: null as string[] | null };
         });
 
-        // se não sincronizou, devolve os ids atuais (pra ajudar o EDIT sem “piscar”)
+        // se não sincronizou, devolve os ids atuais
         let effectiveCompanyIds: string[] = [];
+        const effectiveVisibilityMode = normalizeVisibilityMode(
+            result.partnerUpdated.visibilityMode ?? 'ALL'
+        );
+
         if (Array.isArray(result.companyIds)) {
             effectiveCompanyIds = result.companyIds;
-        } else {
+        } else if (effectiveVisibilityMode === 'SELECTED') {
             const vis = await prisma.partnerVisibility.findMany({
                 where: { partnerId: result.partnerUpdated.id, isEnabled: true },
                 select: { companyId: true },
@@ -457,21 +488,29 @@ export async function PATCH(
                 name: result.partnerUpdated.name,
                 logoUrl: result.partnerUpdated.logoUrl ?? null,
                 logoKey: result.partnerUpdated.logoKey ?? null,
-                discountPct: Number(result.partnerUpdated.discountPct ?? 0),
+                discountPct: toInt(result.partnerUpdated.discountPct, 0, {
+                    min: 0,
+                    max: 100,
+                }),
                 description: result.partnerUpdated.description ?? null,
                 rules: result.partnerUpdated.rules ?? null,
-                ctaUrl: result.partnerUpdated.ctaUrl ?? null,
+                ctaUrl: normalizeCtaUrl(result.partnerUpdated.ctaUrl) ?? null,
                 ctaLabel: result.partnerUpdated.ctaLabel ?? null,
                 isActive: Boolean(result.partnerUpdated.isActive),
-                visibilityMode: (result.partnerUpdated.visibilityMode ??
-                    'ALL') as PartnerVisibilityMode,
-                sortOrder: Number(result.partnerUpdated.sortOrder ?? 100),
+                visibilityMode: effectiveVisibilityMode,
+                sortOrder: toInt(result.partnerUpdated.sortOrder, 100, {
+                    min: 0,
+                    max: 100000,
+                }),
                 updatedAt: result.partnerUpdated.updatedAt,
             },
-            companyIds: effectiveCompanyIds,
+            companyIds:
+                effectiveVisibilityMode === 'SELECTED'
+                    ? effectiveCompanyIds
+                    : [],
         });
     } catch (e) {
-        console.error('[admin partners patch] error:', e);
+        console.error('[platform partners patch] error:', e);
         return jsonErr('Erro ao editar parceiro.', 500);
     }
 }

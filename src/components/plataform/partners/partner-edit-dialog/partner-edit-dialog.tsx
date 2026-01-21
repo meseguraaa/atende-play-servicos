@@ -150,8 +150,8 @@ const VISIBILITY_OPTIONS: Array<{
     value: PartnerVisibilityMode;
     label: string;
 }> = [
-    { value: 'ALL', label: 'Todas as empresas (ALL)' },
-    { value: 'SELECTED', label: 'Selecionadas (SELECTED)' },
+    { value: 'ALL', label: 'Todas as empresas' },
+    { value: 'SELECTED', label: 'Empresas selecionadas' },
 ];
 
 async function safeReadJson<T>(res: Response): Promise<T | null> {
@@ -163,13 +163,13 @@ async function safeReadJson<T>(res: Response): Promise<T | null> {
 }
 
 /**
- * Busca empresas do admin.
+ * ✅ Busca empresas do painel da PLATAFORMA
  */
-async function fetchCompaniesAdmin(): Promise<CompanyOption[]> {
+async function fetchCompaniesPlatform(): Promise<CompanyOption[]> {
     const urls = [
-        '/api/admin/companies/options',
-        '/api/admin/companies?active=1',
-        '/api/admin/companies',
+        '/api/plataform/companies/options',
+        '/api/plataform/companies?active=1',
+        '/api/plataform/companies',
     ];
 
     for (const url of urls) {
@@ -208,16 +208,14 @@ async function fetchCompaniesAdmin(): Promise<CompanyOption[]> {
 /**
  * Busca companyIds já vinculados ao parceiro (para pré-seleção no EDIT).
  *
- * Como você já tem a rota PATCH /api/admin/partners/:partnerId,
- * normalmente NÃO existe um GET nessa mesma rota.
- * Então aqui tentamos endpoints comuns e, se não existir nenhum,
- * simplesmente não pré-seleciona (mas o usuário consegue selecionar manualmente).
+ * Se não existir endpoint de GET para isso, a edição continua funcionando:
+ * o usuário consegue selecionar manualmente, só perde a pré-seleção.
  */
 async function fetchPartnerCompanyIds(partnerId: string): Promise<string[]> {
     const urls = [
-        `/api/admin/partners/${partnerId}/companies`,
-        `/api/admin/partners/${partnerId}/visibility`,
-        `/api/admin/partners/${partnerId}`, // fallback (se você criar GET futuramente)
+        `/api/plataform/partners/${partnerId}/companies`,
+        `/api/plataform/partners/${partnerId}/visibility`,
+        `/api/plataform/partners/${partnerId}`, // fallback (se você criar GET futuramente)
     ];
 
     for (const url of urls) {
@@ -228,32 +226,33 @@ async function fetchPartnerCompanyIds(partnerId: string): Promise<string[]> {
             const json = await safeReadJson<any>(res);
             if (!json) continue;
 
-            const root = json?.data ?? json;
-
-            const companyIdsRaw =
-                root?.companyIds ??
-                root?.selectedCompanyIds ??
-                root?.visibilityCompanyIds ??
+            // formato mais comum: companyIds: string[]
+            const ids1 =
+                json?.companyIds ??
+                json?.data?.companyIds ??
+                json?.data?.selectedCompanyIds ??
                 null;
 
-            if (Array.isArray(companyIdsRaw)) {
-                const ids = companyIdsRaw
+            if (Array.isArray(ids1)) {
+                const ids = ids1
                     .map((v: any) => String(v ?? '').trim())
                     .filter(Boolean);
+
                 if (ids.length) return Array.from(new Set(ids));
             }
 
-            const companiesRaw =
-                root?.companies ??
-                root?.items ??
-                root?.list ??
-                root?.partnerVisibilities ??
+            // fallback: lista de objetos [{companyId}] ou [{id}]
+            const ids2 =
+                json?.companies ??
+                json?.data?.companies ??
+                json?.data?.items ??
                 null;
 
-            if (Array.isArray(companiesRaw)) {
-                const ids = companiesRaw
+            if (Array.isArray(ids2)) {
+                const ids = ids2
                     .map((v: any) => String(v?.companyId ?? v?.id ?? '').trim())
                     .filter(Boolean);
+
                 if (ids.length) return Array.from(new Set(ids));
             }
         } catch {
@@ -376,7 +375,7 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
             setCompaniesLoading(true);
             try {
                 const [list, ids] = await Promise.all([
-                    fetchCompaniesAdmin(),
+                    fetchCompaniesPlatform(),
                     fetchPartnerCompanyIds(partner.id),
                 ]);
 
@@ -384,7 +383,7 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
 
                 if (!list.length) {
                     toast.error(
-                        'Não encontrei empresas para listar. Verifique o endpoint /api/admin/companies/options.'
+                        'Não encontrei empresas para listar. Verifique o endpoint /api/plataform/companies/options.'
                     );
                 }
 
@@ -408,6 +407,13 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
         };
     }, [open, partner.id]);
 
+    React.useEffect(() => {
+        if (visibilityMode !== 'ALL') return;
+        if (selectedCompanyIds.length === 0) return;
+        setSelectedCompanyIds([]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [visibilityMode]);
+
     const filteredCompanies = React.useMemo(() => {
         const q = companiesQuery.trim().toLowerCase();
         if (!q) return companies;
@@ -425,7 +431,8 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
             const fd = new FormData();
             fd.append('file', file);
 
-            // ✅ correto para parceiros
+            // ✅ parceiros agora são globais, mas a rota de upload continua a mesma
+            // e o backend decide o "scope" (global/partners)
             fd.append('module', 'PARTNERS');
 
             const res = await fetch('/api/admin/uploads', {
@@ -446,7 +453,7 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
             }
 
             setLogoUrl(json.data.url);
-            setLogoKey(json.data.key);
+            setLogoKey(String(json.data.key ?? '').trim());
 
             toast.success('Imagem enviada!');
         } catch {
@@ -534,13 +541,16 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
 
         startTransition(async () => {
             try {
-                const res = await fetch(`/api/admin/partners/${partner.id}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        update: { ...payload, ctaUrl: cta },
-                    }),
-                });
+                const res = await fetch(
+                    `/api/plataform/partners/${partner.id}`,
+                    {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            update: { ...payload, ctaUrl: cta },
+                        }),
+                    }
+                );
 
                 const json = (await res.json().catch(() => null)) as
                     | { ok: true; data?: any }

@@ -11,27 +11,22 @@ async function main() {
 
     const ADMIN_EMAIL = 'admin@atendeplay.com.br';
     const PROF_EMAIL = 'jeff@atendeplay.com.br';
+
+    // ✅ NOVO: usuário da plataforma (não depende de CompanyMember/AdminAccess)
+    const PLATFORM_EMAIL = 'platform@atendeplay.com.br';
+
     const PASSWORD = 'Mesegura@2468';
 
     const passwordHash = await bcrypt.hash(PASSWORD, 10);
 
     // 1) Company
-    // slug NÃO é @unique no schema, então NÃO dá pra usar upsert({ where: { slug } })
-    // fazemos findFirst + create/update por id
+    // ✅ Segurança: se já existir, NÃO atualiza nada (evita sobrescrever dados reais)
     const existingCompany = await prisma.company.findFirst({
         where: { slug: COMPANY_SLUG },
     });
 
     const company = existingCompany
-        ? await prisma.company.update({
-              where: { id: existingCompany.id },
-              data: {
-                  name: COMPANY_NAME,
-                  slug: COMPANY_SLUG,
-                  segment: 'BARBERSHOP',
-                  isActive: true,
-              },
-          })
+        ? existingCompany
         : await prisma.company.create({
               data: {
                   name: COMPANY_NAME,
@@ -42,20 +37,13 @@ async function main() {
           });
 
     // 2) Unit
-    // Não existe unique em (companyId, name), então fazemos findFirst + create
-    // (opcionalmente: update se você quiser manter sincronizado)
+    // ✅ Segurança: se já existir, NÃO atualiza nada (evita sobrescrever dados reais)
     const existingUnit = await prisma.unit.findFirst({
         where: { companyId: company.id, name: UNIT_NAME },
     });
 
     const unit = existingUnit
-        ? await prisma.unit.update({
-              where: { id: existingUnit.id },
-              data: {
-                  name: UNIT_NAME,
-                  isActive: true,
-              },
-          })
+        ? existingUnit
         : await prisma.unit.create({
               data: {
                   companyId: company.id,
@@ -226,11 +214,35 @@ async function main() {
         },
     });
 
+    // ✅ 5) PLATFORM OWNER user (para testar /plataform)
+    // - Não cria CompanyMember
+    // - Não cria AdminAccess
+    // - Só garante um User com role PLATFORM_OWNER
+    const platformUser = await prisma.user.upsert({
+        where: { email: PLATFORM_EMAIL },
+        update: {
+            role: 'PLATFORM_OWNER',
+            isOwner: false,
+            isActive: true,
+            passwordHash,
+            name: 'Platform Owner',
+        },
+        create: {
+            email: PLATFORM_EMAIL,
+            name: 'Platform Owner',
+            role: 'PLATFORM_OWNER',
+            isOwner: false,
+            isActive: true,
+            passwordHash,
+        },
+    });
+
     console.log('🌱 Seed concluída!');
     console.log(`Company: ${company.name} (${company.slug ?? '-'})`);
     console.log(`Unit: ${unit.name}`);
     console.log(`ADMIN: ${ADMIN_EMAIL} / ${PASSWORD}`);
     console.log(`PROF: ${PROF_EMAIL} / ${PASSWORD}`);
+    console.log(`PLATFORM: ${platformUser.email} / ${PASSWORD}`);
 }
 
 main()

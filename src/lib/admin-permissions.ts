@@ -4,6 +4,10 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getCurrentPainelUser } from '@/lib/painel-session';
 
+/* =========================================================
+ * Admin (Tenant)
+ * ========================================================= */
+
 export type AdminModule =
     | 'DASHBOARD'
     | 'REPORTS'
@@ -84,8 +88,13 @@ function moduleToAccessField(module: AdminModule): AdminAccessFlag | null {
             return 'canAccessReviews';
         case 'PRODUCTS':
             return 'canAccessProducts';
+
+        // ✅ IMPORTANTE:
+        // Parceiros saiu do ADMIN (tenant) e agora pertence somente à PLATAFORMA.
+        // Ao retornar null, o guard força redirect para o primeiro módulo permitido.
         case 'PARTNERS':
-            return 'canAccessPartners';
+            return null;
+
         case 'CLIENTS':
             return 'canAccessClients';
         case 'CLIENT_LEVELS':
@@ -129,6 +138,8 @@ async function getAdminContext(): Promise<AdminContextResult> {
     const session = await getCurrentPainelUser();
 
     if (!session) return { ok: false, reason: 'no_session' };
+
+    // ✅ IMPORTANTE: aqui é TENANT ADMIN apenas
     if (session.role !== 'ADMIN') return { ok: false, reason: 'not_admin' };
 
     const userId = String((session as any).sub || '').trim();
@@ -214,7 +225,9 @@ const FALLBACK_ROUTES: ModuleRoute[] = [
     },
     { module: 'SERVICES', href: '/admin/services' },
     { module: 'PRODUCTS', href: '/admin/products' },
-    { module: 'PARTNERS', href: '/admin/partners' },
+
+    // ✅ PARTNERS REMOVIDO do fallback (agora é somente da PLATAFORMA)
+
     { module: 'CLIENTS', href: '/admin/clients' },
     { module: 'CLIENT_LEVELS', href: '/admin/client-levels' },
     { module: 'REVIEWS', href: '/admin/review-tags' },
@@ -272,8 +285,17 @@ export async function requireAdminForModule(
 
     const ctx = res.ctx;
 
-    // OWNER: tudo liberado
+    // OWNER: tudo liberado (mas mesmo assim, PARTNERS não existe mais no Admin)
     if (ctx.isOwner) {
+        // ✅ Se tentarem acessar PARTNERS como admin-owner tenant, cai no redirect padrão
+        if (module === 'PARTNERS') {
+            await redirectToFirstAllowedOrLogin({
+                companyId: ctx.companyId,
+                userId: ctx.id,
+            });
+            throw new Error('unreachable');
+        }
+
         return {
             id: ctx.id,
             name: ctx.name,
@@ -352,6 +374,14 @@ export async function requireAdminForModuleApi(
     const ctx = res.ctx;
 
     if (ctx.isOwner) {
+        // ✅ trava PARTNERS também na API do Admin
+        if (module === 'PARTNERS') {
+            return NextResponse.json(
+                { ok: false, error: 'forbidden' },
+                { status: 403 }
+            );
+        }
+
         return {
             id: ctx.id,
             name: ctx.name,
@@ -396,6 +426,23 @@ export async function requireAdminForModuleApi(
         canSeeAllUnits: false,
     };
 }
+
+/* =========================================================
+ * Platform (AtendePlay)
+ * ========================================================= *
+ * ✅ MOVED OUT:
+ * A plataforma agora vive em src/lib/platform-permissions.ts
+ * Mantemos re-export aqui por compat (caso algum import antigo exista).
+ */
+
+export type {
+    PlatformModule,
+    PlatformSession,
+} from '@/lib/plataform-permissions';
+export {
+    requirePlatformForModule,
+    requirePlatformForModuleApi,
+} from '@/lib/plataform-permissions';
 
 /**
  * Mantive esse export porque você já usou em outros pontos.

@@ -914,15 +914,15 @@ model AnalyticsEvent {
 
 model PasswordResetToken {
   id        String   @id @default(cuid())
-  companyId String
+  companyId String?
   userId    String
   tokenHash String   @unique
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime @default(now())
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([companyId, userId])
   @@index([userId])
@@ -940,22 +940,22 @@ enum PartnerVisibilityMode {
 }
 
 model Partner {
-  id             String               @id @default(cuid())
-  name           String
-  logoUrl        String
-  logoKey        String?
-  discountPct    Int                  @default(0) // 10 = 10%
-  description    String?
-  rules          String?
-  ctaUrl         String
-  ctaLabel       String               @default("Ativar cashback e ir pra loja")
-  isActive       Boolean              @default(true)
-  visibilityMode PartnerVisibilityMode @default(ALL)
-  sortOrder      Int                  @default(100)
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+  id              String                @id @default(cuid())
+  name            String
+  logoUrl         String
+  logoKey         String?
+  discountPct     Int                   @default(0) // 10 = 10%
+  description     String?
+  rules           String?
+  ctaUrl          String
+  ctaLabel        String                @default("Ativar cashback e ir pra loja")
+  isActive        Boolean               @default(true)
+  visibilityMode  PartnerVisibilityMode @default(ALL)
+  sortOrder       Int                   @default(100)
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
 
-  companies      PartnerVisibility[]
+  companies       PartnerVisibility[]
 
   @@index([isActive, sortOrder])
   @@index([visibilityMode])
@@ -985,6 +985,10 @@ enum Role {
   CLIENT
   PROFESSIONAL
   ADMIN
+
+  // ✅ NOVO: AtendePlay (plataforma)
+  PLATFORM_OWNER
+  PLATFORM_STAFF
 }
 
 enum CompanySegment {

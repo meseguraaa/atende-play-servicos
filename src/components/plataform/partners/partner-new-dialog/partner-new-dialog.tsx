@@ -133,11 +133,13 @@ async function safeReadJson<T>(res: Response): Promise<T | null> {
 }
 
 /**
- * ✅ Busca empresas do admin (endpoint oficial)
- * GET /api/admin/companies/options
+ * ✅ Busca empresas do painel da PLATAFORMA
+ * GET /api/plataform/companies/options
  */
-async function fetchCompaniesAdmin(): Promise<CompanyOption[]> {
-    const res = await fetch('/api/admin/companies/options', { method: 'GET' });
+async function fetchCompaniesPlatform(): Promise<CompanyOption[]> {
+    const res = await fetch('/api/plataform/companies/options', {
+        method: 'GET',
+    });
     if (!res.ok) return [];
 
     const json = await safeReadJson<any>(res);
@@ -232,12 +234,12 @@ export function PartnerNewDialog() {
         async function load() {
             setCompaniesLoading(true);
             try {
-                const list = await fetchCompaniesAdmin();
+                const list = await fetchCompaniesPlatform();
                 if (!alive) return;
 
                 if (!list.length) {
                     toast.error(
-                        'Não encontrei empresas para listar. Verifique /api/admin/companies/options.'
+                        'Não encontrei empresas para listar. Verifique /api/plataform/companies/options.'
                     );
                 }
 
@@ -407,7 +409,7 @@ export function PartnerNewDialog() {
 
         startTransition(async () => {
             try {
-                const res = await fetch('/api/admin/partners', {
+                const res = await fetch('/api/plataform/partners', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ...payload, ctaUrl: cta }),
@@ -628,11 +630,6 @@ export function PartnerNewDialog() {
                                 <p className="text-sm font-medium text-content-primary">
                                     Visibilidade
                                 </p>
-                                <p className="text-xs text-content-secondary">
-                                    ALL: aparece para todas as empresas.
-                                    SELECTED: aparece só para empresas
-                                    selecionadas.
-                                </p>
                             </div>
                         </div>
 
@@ -651,10 +648,10 @@ export function PartnerNewDialog() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="ALL">
-                                    ALL (todas as empresas)
+                                    Todas as empresas
                                 </SelectItem>
                                 <SelectItem value="SELECTED">
-                                    SELECTED (empresas selecionadas)
+                                    Empresas selecionadas
                                 </SelectItem>
                             </SelectContent>
                         </Select>

@@ -1,4 +1,4 @@
-// src/components/admin/partners/partner-row/partner-row.tsx
+// src/components/plataform/partners/partner-row/partner-row.tsx
 'use client';
 
 import * as React from 'react';
@@ -8,8 +8,8 @@ import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
 
-import type { PartnerForRow } from '@/app/admin/partners/page';
-import { PartnerEditDialog } from '@/components/admin/partners/partner-edit-dialog/partner-edit-dialog';
+import type { PartnerForRow } from '@/app/plataform/partners/page';
+import { PartnerEditDialog } from '@/components/plataform/partners/partner-edit-dialog/partner-edit-dialog';
 
 function Pill({
     children,
@@ -37,6 +37,31 @@ function Pill({
     );
 }
 
+/* ✅ Badge de STATUS padronizado (igual Finance / Services / Products) */
+function StatusBadge({
+    isActive,
+    title,
+}: {
+    isActive: boolean;
+    title?: string;
+}) {
+    const toneClass = isActive
+        ? 'bg-green-500/15 text-green-600 border-green-500/30'
+        : 'bg-red-500/15 text-red-600 border-red-500/30';
+
+    return (
+        <span
+            title={title}
+            className={cn(
+                'inline-flex items-center rounded-md border px-2 py-0.5 text-xs',
+                toneClass
+            )}
+        >
+            {isActive ? 'Ativo' : 'Inativo'}
+        </span>
+    );
+}
+
 export function PartnerRow({ partner }: { partner: PartnerForRow }) {
     const router = useRouter();
     const [isPending, startTransition] = React.useTransition();
@@ -44,11 +69,14 @@ export function PartnerRow({ partner }: { partner: PartnerForRow }) {
     function handleToggleActive() {
         startTransition(async () => {
             try {
-                const res = await fetch(`/api/admin/partners/${partner.id}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ toggleActive: true }),
-                });
+                const res = await fetch(
+                    `/api/plataform/partners/${partner.id}`,
+                    {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ toggleActive: true }),
+                    }
+                );
 
                 const json = (await res.json().catch(() => null)) as
                     | { ok: true; data?: any }
@@ -121,16 +149,13 @@ export function PartnerRow({ partner }: { partner: PartnerForRow }) {
                 </span>
             </td>
 
-            {/* STATUS – padrão product-row */}
+            {/* ✅ STATUS padronizado */}
             <td className="px-4 py-3">
-                <span className="text-xs text-content-secondary">
-                    {partner.isActive ? 'Ativo' : 'Inativo'}
-                </span>
+                <StatusBadge isActive={Boolean(partner.isActive)} />
             </td>
 
             <td className="px-4 py-3 text-right">
                 <div className="inline-flex items-center gap-2">
-                    {/* ✅ Editar primeiro */}
                     <PartnerEditDialog
                         partner={{
                             id: partner.id,
@@ -156,7 +181,6 @@ export function PartnerRow({ partner }: { partner: PartnerForRow }) {
                         }}
                     />
 
-                    {/* ✅ Ativar / Desativar depois */}
                     <Button
                         variant={partner.isActive ? 'destructive' : 'active'}
                         size="sm"
