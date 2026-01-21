@@ -205,6 +205,11 @@ export function ServiceRow({ service }: ServiceRowProps) {
         ]
     );
 
+    // ✅ Badge padronizado no estilo do Finance (rounded-md + border + tons)
+    const badgeToneClass = isActive
+        ? 'bg-green-500/15 text-green-600 border-green-500/30'
+        : 'bg-red-500/15 text-red-600 border-red-500/30';
+
     return (
         <tr className="border-t border-border-primary">
             <td className="px-4 py-3">
@@ -251,10 +256,8 @@ export function ServiceRow({ service }: ServiceRowProps) {
             <td className="px-4 py-3">
                 <span
                     className={[
-                        'inline-flex items-center rounded-full px-2 py-0.5 text-xs',
-                        isActive
-                            ? 'bg-emerald-500/10 text-emerald-600'
-                            : 'bg-rose-500/10 text-rose-600',
+                        'inline-flex items-center rounded-md border px-2 py-0.5 text-xs',
+                        badgeToneClass,
                     ].join(' ')}
                 >
                     {isActive ? 'Ativo' : 'Inativo'}

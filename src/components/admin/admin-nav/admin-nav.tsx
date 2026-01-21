@@ -92,7 +92,11 @@ const ICON_BY_KEY: Record<
     services: ListChecks,
     reviews: Tag,
     products: Package,
+
+    // ⚠️ Parceiros agora é PLATAFORMA, mas mantemos o ícone mapeado
+    // caso o ADMIN_MENU ainda tenha a entrada (vamos filtrar na renderização).
     partners: Handshake,
+
     clients: Users,
 
     // ✅ “Nível do cliente” com medalha bonita
@@ -104,6 +108,9 @@ const ICON_BY_KEY: Record<
 
 const UNIT_COOKIE_NAME = 'admin_unit_context';
 const UNIT_ALL_VALUE = 'all';
+
+// ✅ Tenant Admin NÃO deve ver menu de Parceiros (agora é Plataforma/AtendePlay)
+const HIDDEN_TENANT_MENU_KEYS = new Set<string>(['partners']);
 
 function getCookie(name: string): string | null {
     if (typeof document === 'undefined') return null;
@@ -193,7 +200,10 @@ function buildOwnerAccess(): AdminAccessLike {
         canAccessServices: true,
         canAccessReviews: true,
         canAccessProducts: true,
-        canAccessPartners: true, // ✅ NOVO
+
+        // ❌ Parceiros agora é da PLATAFORMA (AtendePlay)
+        canAccessPartners: false,
+
         canAccessClients: true,
         canAccessClientLevels: true,
         canAccessFinance: true,
@@ -216,10 +226,14 @@ export function AdminNav({
         ? buildOwnerAccess()
         : adminAccess;
 
-    const visibleLinks = ADMIN_MENU.filter(
-        (link) =>
-            link.enabled && canAccess(effectiveAccess as any, link.menuKey)
-    );
+    const visibleLinks = ADMIN_MENU.filter((link) => {
+        if (!link.enabled) return false;
+
+        // ✅ remove menus que são somente PLATAFORMA
+        if (HIDDEN_TENANT_MENU_KEYS.has(String(link.menuKey))) return false;
+
+        return canAccess(effectiveAccess as any, link.menuKey);
+    });
 
     const shouldShowUnitPicker = !!unitOptions?.length;
 

@@ -3,7 +3,11 @@ import type { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 
-export type PainelLoginRole = 'ADMIN' | 'PROFESSIONAL';
+export type PainelLoginRole =
+    | 'ADMIN'
+    | 'PROFESSIONAL'
+    | 'PLATFORM_OWNER'
+    | 'PLATFORM_STAFF';
 
 export type AuthenticatedUser = {
     id: string;
@@ -83,6 +87,7 @@ async function verifyPassword(
 /**
  * Autentica e decide o "role do painel":
  * - ADMIN: se user.role === "ADMIN"
+ * - PLATFORM_*: se user.role === "PLATFORM_OWNER" | "PLATFORM_STAFF"
  * - PROFESSIONAL: se existir Professional ativo (em qualquer company) com userId ou email
  *
  * Observação: o vínculo com a company do TENANT é validado na criação da sessão (painel-session),
@@ -114,8 +119,22 @@ export async function loginWithCredentialsWithPrisma(
     const ok = await verifyPassword(password, user.passwordHash);
     if (!ok) throw new AuthError('credenciais');
 
+    const role = String(user.role || '')
+        .trim()
+        .toUpperCase();
+
+    // ✅ PLATFORM (painel): não depende de CompanyMember/AdminAccess
+    if (role === 'PLATFORM_OWNER' || role === 'PLATFORM_STAFF') {
+        return {
+            id: user.id,
+            name: user.name ?? null,
+            email: user.email,
+            role: role as PainelLoginRole,
+        };
+    }
+
     // ADMIN (painel)
-    if (String(user.role).toUpperCase() === 'ADMIN') {
+    if (role === 'ADMIN') {
         return {
             id: user.id,
             name: user.name ?? null,

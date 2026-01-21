@@ -22,7 +22,7 @@ type AdminAccessLike = {
     canAccessReviews: boolean;
     canAccessProducts: boolean;
 
-    // ✅ NOVO: Parceiros
+    // ⚠️ Parceiros agora é PLATAFORMA (AtendePlay), não Tenant
     canAccessPartners: boolean;
 
     canAccessClients: boolean;
@@ -31,6 +31,9 @@ type AdminAccessLike = {
     canAccessSettings: boolean;
 };
 
+// ✅ Tenant Admin NÃO deve considerar "partners" em fallbacks/menus
+const HIDDEN_TENANT_MENU_KEYS = new Set<string>(['partners']);
+
 function getFirstAllowedEnabledHref(
     access: AdminAccessLike | null
 ): string | null {
@@ -38,6 +41,10 @@ function getFirstAllowedEnabledHref(
 
     for (const item of ADMIN_MENU) {
         if (!item.enabled) continue;
+
+        // ✅ remove menus que são somente PLATAFORMA
+        if (HIDDEN_TENANT_MENU_KEYS.has(String(item.menuKey))) continue;
+
         if (!canAccess(access as any, item.menuKey)) continue;
         return item.href;
     }
@@ -57,6 +64,8 @@ export default async function AdminLayout({
         redirect('/painel/login?error=credenciais');
     }
 
+    // ✅ /admin é APENAS do TENANT.
+    // PLATFORM_* não entra aqui.
     if (session.role !== 'ADMIN') {
         redirect('/painel/login?error=permissao');
     }
@@ -106,8 +115,8 @@ export default async function AdminLayout({
               canAccessReviews: true,
               canAccessProducts: true,
 
-              // ✅ NOVO: Parceiros
-              canAccessPartners: true,
+              // ❌ Parceiros agora é PLATAFORMA (AtendePlay)
+              canAccessPartners: false,
 
               canAccessClients: true,
               canAccessClientLevels: true,
@@ -126,7 +135,7 @@ export default async function AdminLayout({
                   canAccessReviews: true,
                   canAccessProducts: true,
 
-                  // ✅ NOVO: Parceiros
+                  // ⚠️ Mesmo que exista no banco antigo, no tenant não usamos mais.
                   canAccessPartners: true,
 
                   canAccessClients: true,

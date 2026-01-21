@@ -5,6 +5,7 @@ import path from 'path';
 import crypto from 'crypto';
 
 import { requireAdminForModule } from '@/lib/admin-permissions';
+import { requirePlatformForModuleApi } from '@/lib/plataform-permissions';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs'; // precisamos de fs (salvar em /public)
@@ -27,7 +28,10 @@ type AdminModuleLike = Parameters<typeof requireAdminForModule>[0];
 const MODULE_TO_PERMISSION: Record<UploadModule, AdminModuleLike> = {
     PRODUCTS: 'PRODUCTS' as AdminModuleLike,
     PROFESSIONALS: 'PROFESSIONALS' as AdminModuleLike,
-    PARTNERS: 'SETTINGS' as AdminModuleLike, // ✅ parceiros seguem padrão de SETTINGS
+
+    // ✅ (IMPORTANTE) aqui não manda mais. Parceiros agora são PLATAFORMA.
+    // Mantemos só por compat de tipo, mas não será usado quando module=PARTNERS.
+    PARTNERS: 'SETTINGS' as AdminModuleLike,
 };
 
 function jsonOk<T>(data: T, init?: ResponseInit) {
@@ -92,6 +96,36 @@ function parseModule(v: unknown): UploadModule | null {
     return null;
 }
 
+type UploadScope = { kind: 'company'; companyId: string } | { kind: 'global' };
+
+/**
+ * ✅ Resolve permissão + namespace de storage
+ * - PRODUCTS/PROFESSIONALS: precisa de ADMIN + companyId
+ * - PARTNERS: precisa de PLATFORM + grava em /uploads/global/partners
+ */
+async function resolveScopeForModule(
+    module: UploadModule
+): Promise<UploadScope | NextResponse> {
+    if (module === 'PARTNERS') {
+        const auth = await requirePlatformForModuleApi('PARTNERS');
+        if (auth instanceof NextResponse) return auth;
+        return { kind: 'global' };
+    }
+
+    const permissionModule = MODULE_TO_PERMISSION[module];
+    const session = await requireAdminForModule(permissionModule);
+
+    const companyId = normalizeString((session as any)?.companyId);
+    if (!companyId) {
+        return jsonErr(
+            'Contexto inválido: companyId ausente (multi-tenant).',
+            401
+        );
+    }
+
+    return { kind: 'company', companyId };
+}
+
 /**
  * POST /api/admin/uploads
  * multipart/form-data:
@@ -99,7 +133,8 @@ function parseModule(v: unknown): UploadModule | null {
  * - module: "PRODUCTS" | "PROFESSIONALS" | "PARTNERS" (obrigatório)
  *
  * Salva em:
- * /public/uploads/<companyId>/<category>/<uuid>.<ext>
+ * - PRODUCTS/PROFESSIONALS: /public/uploads/<companyId>/<category>/<uuid>.<ext>
+ * - PARTNERS (PLATFORM):    /public/uploads/global/partners/<uuid>.<ext>
  *
  * Retorna:
  * { ok: true, data: { url, key, mime, size, originalName, module, category } }
@@ -117,17 +152,9 @@ export async function POST(request: Request) {
             );
         }
 
-        // 🔒 Permissão conforme o módulo (resolve TS + mantém padrão do app)
-        const permissionModule = MODULE_TO_PERMISSION[module];
-        const session = await requireAdminForModule(permissionModule);
-
-        const companyId = normalizeString((session as any)?.companyId);
-        if (!companyId) {
-            return jsonErr(
-                'Contexto inválido: companyId ausente (multi-tenant).',
-                401
-            );
-        }
+        // ✅ resolve permissão + scope (company/global)
+        const scope = await resolveScopeForModule(module);
+        if (scope instanceof NextResponse) return scope;
 
         const file = formGet(form, 'file');
         if (!file || !(file instanceof File)) {
@@ -168,8 +195,10 @@ export async function POST(request: Request) {
         const key = crypto.randomUUID();
         const fileName = `${key}${ext}`;
 
-        // organiza por empresa + categoria (evita colisão e separa por domínio)
-        const targetDir = path.join(UPLOADS_DIR, companyId, category);
+        // ✅ monta path conforme scope
+        const namespace = scope.kind === 'global' ? 'global' : scope.companyId;
+
+        const targetDir = path.join(UPLOADS_DIR, namespace, category);
         await mkdir(targetDir, { recursive: true });
 
         const arrayBuffer = await file.arrayBuffer();
@@ -178,7 +207,7 @@ export async function POST(request: Request) {
         const absPath = path.join(targetDir, fileName);
         await writeFile(absPath, buffer);
 
-        const url = `/uploads/${companyId}/${category}/${fileName}`;
+        const url = `/uploads/${namespace}/${category}/${fileName}`;
 
         return jsonOk(
             {

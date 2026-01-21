@@ -37,8 +37,16 @@ function getTenantSlugFromHost(host: string): string | null {
     return first;
 }
 
+function isPlatformRole(role: unknown) {
+    const r = String(role ?? '')
+        .trim()
+        .toUpperCase();
+    return r === 'PLATFORM_OWNER' || r === 'PLATFORM_STAFF';
+}
+
 /**
  * Valida o token do painel e garante que ele pertence ao tenant atual.
+ * ✅ EXCEÇÃO: tokens de PLATAFORMA não são tenant-bound, então passam.
  */
 async function isValidPainelSessionForTenant(
     token: string,
@@ -47,6 +55,9 @@ async function isValidPainelSessionForTenant(
     try {
         const { payload } = await jwtVerify(token, getJwtSecretKey());
         const p = payload as any;
+
+        // ✅ plataforma: não valida tenantSlug
+        if (isPlatformRole(p?.role)) return true;
 
         const tokenTenant = String(p?.tenantSlug ?? '')
             .toLowerCase()
@@ -70,10 +81,12 @@ function isPainelArea(pathname: string) {
 export async function proxy(req: NextRequest) {
     const { pathname } = req.nextUrl;
 
-    // ignora assets e APIs
+    // ✅ ignora assets e APIs
+    // (IMPORTANTE) /uploads é conteúdo público (inclui /uploads/global/partners/...)
     if (
         pathname.startsWith('/api') ||
         pathname.startsWith('/_next') ||
+        pathname.startsWith('/uploads') ||
         pathname === '/favicon.ico' ||
         pathname === '/robots.txt' ||
         pathname === '/sitemap.xml'
