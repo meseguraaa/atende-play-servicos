@@ -6,6 +6,9 @@ import { jwtVerify } from 'jose';
 const SESSION_COOKIE_NAME = 'painel_session';
 const DEV_DEFAULT_TENANT = 'atendeplay';
 
+// ✅ ajuste aqui se seu domínio base for diferente
+const BASE_DOMAIN = 'atendeplay.com.br';
+
 function getJwtSecretKey() {
     const secret = process.env.PAINEL_JWT_SECRET;
     if (!secret) throw new Error('PAINEL_JWT_SECRET não definido no .env');
@@ -13,28 +16,57 @@ function getJwtSecretKey() {
 }
 
 /**
- * Resolve o tenant pelo subdomínio:
+ * Pega o host "real" da requisição, respeitando proxies.
+ * - Vercel/Cloudflare/Nginx normalmente setam x-forwarded-host
+ * - Pode vir como lista separada por vírgula
+ */
+function getHostFromRequest(req: NextRequest): string {
+    const xfHost =
+        req.headers.get('x-forwarded-host') ||
+        req.headers.get('x-original-host') ||
+        req.headers.get('x-vercel-forwarded-host') ||
+        '';
+
+    const raw = (xfHost || req.headers.get('host') || '').trim().toLowerCase();
+    const first = raw.split(',')[0]?.trim() ?? '';
+    return first.split(':')[0]; // remove :3000
+}
+
+/**
+ * Resolve tenant slug pelo subdomínio:
  * clientea.atendeplay.com.br => "clientea"
+ * ✅ domínio raiz (atendeplay.com.br / www.atendeplay.com.br) => null
  */
 function getTenantSlugFromHost(host: string): string | null {
     const cleanHost = String(host || '')
         .trim()
         .toLowerCase()
         .split(':')[0];
+
     if (!cleanHost) return null;
 
-    // DEV: qualquer *.localhost usa tenant padrão
+    // ✅ DEV: localhost e *.localhost usam tenant padrão
     if (cleanHost === 'localhost' || cleanHost.endsWith('.localhost')) {
         return DEV_DEFAULT_TENANT;
     }
 
-    const parts = cleanHost.split('.').filter(Boolean);
-    if (parts.length < 2) return null;
+    // ✅ domínio raiz não tem tenant
+    if (cleanHost === BASE_DOMAIN || cleanHost === `www.${BASE_DOMAIN}`) {
+        return null;
+    }
 
-    const first = parts[0] === 'www' ? parts[1] : parts[0];
-    if (!first) return null;
+    // ✅ padrão oficial: <tenant>.atendeplay.com.br
+    if (cleanHost.endsWith(`.${BASE_DOMAIN}`)) {
+        const sub = cleanHost.slice(0, -`.${BASE_DOMAIN}`.length);
+        const parts = sub.split('.').filter(Boolean);
 
-    return first;
+        // ignora www caso exista (www.clientea.atendeplay.com.br)
+        const first = parts[0] === 'www' ? parts[1] : parts[0];
+        return first ? String(first) : null;
+    }
+
+    // ✅ fallback: não tenta adivinhar tenant em domínio desconhecido
+    return null;
 }
 
 function isPlatformRole(role: unknown) {
@@ -77,12 +109,18 @@ function isPainelArea(pathname: string) {
     );
 }
 
+function redirectToLogin(req: NextRequest, error?: string) {
+    const url = req.nextUrl.clone();
+    url.pathname = '/painel/login';
+    if (error) url.search = `?error=${encodeURIComponent(error)}`;
+    return NextResponse.redirect(url);
+}
+
 // Next 16.1+: proxy.ts precisa exportar uma função chamada `proxy`
 export async function proxy(req: NextRequest) {
     const { pathname } = req.nextUrl;
 
     // ✅ ignora assets e APIs
-    // (IMPORTANTE) /uploads é conteúdo público (inclui /uploads/global/partners/...)
     if (
         pathname.startsWith('/api') ||
         pathname.startsWith('/_next') ||
@@ -94,47 +132,38 @@ export async function proxy(req: NextRequest) {
         return NextResponse.next();
     }
 
-    const host = req.headers.get('host') ?? '';
+    const host = getHostFromRequest(req);
     const tenantSlug = getTenantSlugFromHost(host);
 
     // Login do painel sempre liberado
     if (pathname === '/painel/login') {
         const res = NextResponse.next();
-        if (tenantSlug) {
-            res.headers.set('x-tenant-slug', tenantSlug);
-        }
+        if (tenantSlug) res.headers.set('x-tenant-slug', tenantSlug);
         return res;
     }
 
     // Se tentar acessar painel sem tenant, manda pro login
     if (isPainelArea(pathname) && !tenantSlug) {
-        const url = req.nextUrl.clone();
-        url.pathname = '/painel/login';
-        url.search = '?error=tenant_not_found';
-        return NextResponse.redirect(url);
+        return redirectToLogin(req, 'tenant_not_found');
     }
 
     // Protege rotas do painel
     if (isPainelArea(pathname)) {
-        // 🔒 Aqui o tenantSlug é garantidamente string
         const safeTenantSlug = tenantSlug as string;
 
         const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
 
+        // ✅ sem cookie: volta pro login com motivo explícito
         if (!token) {
-            const url = req.nextUrl.clone();
-            url.pathname = '/painel/login';
-            return NextResponse.redirect(url);
+            return redirectToLogin(req, 'session_missing');
         }
 
         const ok = await isValidPainelSessionForTenant(token, safeTenantSlug);
 
+        // ✅ token inválido/tenant diferente: volta pro login com motivo explícito
+        // (não deleta cookie aqui, porque cookie com domain compartilhado pode não ser removido corretamente no Edge)
         if (!ok) {
-            const url = req.nextUrl.clone();
-            url.pathname = '/painel/login';
-            const res = NextResponse.redirect(url);
-            res.cookies.delete(SESSION_COOKIE_NAME);
-            return res;
+            return redirectToLogin(req, 'session_invalid');
         }
 
         const res = NextResponse.next();
@@ -143,9 +172,7 @@ export async function proxy(req: NextRequest) {
     }
 
     const res = NextResponse.next();
-    if (tenantSlug) {
-        res.headers.set('x-tenant-slug', tenantSlug);
-    }
+    if (tenantSlug) res.headers.set('x-tenant-slug', tenantSlug);
     return res;
 }
 
