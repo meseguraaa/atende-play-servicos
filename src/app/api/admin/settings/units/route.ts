@@ -1,6 +1,7 @@
 // src/app/api/admin/settings/units/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getCurrentPainelUser } from '@/lib/painel-session';
 
 export const dynamic = 'force-dynamic';
 
@@ -103,30 +104,24 @@ function normalizeUnitRow(row: any) {
     };
 }
 
-/**
- * ✅ TEMPORÁRIO (pra você não “se preocupar com isso” agora)
- *
- * No seu projeto, a autenticação/permissão real deve vir do helper correto.
- *
- * Por enquanto:
- * - Em produção: bloqueia (401) para não abrir brecha.
- * - Em dev: pega a primeira company do banco e assume OWNER (para você conseguir testar UI/API).
- */
-async function requireAdminSessionTemp(): Promise<MinimalAdminSession> {
-    if (process.env.NODE_ENV === 'production') {
-        throw new Error('UNAUTHORIZED');
+async function requireAdminSession(): Promise<MinimalAdminSession> {
+    const u = await getCurrentPainelUser();
+    if (!u) throw new Error('UNAUTHORIZED');
+
+    // Este endpoint é do painel de tenant (empresa)
+    if (!u.companyId) throw new Error('UNAUTHORIZED');
+
+    // Somente ADMIN pode mexer em Settings/Units
+    if (String(u.role).toUpperCase() !== 'ADMIN') {
+        throw new Error('FORBIDDEN');
     }
 
-    const company = await prisma.company.findFirst({
-        select: { id: true },
-        orderBy: { createdAt: 'asc' },
-    });
+    const isOwner = u.canSeeAllUnits === true;
 
-    if (!company?.id) {
-        throw new Error('NO_COMPANY');
-    }
-
-    return { companyId: company.id, isOwner: true };
+    return {
+        companyId: String(u.companyId),
+        isOwner,
+    };
 }
 
 async function getSessionOrErr(): Promise<
@@ -134,12 +129,17 @@ async function getSessionOrErr(): Promise<
     | { ok: false; res: NextResponse }
 > {
     try {
-        const session = await requireAdminSessionTemp();
+        const session = await requireAdminSession();
         return { ok: true, session };
     } catch (e: any) {
         const msg =
-            e?.message === 'NO_COMPANY' ? 'company_not_found' : 'unauthorized';
-        const status = e?.message === 'UNAUTHORIZED' ? 401 : 401;
+            e?.message === 'FORBIDDEN'
+                ? 'forbidden'
+                : e?.message === 'UNAUTHORIZED'
+                  ? 'unauthorized'
+                  : 'unauthorized';
+
+        const status = e?.message === 'FORBIDDEN' ? 403 : 401;
         return { ok: false, res: jsonErr(msg, status) };
     }
 }
