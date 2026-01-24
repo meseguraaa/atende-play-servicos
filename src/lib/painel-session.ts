@@ -8,10 +8,32 @@ const SESSION_COOKIE_NAME = 'painel_session';
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 8; // 8h
 const DEV_DEFAULT_TENANT = 'atendeplay';
 
+// ✅ ajuste aqui se seu domínio base for diferente
+const BASE_DOMAIN = 'atendeplay.com.br';
+
 function getJwtSecretKey() {
     const secret = process.env.PAINEL_JWT_SECRET;
     if (!secret) throw new Error('PAINEL_JWT_SECRET não definido no .env');
     return new TextEncoder().encode(secret);
+}
+
+/**
+ * Pega o host "real" da requisição, respeitando proxies.
+ * - Vercel/Cloudflare/Nginx normalmente setam x-forwarded-host
+ * - Pode vir como lista separada por vírgula
+ */
+function getHostFromHeaders(h: Headers): string {
+    const xfHost =
+        h.get('x-forwarded-host') ||
+        h.get('x-original-host') ||
+        h.get('x-vercel-forwarded-host') ||
+        '';
+
+    const raw = (xfHost || h.get('host') || '').trim().toLowerCase();
+
+    // pode vir "a.com, b.com"
+    const first = raw.split(',')[0]?.trim() ?? '';
+    return first.split(':')[0]; // remove :3000
 }
 
 /**
@@ -22,7 +44,7 @@ function getTenantSlugFromHost(host: string): string | null {
     const cleanHost = String(host || '')
         .trim()
         .toLowerCase()
-        .split(':')[0]; // remove :3000
+        .split(':')[0];
 
     if (!cleanHost) return null;
 
@@ -31,22 +53,43 @@ function getTenantSlugFromHost(host: string): string | null {
         return DEV_DEFAULT_TENANT;
     }
 
+    // ✅ domínio raiz não tem tenant (evita tratar "atendeplay" como tenant)
+    if (cleanHost === BASE_DOMAIN || cleanHost === `www.${BASE_DOMAIN}`) {
+        return null;
+    }
+
+    // ✅ padrão oficial: <tenant>.atendeplay.com.br
+    if (cleanHost.endsWith(`.${BASE_DOMAIN}`)) {
+        const sub = cleanHost.slice(0, -`.${BASE_DOMAIN}`.length);
+        const parts = sub.split('.').filter(Boolean);
+
+        // ignora www caso exista (www.clientea.atendeplay.com.br)
+        const first = parts[0] === 'www' ? parts[1] : parts[0];
+        return first ? String(first) : null;
+    }
+
+    /**
+     * Fallback genérico (caso você use outros domínios)
+     * Regras:
+     * - precisa ter pelo menos 3 partes para "subdomínio + domínio + tld"
+     * - ignora www
+     */
     const parts = cleanHost.split('.').filter(Boolean);
-    if (parts.length < 2) return null;
+    if (parts.length < 3) return null;
 
-    // ignora www
     const first = parts[0] === 'www' ? parts[1] : parts[0];
-
-    if (!first) return null;
-
-    return first;
+    return first ? String(first) : null;
 }
 
 async function getTenantSlugFromRequestHeaders(): Promise<string> {
     const h = await headers();
-    const host = h.get('host') ?? '';
+    const host = getHostFromHeaders(h);
+
     const slug = getTenantSlugFromHost(host);
+
+    // ✅ em prod, sem tenant = sem painel de empresa
     if (!slug) throw new Error('tenant_not_found');
+
     return slug;
 }
 
@@ -223,11 +266,12 @@ export async function createSessionToken(
         throw new Error('permissao');
     }
 
-    // ✅ Tenant vem do host
-    const tenantSlug = await getTenantSlugFromRequestHeaders();
+    // ✅ Tenant vem do host (com suporte a proxy em prod)
+    const tenantSlugFromHost = await getTenantSlugFromRequestHeaders();
 
     // ✅ Company vem do tenantSlug
-    const { companyId } = await resolveCompanyByTenantSlug(tenantSlug);
+    const { companyId, tenantSlug } =
+        await resolveCompanyByTenantSlug(tenantSlugFromHost);
 
     // ===== ADMIN =====
     if (role === 'ADMIN') {
@@ -299,7 +343,7 @@ export async function createSessionToken(
 
         let access = access0;
 
-        // ✅ auto-heal: cria adminAccess se não existir (evita bloquear login por inconsistência)
+        // ✅ auto-heal: cria adminAccess se não existir
         if (!access) {
             const created = await prisma.adminAccess.create({
                 data: {
@@ -348,7 +392,6 @@ export async function createSessionToken(
     }
 
     // ===== PROFESSIONAL =====
-    // role já está validado por isTenantRole, mas mantemos a checagem explícita
     if (role !== 'PROFESSIONAL') {
         throw new Error('permissao');
     }
