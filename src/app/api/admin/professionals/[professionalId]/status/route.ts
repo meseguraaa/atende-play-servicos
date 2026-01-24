@@ -1,5 +1,5 @@
 // src/app/api/admin/professionals/[professionalId]/status/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/prisma';
 import { requireAdminForModule } from '@/lib/admin-permissions';
@@ -15,19 +15,20 @@ function jsonErr(error: string, status = 400) {
 }
 
 type RouteContext = {
-    params: {
+    params: Promise<{
         professionalId: string;
-    };
+    }>;
 };
 
-export async function PATCH(request: Request, { params }: RouteContext) {
+export async function PATCH(request: NextRequest, ctx: RouteContext) {
     try {
         const session = await requireAdminForModule('PROFESSIONALS');
         const companyId = session.companyId;
 
-        const professionalId = String(params?.professionalId ?? '').trim();
+        const { professionalId } = await ctx.params;
+        const id = String(professionalId ?? '').trim();
 
-        if (!professionalId) {
+        if (!id) {
             return jsonErr('professionalId é obrigatório.', 400);
         }
 
@@ -45,7 +46,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
         // 🔒 Hard multi-tenant: só mexe no profissional da empresa logada
         const exists = await prisma.professional.findFirst({
-            where: { id: professionalId, companyId },
+            where: { id, companyId },
             select: { id: true },
         });
 
@@ -54,13 +55,12 @@ export async function PATCH(request: Request, { params }: RouteContext) {
         }
 
         await prisma.professional.update({
-            where: { id: professionalId },
+            where: { id },
             data: { isActive },
         });
 
-        return jsonOk({ id: professionalId, isActive });
+        return jsonOk({ id, isActive });
     } catch {
-        // Permissão / sessão / etc
         return jsonErr('Não autorizado.', 401);
     }
 }
