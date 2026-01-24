@@ -1,5 +1,5 @@
 // src/app/api/admin/settings/units/[unitId]/exceptions/[exceptionId]/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminForModule } from '@/lib/admin-permissions';
 
@@ -14,18 +14,11 @@ function jsonErr(error: string, status = 400) {
 }
 
 /**
- * Next 15/14: ctx.params pode vir como Promise (sync-dynamic-apis)
+ * ✅ Next (validator do projeto): params vem como Promise
  */
-type Ctx =
-    | { params: { unitId: string; exceptionId: string } }
-    | { params: Promise<{ unitId: string; exceptionId: string }> };
-
-async function getParams(ctx: Ctx) {
-    const p = (ctx as any).params;
-    return typeof p?.then === 'function'
-        ? ((await p) as { unitId: string; exceptionId: string })
-        : (p as { unitId: string; exceptionId: string });
-}
+type Ctx = {
+    params: Promise<{ unitId: string; exceptionId: string }>;
+};
 
 /**
  * DELETE /api/admin/settings/units/:unitId/exceptions/:exceptionId
@@ -38,7 +31,7 @@ async function getParams(ctx: Ctx) {
  * - somente owner pode deletar
  * - garante que a unidade pertence à company do admin
  */
-export async function DELETE(_req: Request, ctx: Ctx) {
+export async function DELETE(_req: NextRequest, ctx: Ctx) {
     try {
         const admin = await requireAdminForModule('SETTINGS');
 
@@ -48,7 +41,7 @@ export async function DELETE(_req: Request, ctx: Ctx) {
         }
 
         const { unitId: rawUnitId, exceptionId: rawExceptionId } =
-            await getParams(ctx);
+            await ctx.params;
 
         const unitId = String(rawUnitId ?? '').trim();
         const exceptionId = String(rawExceptionId ?? '').trim();
