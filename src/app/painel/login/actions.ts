@@ -14,6 +14,23 @@ function redirectWithError(code: string): never {
 
 const DEV_DEFAULT_TENANT = 'atendeplay';
 
+// ✅ ajuste aqui se seu domínio base for diferente
+const BASE_DOMAIN = 'atendeplay.com.br';
+
+function getHostFromHeaders(h: Headers): string {
+    const xfHost =
+        h.get('x-forwarded-host') ||
+        h.get('x-original-host') ||
+        h.get('x-vercel-forwarded-host') ||
+        '';
+
+    const raw = (xfHost || h.get('host') || '').trim().toLowerCase();
+
+    // pode vir "a.com, b.com"
+    const first = raw.split(',')[0]?.trim() ?? '';
+    return first.split(':')[0]; // remove :3000
+}
+
 function getTenantSlugFromHost(host: string): string | null {
     const cleanHost = String(host || '')
         .trim()
@@ -26,18 +43,30 @@ function getTenantSlugFromHost(host: string): string | null {
         return DEV_DEFAULT_TENANT;
     }
 
-    const parts = cleanHost.split('.').filter(Boolean);
-    if (parts.length < 2) return null;
+    // ✅ domínio raiz não tem tenant
+    if (cleanHost === BASE_DOMAIN || cleanHost === `www.${BASE_DOMAIN}`) {
+        return null;
+    }
 
-    const first = parts[0] === 'www' ? parts[1] : parts[0];
-    return first || null;
+    // ✅ padrão oficial: <tenant>.atendeplay.com.br
+    if (cleanHost.endsWith(`.${BASE_DOMAIN}`)) {
+        const sub = cleanHost.slice(0, -`.${BASE_DOMAIN}`.length);
+        const parts = sub.split('.').filter(Boolean);
+
+        const first = parts[0] === 'www' ? parts[1] : parts[0];
+        return first ? String(first) : null;
+    }
+
+    return null;
 }
 
 async function resolveCompanyIdFromRequestHost(): Promise<string> {
     const { headers } = await import('next/headers');
     const h = await headers();
-    const host = h.get('host') ?? '';
+
+    const host = getHostFromHeaders(h);
     const tenantSlug = getTenantSlugFromHost(host);
+
     if (!tenantSlug) throw new Error('tenant_not_found');
 
     const company = await prisma.company.findFirst({
