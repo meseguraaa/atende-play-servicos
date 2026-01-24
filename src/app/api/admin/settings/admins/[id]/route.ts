@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+// src/app/api/admin/settings/admins/[id]/route.ts
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdminForModuleApi } from '@/lib/admin-permissions';
 
@@ -161,15 +162,15 @@ function mergePermissions(params: {
     };
 }
 
-// ✅ Next 15/16: params pode vir como Promise em route handlers
-type RouteCtx = { params: Promise<{ id: string }> | { id: string } };
+// ✅ Next (validator do projeto): params vem como Promise
+type RouteCtx = { params: Promise<{ id: string }> };
 
 async function getParamsId(ctx: RouteCtx): Promise<string> {
-    const p: any = await ctx.params;
+    const p = await ctx.params;
     return String(p?.id || '').trim();
 }
 
-export async function PATCH(req: Request, ctx: RouteCtx) {
+export async function PATCH(req: NextRequest, ctx: RouteCtx) {
     // ✅ API gate: precisa estar logado e ter SETTINGS
     const auth = await requireAdminForModuleApi('SETTINGS');
     if (auth instanceof NextResponse) return auth;
