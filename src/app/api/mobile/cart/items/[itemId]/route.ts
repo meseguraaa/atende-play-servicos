@@ -1,5 +1,5 @@
 // src/app/api/mobile/cart/items/[itemId]/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
@@ -94,11 +94,12 @@ export async function OPTIONS() {
     return new NextResponse(null, { status: 204, headers: corsHeaders() });
 }
 
+// ✅ Next (validator do projeto): params vem como Promise
 type DeleteCtx = {
-    params: { itemId: string } | Promise<{ itemId: string }>;
+    params: Promise<{ itemId: string }>;
 };
 
-export async function DELETE(req: Request, ctx: DeleteCtx) {
+export async function DELETE(req: NextRequest, ctx: DeleteCtx) {
     try {
         const me = await requireMobileAuth(req);
 
@@ -111,9 +112,7 @@ export async function DELETE(req: Request, ctx: DeleteCtx) {
             );
         }
 
-        // ✅ compat: params pode ser objeto OU Promise (dependendo do runtime/build)
-        const resolvedParams = await Promise.resolve(ctx.params);
-        const rawItemId = (resolvedParams as any)?.itemId;
+        const { itemId: rawItemId } = await ctx.params;
 
         const itemId = normalizeString(rawItemId);
         if (!itemId) {
