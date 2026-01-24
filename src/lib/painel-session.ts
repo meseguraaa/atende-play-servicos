@@ -10,6 +10,8 @@ const DEV_DEFAULT_TENANT = 'atendeplay';
 
 // ✅ ajuste aqui se seu domínio base for diferente
 const BASE_DOMAIN = 'atendeplay.com.br';
+// ✅ cookie compartilhado por subdomínios em produção
+const COOKIE_DOMAIN_PROD = `.${BASE_DOMAIN}`;
 
 function getJwtSecretKey() {
     const secret = process.env.PAINEL_JWT_SECRET;
@@ -434,7 +436,6 @@ export async function verifySessionToken(
 
         const role = String(p?.role ?? '').toUpperCase();
 
-        // ✅ Roles válidos
         const isValidRole =
             role === 'ADMIN' ||
             role === 'PROFESSIONAL' ||
@@ -457,13 +458,11 @@ export async function verifySessionToken(
                 p?.professionalId == null ? null : String(p.professionalId),
         };
 
-        // ✅ PLATFORM: não exige tenantSlug/companyId
         if (isPlatformRole(role)) {
             if (!base.sub || !base.email) return null;
             return base;
         }
 
-        // ✅ TENANT (ADMIN/PROFESSIONAL): exige tenantSlug + companyId
         const tenantSlug = String(p?.tenantSlug ?? '')
             .trim()
             .toLowerCase();
@@ -498,10 +497,30 @@ export async function createPainelSessionCookie(user: AuthenticatedUser) {
         sameSite: 'lax',
         path: '/',
         maxAge: SESSION_MAX_AGE_SECONDS,
+        // ✅ permite cookie entre subdomínios (e evita loop quando host muda)
+        domain:
+            process.env.NODE_ENV === 'production'
+                ? COOKIE_DOMAIN_PROD
+                : undefined,
     });
 }
 
 export async function clearPainelSessionCookie() {
     const cookieStore = await cookies();
+
+    // ✅ expira com o mesmo domain/path para garantir remoção
+    cookieStore.set(SESSION_COOKIE_NAME, '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 0,
+        domain:
+            process.env.NODE_ENV === 'production'
+                ? COOKIE_DOMAIN_PROD
+                : undefined,
+    });
+
+    // fallback
     cookieStore.delete(SESSION_COOKIE_NAME);
 }
