@@ -135,12 +135,20 @@ export default async function PlataformaDashboardPage({
             }),
         ]);
 
-    const clientsCount = await prisma.user.count({
-        where: {
-            ...(whereCompany ?? {}),
-            role: 'CLIENT',
-        },
-    });
+    const clientsCount = companyId
+        ? await prisma.companyMember.count({
+              where: {
+                  companyId,
+                  role: 'CLIENT',
+                  isActive: true,
+              },
+          })
+        : await prisma.companyMember.count({
+              where: {
+                  role: 'CLIENT',
+                  isActive: true,
+              },
+          });
 
     // ---------------------------------------------------------
     // ✅ Movimento do DIA (evolução dia a dia)
