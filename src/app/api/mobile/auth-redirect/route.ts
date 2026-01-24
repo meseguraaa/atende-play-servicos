@@ -1,5 +1,5 @@
 // src/app/api/mobile/auth-redirect/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import crypto from 'node:crypto';
 import { signAppJwt } from '@/lib/app-jwt';
@@ -134,16 +134,19 @@ function isAllowedRedirectUri(uri: string) {
 
 /**
  * ✅ Lê token do NextAuth (se NextAuth existir).
- * Sem import estático (evita TS2307).
+ * IMPORTANTe: usa require “dinâmico” (eval) para evitar o bundler tentar resolver
+ * 'next-auth/jwt' durante o build quando o pacote não está instalado.
  */
 async function tryGetNextAuthToken(
-    req: Request
+    req: NextRequest
 ): Promise<NextAuthJwtTokenLike | null> {
     if (!process.env.NEXTAUTH_SECRET) return null;
 
     try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const mod = require('next-auth/jwt') as {
+        // eslint-disable-next-line @typescript-eslint/no-implied-eval
+        const dynamicRequire = eval('require') as (id: string) => any;
+
+        const mod = dynamicRequire('next-auth/jwt') as {
             getToken?: (args: { req: any; secret: string }) => Promise<any>;
         };
 
@@ -245,7 +248,7 @@ function extractUserIdFromNextAuthToken(token: NextAuthJwtTokenLike | null) {
 // -----------------------------
 // Handler
 // -----------------------------
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
     const url = new URL(req.url);
 
     const redirectUriRaw = url.searchParams.get('redirect_uri');
@@ -421,7 +424,6 @@ export async function GET(req: Request) {
             name: dbUser.name ?? null,
         });
 
-        // ✅ devolve no formato simples e compatível pro app
         return redirect302(
             withParams(redirectUri, {
                 token: appToken,
