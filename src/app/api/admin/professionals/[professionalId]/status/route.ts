@@ -14,18 +14,17 @@ function jsonErr(error: string, status = 400) {
     return NextResponse.json({ ok: false, error } as const, { status });
 }
 
-export async function PATCH(
-    request: Request,
-    ctx:
-        | { params: Promise<{ professionalId: string }> }
-        | { params: { professionalId: string } }
-) {
+type RouteContext = {
+    params: {
+        professionalId: string;
+    };
+};
+
+export async function PATCH(request: Request, { params }: RouteContext) {
     try {
         const session = await requireAdminForModule('PROFESSIONALS');
         const companyId = session.companyId;
 
-        // ✅ Next (params pode vir como Promise em alguns runtimes)
-        const params = await Promise.resolve((ctx as any).params);
         const professionalId = String(params?.professionalId ?? '').trim();
 
         if (!professionalId) {
@@ -60,7 +59,7 @@ export async function PATCH(
         });
 
         return jsonOk({ id: professionalId, isActive });
-    } catch (err) {
+    } catch {
         // Permissão / sessão / etc
         return jsonErr('Não autorizado.', 401);
     }
