@@ -4,78 +4,15 @@
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { loginWithCredentialsWithPrisma, AuthError } from '@/lib/auth';
-import { createPainelSessionCookie } from '@/lib/painel-session';
+import {
+    createPainelSessionCookie,
+    getCurrentPainelUser,
+} from '@/lib/painel-session';
 import { ADMIN_MENU } from '@/lib/admin-menu';
 import { canAccess } from '@/lib/admin-access-map';
 
 function redirectWithError(code: string): never {
     redirect(`/painel/login?error=${encodeURIComponent(code)}`);
-}
-
-const DEV_DEFAULT_TENANT = 'atendeplay';
-
-// ✅ ajuste aqui se seu domínio base for diferente
-const BASE_DOMAIN = 'atendeplay.com.br';
-
-function getHostFromHeaders(h: Headers): string {
-    const xfHost =
-        h.get('x-forwarded-host') ||
-        h.get('x-original-host') ||
-        h.get('x-vercel-forwarded-host') ||
-        '';
-
-    const raw = (xfHost || h.get('host') || '').trim().toLowerCase();
-
-    // pode vir "a.com, b.com"
-    const first = raw.split(',')[0]?.trim() ?? '';
-    return first.split(':')[0]; // remove :3000
-}
-
-function getTenantSlugFromHost(host: string): string | null {
-    const cleanHost = String(host || '')
-        .trim()
-        .toLowerCase()
-        .split(':')[0];
-
-    if (!cleanHost) return null;
-
-    if (cleanHost === 'localhost' || cleanHost.endsWith('.localhost')) {
-        return DEV_DEFAULT_TENANT;
-    }
-
-    // ✅ domínio raiz não tem tenant
-    if (cleanHost === BASE_DOMAIN || cleanHost === `www.${BASE_DOMAIN}`) {
-        return null;
-    }
-
-    // ✅ padrão oficial: <tenant>.atendeplay.com.br
-    if (cleanHost.endsWith(`.${BASE_DOMAIN}`)) {
-        const sub = cleanHost.slice(0, -`.${BASE_DOMAIN}`.length);
-        const parts = sub.split('.').filter(Boolean);
-
-        const first = parts[0] === 'www' ? parts[1] : parts[0];
-        return first ? String(first) : null;
-    }
-
-    return null;
-}
-
-async function resolveCompanyIdFromRequestHost(): Promise<string> {
-    const { headers } = await import('next/headers');
-    const h = await headers();
-
-    const host = getHostFromHeaders(h);
-    const tenantSlug = getTenantSlugFromHost(host);
-
-    if (!tenantSlug) throw new Error('tenant_not_found');
-
-    const company = await prisma.company.findFirst({
-        where: { slug: tenantSlug, isActive: true },
-        select: { id: true },
-    });
-
-    if (!company?.id) throw new Error('missing_company');
-    return String(company.id);
 }
 
 type AdminAccessRow = {
@@ -147,7 +84,14 @@ export async function loginPainel(formData: FormData) {
                 redirect('/admin/dashboard');
             }
 
-            const companyId = await resolveCompanyIdFromRequestHost();
+            // ✅ pega o companyId do MESMO payload que o resto do painel vai usar
+            const session = await getCurrentPainelUser();
+            const companyId = session?.companyId;
+
+            if (!companyId) {
+                // se não tem companyId aqui, é porque o tenant não foi resolvido
+                redirectWithError('tenant_not_found');
+            }
 
             const access = await prisma.adminAccess.findFirst({
                 where: { companyId, userId: user.id },

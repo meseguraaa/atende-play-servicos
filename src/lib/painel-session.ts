@@ -39,6 +39,54 @@ function getHostFromHeaders(h: Headers): string {
 }
 
 /**
+ * Detecta se a requisição está chegando via HTTPS (mesmo atrás de proxy).
+ */
+function isHttpsFromHeaders(h: Headers): boolean {
+    // padrão em proxies (Vercel/Nginx/Ingress)
+    const xfProtoRaw = (h.get('x-forwarded-proto') || '').toLowerCase();
+    const xfProto = xfProtoRaw.split(',')[0]?.trim() ?? '';
+
+    if (xfProto === 'https') return true;
+    if (xfProto === 'http') return false;
+
+    // Cloudflare
+    const cfVisitor = h.get('cf-visitor');
+    if (cfVisitor && cfVisitor.toLowerCase().includes('"scheme":"https"')) {
+        return true;
+    }
+
+    // alguns proxies setam isso
+    const xfSsl = (h.get('x-forwarded-ssl') || '').toLowerCase();
+    if (xfSsl === 'on') return true;
+
+    // fallback: se não sabemos, assume false
+    return false;
+}
+
+/**
+ * Define o domain do cookie somente quando o host pertence ao BASE_DOMAIN.
+ * Isso evita quebrar login em preview/staging (ex: *.vercel.app, IP, etc).
+ */
+function getCookieDomainForHost(host: string): string | undefined {
+    const cleanHost = String(host || '')
+        .trim()
+        .toLowerCase();
+    if (!cleanHost) return undefined;
+
+    // localhost nunca usa domain
+    if (cleanHost === 'localhost' || cleanHost.endsWith('.localhost')) {
+        return undefined;
+    }
+
+    // só aplica o domain compartilhado se for realmente do domínio base
+    if (cleanHost === BASE_DOMAIN || cleanHost.endsWith(`.${BASE_DOMAIN}`)) {
+        return COOKIE_DOMAIN_PROD;
+    }
+
+    return undefined;
+}
+
+/**
  * Resolve tenant slug pelo subdomínio:
  * clientea.atendeplay.com.br => "clientea"
  */
@@ -491,34 +539,39 @@ export async function createPainelSessionCookie(user: AuthenticatedUser) {
     const token = await createSessionToken(user);
     const cookieStore = await cookies();
 
+    const h = await headers();
+    const host = getHostFromHeaders(h);
+    const secure = isHttpsFromHeaders(h);
+    const domain = getCookieDomainForHost(host);
+
     cookieStore.set(SESSION_COOKIE_NAME, token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        // ✅ só marca Secure se a request realmente estiver em HTTPS
+        secure,
         sameSite: 'lax',
         path: '/',
         maxAge: SESSION_MAX_AGE_SECONDS,
-        // ✅ permite cookie entre subdomínios (e evita loop quando host muda)
-        domain:
-            process.env.NODE_ENV === 'production'
-                ? COOKIE_DOMAIN_PROD
-                : undefined,
+        // ✅ só força domain quando for o domínio real
+        domain,
     });
 }
 
 export async function clearPainelSessionCookie() {
     const cookieStore = await cookies();
 
+    const h = await headers();
+    const host = getHostFromHeaders(h);
+    const secure = isHttpsFromHeaders(h);
+    const domain = getCookieDomainForHost(host);
+
     // ✅ expira com o mesmo domain/path para garantir remoção
     cookieStore.set(SESSION_COOKIE_NAME, '', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure,
         sameSite: 'lax',
         path: '/',
         maxAge: 0,
-        domain:
-            process.env.NODE_ENV === 'production'
-                ? COOKIE_DOMAIN_PROD
-                : undefined,
+        domain,
     });
 
     // fallback
