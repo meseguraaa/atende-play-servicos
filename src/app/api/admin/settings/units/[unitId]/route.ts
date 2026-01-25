@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { jwtVerify } from 'jose';
 import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
@@ -23,12 +25,32 @@ type MinimalAdminSession = {
     isOwner: boolean;
 };
 
+type PainelTokenPayload = {
+    sub: string;
+    role?: string;
+    email?: string;
+    name?: string;
+    tenantSlug?: string;
+    companyId?: string;
+    unitId?: string | null;
+    isOwner?: boolean;
+    canSeeAllUnits?: boolean;
+};
+
+const SESSION_COOKIE_NAME = 'painel_session';
+
 function jsonOk<T>(data: T, init?: ResponseInit) {
     return NextResponse.json({ ok: true, data } as const, init);
 }
 
-function jsonErr(error: string, status = 400) {
-    return NextResponse.json({ ok: false, error } as const, { status });
+function jsonErr(error: string, status = 400, extra?: any) {
+    // Em produção, não vaza detalhes
+    const payload =
+        process.env.NODE_ENV === 'production'
+            ? { ok: false, error }
+            : { ok: false, error, extra };
+
+    return NextResponse.json(payload as const, { status });
 }
 
 function asTrimmedOrNull(v: unknown): string | null {
@@ -70,23 +92,28 @@ function buildAddressLine(input: {
     return parts.join(' • ') || null;
 }
 
-/**
- * ✅ TEMPORÁRIO
- * Em produção bloqueia; em dev assume primeira company como owner.
- */
-async function requireAdminSessionTemp(): Promise<MinimalAdminSession> {
-    if (process.env.NODE_ENV === 'production') {
-        throw new Error('UNAUTHORIZED');
-    }
+function getJwtSecretKey() {
+    const secret = process.env.PAINEL_JWT_SECRET;
+    if (!secret) throw new Error('PAINEL_JWT_SECRET_NOT_SET');
+    return new TextEncoder().encode(secret);
+}
 
-    const company = await prisma.company.findFirst({
-        select: { id: true },
-        orderBy: { createdAt: 'asc' },
-    });
+async function requireAdminSession(): Promise<MinimalAdminSession> {
+    const token = cookies().get(SESSION_COOKIE_NAME)?.value || '';
+    if (!token) throw new Error('UNAUTHORIZED');
 
-    if (!company?.id) throw new Error('NO_COMPANY');
+    const { payload } = await jwtVerify(token, getJwtSecretKey());
+    const p = payload as unknown as PainelTokenPayload;
 
-    return { companyId: company.id, isOwner: true };
+    // Ajuste aqui se sua role de admin tiver outro nome
+    if (p.role !== 'ADMIN') throw new Error('UNAUTHORIZED');
+
+    if (!p.companyId) throw new Error('COMPANY_ID_MISSING');
+
+    return {
+        companyId: p.companyId,
+        isOwner: Boolean(p.isOwner),
+    };
 }
 
 /**
@@ -100,11 +127,15 @@ type Ctx = { params: Promise<{ unitId: string }> };
 export async function GET(_req: Request, ctx: Ctx) {
     let session: MinimalAdminSession;
     try {
-        session = await requireAdminSessionTemp();
+        session = await requireAdminSession();
     } catch (e: any) {
         const msg =
-            e?.message === 'NO_COMPANY' ? 'company_not_found' : 'unauthorized';
-        return jsonErr(msg, 401);
+            e?.message === 'COMPANY_ID_MISSING'
+                ? 'company_id_missing'
+                : e?.message === 'PAINEL_JWT_SECRET_NOT_SET'
+                  ? 'server_misconfigured'
+                  : 'unauthorized';
+        return jsonErr(msg, 401, { message: e?.message });
     }
 
     const { unitId } = await ctx.params;
@@ -142,11 +173,15 @@ export async function GET(_req: Request, ctx: Ctx) {
 export async function PUT(req: Request, ctx: Ctx) {
     let session: MinimalAdminSession;
     try {
-        session = await requireAdminSessionTemp();
+        session = await requireAdminSession();
     } catch (e: any) {
         const msg =
-            e?.message === 'NO_COMPANY' ? 'company_not_found' : 'unauthorized';
-        return jsonErr(msg, 401);
+            e?.message === 'COMPANY_ID_MISSING'
+                ? 'company_id_missing'
+                : e?.message === 'PAINEL_JWT_SECRET_NOT_SET'
+                  ? 'server_misconfigured'
+                  : 'unauthorized';
+        return jsonErr(msg, 401, { message: e?.message });
     }
 
     if (!session.isOwner) {
@@ -227,42 +262,49 @@ export async function PUT(req: Request, ctx: Ctx) {
         cep,
     });
 
-    const updated = await prisma.unit.update({
-        where: { id: unitId },
-        data: {
-            name,
-            phone,
+    try {
+        const updated = await prisma.unit.update({
+            where: { id: unitId },
+            data: {
+                name,
+                phone,
 
-            cep,
-            street,
-            number,
-            complement,
-            neighborhood,
-            city,
-            state,
+                cep,
+                street,
+                number,
+                complement,
+                neighborhood,
+                city,
+                state,
 
-            address,
-            isActive,
-        },
-        select: {
-            id: true,
-            name: true,
-            phone: true,
+                address,
+                isActive,
+            },
+            select: {
+                id: true,
+                name: true,
+                phone: true,
 
-            cep: true,
-            street: true,
-            number: true,
-            complement: true,
-            neighborhood: true,
-            city: true,
-            state: true,
-            address: true,
+                cep: true,
+                street: true,
+                number: true,
+                complement: true,
+                neighborhood: true,
+                city: true,
+                state: true,
+                address: true,
 
-            isActive: true,
-            createdAt: true,
-            updatedAt: true,
-        },
-    });
+                isActive: true,
+                createdAt: true,
+                updatedAt: true,
+            },
+        });
 
-    return jsonOk(updated);
+        return jsonOk(updated);
+    } catch (e: any) {
+        return jsonErr('update_failed', 500, {
+            message: e?.message,
+            code: e?.code,
+        });
+    }
 }
