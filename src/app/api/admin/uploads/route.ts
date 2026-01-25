@@ -8,19 +8,20 @@ import { requireAdminForModule } from '@/lib/admin-permissions';
 import { requirePlatformForModuleApi } from '@/lib/plataform-permissions';
 
 export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs'; // precisamos de fs (salvar em /public)
+export const runtime = 'nodejs';
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 
 /**
- * ✅ Locaweb/local friendly:
- * - por padrão salva em <project>/public/uploads
- * - se precisar, você pode setar UPLOADS_PUBLIC_DIR para apontar pra outro lugar
- *   (mas recomendado manter dentro de /public pra servir estático sem proxy)
+ * ✅ Produção-friendly:
+ * - salva em um diretório gravável dentro do app (persistente no VPS)
+ * - e serve via rota do Next: /media/<namespace>/<category>/<file>
+ *
+ * Se quiser apontar pra outro lugar gravável, defina UPLOADS_DIR no .env:
+ * UPLOADS_DIR=/apps/atende-play-servicos/uploads_data
  */
-const UPLOADS_PUBLIC_DIR =
-    process.env.UPLOADS_PUBLIC_DIR?.trim() ||
-    path.join(process.cwd(), 'public', 'uploads');
+const UPLOADS_DIR =
+    process.env.UPLOADS_DIR?.trim() || path.join(process.cwd(), 'uploads_data');
 
 type UploadModule = 'PRODUCTS' | 'PROFESSIONALS' | 'PARTNERS';
 type UploadCategory = 'products' | 'professionals' | 'partners';
@@ -37,10 +38,7 @@ type AdminModuleLike = Parameters<typeof requireAdminForModule>[0];
 const MODULE_TO_PERMISSION: Record<UploadModule, AdminModuleLike> = {
     PRODUCTS: 'PRODUCTS' as AdminModuleLike,
     PROFESSIONALS: 'PROFESSIONALS' as AdminModuleLike,
-
-    // ✅ Parceiros agora são PLATAFORMA.
-    // Mantemos só por compat de tipo, mas não será usado quando module=PARTNERS.
-    PARTNERS: 'SETTINGS' as AdminModuleLike,
+    PARTNERS: 'SETTINGS' as AdminModuleLike, // compat de tipo
 };
 
 function jsonOk<T>(data: T, init?: ResponseInit) {
@@ -56,10 +54,6 @@ function normalizeString(raw: unknown) {
     return s.length ? s : '';
 }
 
-/**
- * ✅ TS FIX:
- * Em alguns setups, o tipo `FormData` no ambiente server não expõe `.get()`
- */
 function formGet(formData: unknown, key: string): unknown {
     const anyForm = formData as any;
     if (anyForm && typeof anyForm.get === 'function') return anyForm.get(key);
@@ -102,11 +96,6 @@ function parseModule(v: unknown): UploadModule | null {
 
 type UploadScope = { kind: 'company'; companyId: string } | { kind: 'global' };
 
-/**
- * ✅ Resolve permissão + namespace de storage
- * - PRODUCTS/PROFESSIONALS: precisa de ADMIN + companyId
- * - PARTNERS: precisa de PLATFORM + grava em /uploads/global/partners
- */
 async function resolveScopeForModule(
     module: UploadModule
 ): Promise<UploadScope | NextResponse> {
@@ -132,8 +121,6 @@ async function resolveScopeForModule(
 
 async function ensureWritableDir(dir: string) {
     await mkdir(dir, { recursive: true });
-
-    // “provinha” rápida: stat pra confirmar que existe e é acessível
     await stat(dir);
 }
 
@@ -144,11 +131,11 @@ async function ensureWritableDir(dir: string) {
  * - module: "PRODUCTS" | "PROFESSIONALS" | "PARTNERS" (obrigatório)
  *
  * Salva em:
- * - PRODUCTS/PROFESSIONALS: /public/uploads/<companyId>/<category>/<uuid>.<ext>
- * - PARTNERS (PLATFORM):    /public/uploads/global/partners/<uuid>.<ext>
+ * - PRODUCTS/PROFESSIONALS: <UPLOADS_DIR>/<companyId>/<category>/<uuid>.<ext>
+ * - PARTNERS (PLATFORM):    <UPLOADS_DIR>/global/partners/<uuid>.<ext>
  *
- * Retorna:
- * { ok: true, data: { url, key, mime, size, originalName, module, category } }
+ * Retorna URL servida pelo Next:
+ * - /media/<namespace>/<category>/<fileName>
  */
 export async function POST(request: Request) {
     try {
@@ -163,7 +150,6 @@ export async function POST(request: Request) {
             );
         }
 
-        // ✅ resolve permissão + scope (company/global)
         const scope = await resolveScopeForModule(module);
         if (scope instanceof NextResponse) return scope;
 
@@ -205,12 +191,10 @@ export async function POST(request: Request) {
         const key = crypto.randomUUID();
         const fileName = `${key}${ext}`;
 
-        // ✅ namespace conforme scope
         const namespace = scope.kind === 'global' ? 'global' : scope.companyId;
 
-        const targetDir = path.join(UPLOADS_PUBLIC_DIR, namespace, category);
+        const targetDir = path.join(UPLOADS_DIR, namespace, category);
 
-        // ✅ garante pasta acessível e gravável
         await ensureWritableDir(targetDir);
 
         const arrayBuffer = await file.arrayBuffer();
@@ -219,7 +203,8 @@ export async function POST(request: Request) {
         const absPath = path.join(targetDir, fileName);
         await writeFile(absPath, buffer);
 
-        const url = `/uploads/${namespace}/${category}/${fileName}`;
+        // ✅ Agora a URL é servida pelo Next (não depende do /uploads do nginx)
+        const url = `/media/${namespace}/${category}/${fileName}`;
 
         return jsonOk(
             {
@@ -234,25 +219,22 @@ export async function POST(request: Request) {
             { status: 201 }
         );
     } catch (e: any) {
-        // ✅ aqui a gente para de “mascarar” tudo como permissão
         const msg = String(e?.message || e || 'Erro desconhecido');
         const code = String((e as any)?.code || '');
 
-        // erros comuns de filesystem em produção
         if (code === 'EACCES' || code === 'EPERM') {
             return jsonErr(
-                `Sem permissão para gravar em "${UPLOADS_PUBLIC_DIR}". Verifique permissões da pasta public/uploads no servidor.`,
+                `Sem permissão para gravar em "${UPLOADS_DIR}". Verifique permissões.`,
                 500
             );
         }
         if (code === 'ENOENT') {
             return jsonErr(
-                `Caminho inválido para uploads: "${UPLOADS_PUBLIC_DIR}". Verifique se o deploy inclui a pasta public.`,
+                `Caminho inválido para uploads: "${UPLOADS_DIR}".`,
                 500
             );
         }
 
-        // erros de auth/permission vindos dos guards
         if (msg === 'missing_token' || msg === 'unauthorized') {
             return jsonErr('Não autenticado.', 401);
         }
