@@ -70,6 +70,69 @@ function normalizeNullableString(raw: unknown) {
     return s.length ? s : null;
 }
 
+// ✅ header case-insensitive
+function getHeaderCI(req: Request, key: string): string | null {
+    const target = key.toLowerCase();
+    for (const [k, v] of req.headers.entries()) {
+        if (k.toLowerCase() === target) {
+            const s = String(v ?? '').trim();
+            return s.length ? s : null;
+        }
+    }
+    return null;
+}
+
+/**
+ * ✅ resolve origin correto atrás de proxy (ngrok/vercel/etc)
+ * - prioriza x-forwarded-proto + x-forwarded-host
+ * - fallback host
+ * - fallback final: req.url origin
+ */
+function getRequestOrigin(req: Request): string {
+    const protoRaw = getHeaderCI(req, 'x-forwarded-proto');
+    const hostRaw =
+        getHeaderCI(req, 'x-forwarded-host') || getHeaderCI(req, 'host');
+
+    const proto = String(protoRaw ?? '')
+        .split(',')[0]
+        .trim()
+        .toLowerCase();
+    const host = String(hostRaw ?? '')
+        .split(',')[0]
+        .trim();
+
+    if (host) {
+        const safeProto =
+            proto === 'http' || proto === 'https' ? proto : 'https';
+        return `${safeProto}://${host}`;
+    }
+
+    try {
+        return new URL(req.url).origin;
+    } catch {
+        return '';
+    }
+}
+
+/**
+ * ✅ normaliza URL de imagem:
+ * - se vier absoluta (http/https), mantém
+ * - se vier "/uploads/..." vira "<origin>/uploads/..."
+ * - se vier "uploads/..." (sem /) também normaliza
+ * - se origin falhar, devolve ao menos o path
+ */
+function normalizeImageUrl(origin: string, raw: unknown): string | null {
+    const s = String(raw ?? '').trim();
+    if (!s) return null;
+
+    const lower = s.toLowerCase();
+    if (lower.startsWith('http://') || lower.startsWith('https://')) return s;
+
+    const path = s.startsWith('/') ? s : `/${s}`;
+    const base = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+    return base ? `${base}${path}` : path;
+}
+
 function isValidLogoUrl(logoUrl: string) {
     const s = String(logoUrl ?? '').trim();
     if (!s) return false;
@@ -80,6 +143,9 @@ function isValidLogoUrl(logoUrl: string) {
 
     // dev/prod: nosso endpoint retorna /uploads/...
     if (s.startsWith('/uploads/')) return true;
+
+    // tolera "uploads/..." sem "/"
+    if (s.startsWith('uploads/')) return true;
 
     // fallback: URL absoluta
     if (lowered.startsWith('http://') || lowered.startsWith('https://'))
@@ -134,12 +200,16 @@ function normalizeCompanyIds(raw: unknown): string[] {
  * - filtros:
  *   ?q=texto (nome)
  *   ?active=1|0
+ *
+ * ✅ Normaliza logoUrl para absoluta quando for "/uploads/..."
  */
 export async function GET(request: Request) {
     const auth = await requirePlatformForModuleApi('PARTNERS');
     if (auth instanceof NextResponse) return auth;
 
     try {
+        const origin = getRequestOrigin(request);
+
         const url = new URL(request.url);
         const q = String(url.searchParams.get('q') ?? '').trim();
         const activeRaw = String(url.searchParams.get('active') ?? '').trim();
@@ -194,10 +264,13 @@ export async function GET(request: Request) {
                     p.visibilityMode
                 );
 
+                // ✅ aqui é o “pulo do gato” 🐈‍⬛: deixa pronto pro app/UI
+                const logoUrl = normalizeImageUrl(origin, p.logoUrl);
+
                 return {
                     id: p.id,
                     name: p.name,
-                    logoUrl: p.logoUrl ?? null,
+                    logoUrl,
                     logoKey: p.logoKey ?? null,
                     discountPct: toInt(p.discountPct, 0, { min: 0, max: 100 }),
                     description: p.description ?? null,

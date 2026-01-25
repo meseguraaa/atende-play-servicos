@@ -36,25 +36,61 @@ type AdminCheckoutPageProps = {
     }>;
 };
 
+/**
+ * Resolve a base URL segura para chamadas server-side.
+ *
+ * Problema em prod:
+ * - o tenant host (ex: atendeplay.atendeplay.com.br) pode não estar coberto
+ *   pelo certificado usado na infra, causando:
+ *   ERR_TLS_CERT_ALTNAME_INVALID
+ *
+ * Solução:
+ * - para páginas do ADMIN, preferimos o host canônico do painel.
+ * - permite override via env (recomendado):
+ *   PAINEL_BASE_URL=https://painel.atendeplay.com.br
+ */
+function resolveAdminBaseUrl(h: Headers): string {
+    const envBase = (process.env.PAINEL_BASE_URL || '').trim();
+    if (envBase) return envBase.replace(/\/+$/, '');
+
+    const forwardedHost = (h.get('x-forwarded-host') ?? '').trim();
+    const host = (forwardedHost || h.get('host') || '').trim();
+
+    // fallback seguro: se estiver dentro de *.atendeplay.com.br, força painel
+    // (evita depender do cert de cada subdomínio tenant)
+    if (
+        host.endsWith('.atendeplay.com.br') &&
+        host !== 'painel.atendeplay.com.br'
+    ) {
+        return 'https://painel.atendeplay.com.br';
+    }
+
+    // último recurso: usa o próprio host
+    const proto = (h.get('x-forwarded-proto') ?? 'https').trim() || 'https';
+    return host ? `${proto}://${host}` : 'https://painel.atendeplay.com.br';
+}
+
 async function fetchCheckoutData(params: {
     month?: string;
     unit?: string;
 }): Promise<CheckoutApiResponse> {
     const h = await headers();
-    const host = h.get('x-forwarded-host') ?? h.get('host');
-    const proto = h.get('x-forwarded-proto') ?? 'http';
-    const baseUrl = host ? `${proto}://${host}` : '';
+
+    const baseUrl = resolveAdminBaseUrl(h);
 
     const sp = new URLSearchParams();
     if (params.month) sp.set('month', params.month);
     if (params.unit) sp.set('unit', params.unit);
 
-    const url = `${baseUrl}/api/admin/checkout${sp.toString() ? `?${sp.toString()}` : ''}`;
+    const url = `${baseUrl}/api/admin/checkout${
+        sp.toString() ? `?${sp.toString()}` : ''
+    }`;
 
     const res = await fetch(url, {
         method: 'GET',
         cache: 'no-store',
         headers: {
+            // mantém sessão do admin
             cookie: h.get('cookie') ?? '',
         },
     });

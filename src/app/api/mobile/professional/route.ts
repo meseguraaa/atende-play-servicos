@@ -75,8 +75,8 @@ function getRequestOrigin(req: Request): string {
 /**
  * ✅ normaliza imagem (mesmo conceito do /products):
  * - se vier absoluta (http/https), mantém
- * - se vier "/uploads/...", transforma em "<origin>/uploads/..."
- * - se vier "uploads/..." (sem /), também normaliza
+ * - se vier "/uploads/..." ou "uploads/...", transforma em "<origin>/uploads/..."
+ * - se vier "data:image/..." (base64), mantém
  * - se vier vazia, null
  */
 function normalizeImageUrl(origin: string, raw: unknown): string | null {
@@ -84,11 +84,19 @@ function normalizeImageUrl(origin: string, raw: unknown): string | null {
     if (!s) return null;
 
     const lower = s.toLowerCase();
+
+    // ✅ já é absoluta
     if (lower.startsWith('http://') || lower.startsWith('https://')) return s;
 
+    // ✅ base64/data uri
+    if (lower.startsWith('data:image/')) return s;
+
+    // ✅ paths relativos: garante leading slash
     const path = s.startsWith('/') ? s : `/${s}`;
     const base = origin.endsWith('/') ? origin.slice(0, -1) : origin;
-    return base ? `${base}${path}` : path; // se origin falhar, ao menos devolve path
+
+    // se origin falhar, ao menos devolve o path (pra app tentar resolver)
+    return base ? `${base}${path}` : path;
 }
 
 async function requireMobileAuth(req: Request): Promise<MobileTokenPayload> {
@@ -242,8 +250,9 @@ export async function GET(req: Request) {
         });
 
         const professionals = rows.map((p) => {
-            // pega o raw do novo padrão ou legado
+            // ✅ pega o raw do novo padrão ou legado
             const rawImage = (p as any).imageUrl ?? (p as any)?.user?.image;
+
             return {
                 id: p.id,
                 name: p.name,

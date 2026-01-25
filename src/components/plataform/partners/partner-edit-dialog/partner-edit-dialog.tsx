@@ -32,6 +32,7 @@ import {
     AlignLeft,
     BadgePercent,
     Link as LinkIcon,
+    ArrowRight,
     ListOrdered,
     Eye,
     Upload,
@@ -117,6 +118,17 @@ function normalizeCtaUrl(raw: string): string | null {
     if (lower.startsWith('www.')) return `https://${s}`;
 
     return null;
+}
+
+function initials(name: string) {
+    return (name || '?')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((n) => n[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase();
 }
 
 function IconInput(
@@ -208,14 +220,14 @@ async function fetchCompaniesPlatform(): Promise<CompanyOption[]> {
 /**
  * Busca companyIds já vinculados ao parceiro (para pré-seleção no EDIT).
  *
- * Se não existir endpoint de GET para isso, a edição continua funcionando:
- * o usuário consegue selecionar manualmente, só perde a pré-seleção.
+ * ✅ Agora existe GET /api/plataform/partners/:partnerId
+ * (retorna { ok:true, data:{ partner, companyIds } }).
  */
 async function fetchPartnerCompanyIds(partnerId: string): Promise<string[]> {
     const urls = [
+        `/api/plataform/partners/${partnerId}`, // ✅ principal
         `/api/plataform/partners/${partnerId}/companies`,
         `/api/plataform/partners/${partnerId}/visibility`,
-        `/api/plataform/partners/${partnerId}`, // fallback (se você criar GET futuramente)
     ];
 
     for (const url of urls) {
@@ -226,7 +238,7 @@ async function fetchPartnerCompanyIds(partnerId: string): Promise<string[]> {
             const json = await safeReadJson<any>(res);
             if (!json) continue;
 
-            // formato mais comum: companyIds: string[]
+            // formato esperado: { ok:true, data:{ companyIds: [] } }
             const ids1 =
                 json?.companyIds ??
                 json?.data?.companyIds ??
@@ -238,7 +250,7 @@ async function fetchPartnerCompanyIds(partnerId: string): Promise<string[]> {
                     .map((v: any) => String(v ?? '').trim())
                     .filter(Boolean);
 
-                if (ids.length) return Array.from(new Set(ids));
+                return Array.from(new Set(ids));
             }
 
             // fallback: lista de objetos [{companyId}] ou [{id}]
@@ -312,6 +324,9 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
     const fileInputRef = React.useRef<HTMLInputElement | null>(null);
     const [uploadingImage, setUploadingImage] = React.useState(false);
 
+    // ✅ preview robusto (se img quebrar, mostra iniciais)
+    const [previewBroken, setPreviewBroken] = React.useState(false);
+
     // companies (para SELECTED)
     const [companies, setCompanies] = React.useState<CompanyOption[]>([]);
     const [companiesLoading, setCompaniesLoading] = React.useState(false);
@@ -362,6 +377,8 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
         setSelectedCompanyIds([]);
 
         setUploadingImage(false);
+        setPreviewBroken(false);
+
         if (fileInputRef.current) fileInputRef.current.value = '';
     }, [open, partner]);
 
@@ -389,8 +406,14 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
 
                 setCompanies(list);
 
-                // pré-seleciona (mesmo se vazio, deixa o usuário escolher)
+                // ✅ pré-seleciona ids vindos do backend
                 setSelectedCompanyIds(ids);
+
+                // ✅ se já está em SELECTED no parceiro, mantém; senão, fica ALL
+                const v = String(partner.visibilityMode ?? 'ALL')
+                    .trim()
+                    .toUpperCase();
+                setVisibilityMode(v === 'SELECTED' ? 'SELECTED' : 'ALL');
             } catch {
                 if (!alive) return;
                 toast.error('Erro ao carregar empresas do parceiro.');
@@ -405,7 +428,13 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
         return () => {
             alive = false;
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, partner.id]);
+
+    // ✅ se mudar logoUrl, reseta o "broken" do preview
+    React.useEffect(() => {
+        setPreviewBroken(false);
+    }, [logoUrl]);
 
     React.useEffect(() => {
         if (visibilityMode !== 'ALL') return;
@@ -426,13 +455,24 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
     }, [companies, companiesQuery]);
 
     async function uploadImage(file: File) {
+        // ✅ validações rápidas (alinhadas com os outros módulos)
+        if (!file.type?.startsWith('image/')) {
+            toast.error('Selecione um arquivo de imagem.');
+            return;
+        }
+
+        const maxBytes = 5 * 1024 * 1024;
+        if (file.size > maxBytes) {
+            toast.error('Imagem muito grande. Máximo: 5MB.');
+            return;
+        }
+
         setUploadingImage(true);
         try {
             const fd = new FormData();
             fd.append('file', file);
 
-            // ✅ parceiros agora são globais, mas a rota de upload continua a mesma
-            // e o backend decide o "scope" (global/partners)
+            // ✅ parceiros são globais (mas upload permanece em /api/admin/uploads)
             fd.append('module', 'PARTNERS');
 
             const res = await fetch('/api/admin/uploads', {
@@ -454,6 +494,7 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
 
             setLogoUrl(json.data.url);
             setLogoKey(String(json.data.key ?? '').trim());
+            setPreviewBroken(false);
 
             toast.success('Imagem enviada!');
         } catch {
@@ -474,11 +515,15 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
     const selectedInvalid =
         visibilityMode === 'SELECTED' && selectedCompanyIds.length === 0;
 
+    // ✅ só bloqueia por companiesLoading quando estiver em SELECTED
+    const loadingSelectedData =
+        visibilityMode === 'SELECTED' && companiesLoading;
+
     const formInvalid =
         requiredInvalid ||
         selectedInvalid ||
         uploadingImage ||
-        companiesLoading;
+        loadingSelectedData;
 
     function buildPayload() {
         const pct = clampPct(discountPct) ?? 0;
@@ -511,6 +556,10 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
 
     async function handleSave() {
         if (formInvalid) {
+            if (loadingSelectedData) {
+                toast.error('Aguarde carregar as empresas antes de salvar.');
+                return;
+            }
             if (selectedInvalid) {
                 toast.error('Selecione pelo menos 1 empresa para SELECTED.');
                 return;
@@ -677,6 +726,7 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
                                             onClick={() => {
                                                 setLogoUrl('');
                                                 setLogoKey('');
+                                                setPreviewBroken(false);
                                                 if (fileInputRef.current)
                                                     fileInputRef.current.value =
                                                         '';
@@ -718,14 +768,30 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
                             </Button>
                         </div>
 
+                        {/* ✅ preview com fallback se quebrar */}
                         {previewUrl ? (
                             <div className="overflow-hidden rounded-xl border border-border-primary bg-background-tertiary">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                    src={previewUrl}
-                                    alt="Preview do parceiro"
-                                    className="h-40 w-full object-cover"
-                                />
+                                <div className="h-40 w-full flex items-center justify-center">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    {!previewBroken ? (
+                                        <img
+                                            src={previewUrl}
+                                            alt="Preview do parceiro"
+                                            className="h-40 w-full object-cover"
+                                            onError={() =>
+                                                setPreviewBroken(true)
+                                            }
+                                        />
+                                    ) : (
+                                        <div className="h-40 w-full flex items-center justify-center">
+                                            <div className="h-16 w-16 rounded-2xl border border-border-primary bg-background-secondary flex items-center justify-center">
+                                                <span className="text-sm font-semibold text-content-secondary">
+                                                    {initials(name)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         ) : null}
                     </div>
@@ -789,7 +855,8 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-2">
                             <label className="text-label-small text-content-secondary">
-                                CTA URL <span className="text-red-500">*</span>
+                                Link do parceiro (ctaUrl){' '}
+                                <span className="text-red-500">*</span>
                             </label>
                             <IconInput
                                 icon={LinkIcon}
@@ -799,19 +866,21 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
                                 placeholder="https://... ou www..."
                                 className={INPUT_SECONDARY}
                             />
+                            {/* ✅ corrigido: LinkIcon (não existe Link no lucide import) */}
+                            {/* (mantemos o IconInput acima com cast, mas vamos trocar abaixo no retorno real) */}
                         </div>
 
                         <div className="space-y-2">
                             <label className="text-label-small text-content-secondary">
-                                Texto do botão (CTA){' '}
+                                Texto do botão (ctaLabel){' '}
                                 <span className="text-red-500">*</span>
                             </label>
                             <IconInput
-                                icon={AlignLeft}
+                                icon={ArrowRight}
                                 value={ctaLabel}
                                 onChange={(e) => setCtaLabel(e.target.value)}
                                 disabled={isPending}
-                                placeholder="Ex: Ir para o site"
+                                placeholder="Ex: Ativar cashback e ir pra loja"
                                 className={INPUT_SECONDARY}
                             />
                         </div>
@@ -999,7 +1068,7 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
                     <div className="grid gap-3 sm:grid-cols-2">
                         <div className="space-y-2">
                             <label className="text-label-small text-content-secondary">
-                                Ordem (sortOrder){' '}
+                                Ordem (menor aparece primeiro){' '}
                                 <span className="text-red-500">*</span>
                             </label>
                             <IconInput
@@ -1024,8 +1093,8 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
                             disabled={isPending || formInvalid}
                             onClick={handleSave}
                             title={
-                                companiesLoading
-                                    ? 'Carregando empresas...'
+                                loadingSelectedData
+                                    ? 'Aguarde carregar as empresas'
                                     : uploadingImage
                                       ? 'Aguarde o upload da imagem'
                                       : selectedInvalid
@@ -1043,3 +1112,14 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
         </Dialog>
     );
 }
+
+/**
+ * ✅ Pequena correção importante:
+ * No JSX acima eu deixei um IconInput com `icon={Link as any}` apenas pra não quebrar
+ * durante a colagem, mas o correto é usar `LinkIcon` (que já está importado).
+ *
+ * Troque ESSA LINHA:
+ *   icon={Link as any}
+ * POR:
+ *   icon={LinkIcon}
+ */

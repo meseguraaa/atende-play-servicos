@@ -97,6 +97,17 @@ function normalizeCtaUrl(raw: string): string | null {
     return null;
 }
 
+function initials(name: string) {
+    return (name || '?')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((n) => n[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase();
+}
+
 function IconInput(
     props: React.ComponentProps<typeof Input> & {
         icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
@@ -188,6 +199,9 @@ export function PartnerNewDialog() {
     const fileInputRef = React.useRef<HTMLInputElement | null>(null);
     const [uploadingImage, setUploadingImage] = React.useState(false);
 
+    // ✅ preview robusto (se img quebrar, mostra iniciais)
+    const [previewBroken, setPreviewBroken] = React.useState(false);
+
     // companies (para SELECTED)
     const [companies, setCompanies] = React.useState<CompanyOption[]>([]);
     const [companiesLoading, setCompaniesLoading] = React.useState(false);
@@ -216,6 +230,8 @@ export function PartnerNewDialog() {
         setCompaniesQuery('');
 
         setUploadingImage(false);
+        setPreviewBroken(false);
+
         if (fileInputRef.current) fileInputRef.current.value = '';
     }
 
@@ -268,6 +284,11 @@ export function PartnerNewDialog() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [visibilityMode]);
 
+    // ✅ se mudou logoUrl, reseta o "broken" do preview
+    React.useEffect(() => {
+        setPreviewBroken(false);
+    }, [logoUrl]);
+
     const filteredCompanies = React.useMemo(() => {
         const q = companiesQuery.trim().toLowerCase();
         if (!q) return companies;
@@ -300,6 +321,18 @@ export function PartnerNewDialog() {
         loadingSelectedData;
 
     async function uploadImage(file: File) {
+        // ✅ validações rápidas (alinhadas com os outros módulos)
+        if (!file.type?.startsWith('image/')) {
+            toast.error('Selecione um arquivo de imagem.');
+            return;
+        }
+
+        const maxBytes = 5 * 1024 * 1024;
+        if (file.size > maxBytes) {
+            toast.error('Imagem muito grande. Máximo: 5MB.');
+            return;
+        }
+
         setUploadingImage(true);
         try {
             const fd = new FormData();
@@ -325,6 +358,7 @@ export function PartnerNewDialog() {
 
             setLogoUrl(json.data.url);
             setLogoKey(json.data.key ?? '');
+            setPreviewBroken(false);
             toast.success('Logo enviada!');
         } catch {
             toast.error('Erro de rede ao fazer upload da logo.');
@@ -534,6 +568,7 @@ export function PartnerNewDialog() {
                                             onClick={() => {
                                                 setLogoUrl('');
                                                 setLogoKey('');
+                                                setPreviewBroken(false);
                                                 if (fileInputRef.current)
                                                     fileInputRef.current.value =
                                                         '';
@@ -575,14 +610,30 @@ export function PartnerNewDialog() {
                             </Button>
                         </div>
 
+                        {/* ✅ preview com fallback se quebrar */}
                         {previewUrl ? (
                             <div className="overflow-hidden rounded-xl border border-border-primary bg-background-tertiary">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                    src={previewUrl}
-                                    alt="Preview da logo"
-                                    className="h-40 w-full object-cover"
-                                />
+                                <div className="h-40 w-full flex items-center justify-center">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    {!previewBroken ? (
+                                        <img
+                                            src={previewUrl}
+                                            alt="Preview da logo"
+                                            className="h-40 w-full object-cover"
+                                            onError={() =>
+                                                setPreviewBroken(true)
+                                            }
+                                        />
+                                    ) : (
+                                        <div className="h-40 w-full flex items-center justify-center">
+                                            <div className="h-16 w-16 rounded-2xl border border-border-primary bg-background-secondary flex items-center justify-center">
+                                                <span className="text-sm font-semibold text-content-secondary">
+                                                    {initials(name)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         ) : null}
                     </div>

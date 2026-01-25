@@ -314,6 +314,7 @@ export async function OPTIONS() {
  * ✅ normaliza imagem:
  * - se vier absoluta (http/https), mantém
  * - se vier "/uploads/...", transforma em "<origin>/uploads/..."
+ * - se origin estiver vazio (fallback), retorna o path como está
  * - se vier vazia, null
  */
 function normalizeImageUrl(origin: string, raw: unknown): string | null {
@@ -324,7 +325,12 @@ function normalizeImageUrl(origin: string, raw: unknown): string | null {
     if (lower.startsWith('http://') || lower.startsWith('https://')) return s;
 
     const path = s.startsWith('/') ? s : `/${s}`;
-    const base = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+
+    // ✅ fallback seguro: se não conseguimos origin, devolve path (não quebra local)
+    const baseRaw = String(origin ?? '').trim();
+    if (!baseRaw) return path;
+
+    const base = baseRaw.endsWith('/') ? baseRaw.slice(0, -1) : baseRaw;
     return `${base}${path}`;
 }
 

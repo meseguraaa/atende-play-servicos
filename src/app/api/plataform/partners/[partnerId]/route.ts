@@ -79,6 +79,69 @@ function toInt(
     return Math.max(min, Math.min(max, i));
 }
 
+// ✅ header case-insensitive
+function getHeaderCI(req: Request, key: string): string | null {
+    const target = key.toLowerCase();
+    for (const [k, v] of req.headers.entries()) {
+        if (k.toLowerCase() === target) {
+            const s = String(v ?? '').trim();
+            return s.length ? s : null;
+        }
+    }
+    return null;
+}
+
+/**
+ * ✅ resolve origin correto atrás de proxy (ngrok/vercel/etc)
+ * - prioriza x-forwarded-proto + x-forwarded-host
+ * - fallback host
+ * - fallback final: req.url origin
+ */
+function getRequestOrigin(req: Request): string {
+    const protoRaw = getHeaderCI(req, 'x-forwarded-proto');
+    const hostRaw =
+        getHeaderCI(req, 'x-forwarded-host') || getHeaderCI(req, 'host');
+
+    const proto = String(protoRaw ?? '')
+        .split(',')[0]
+        .trim()
+        .toLowerCase();
+    const host = String(hostRaw ?? '')
+        .split(',')[0]
+        .trim();
+
+    if (host) {
+        const safeProto =
+            proto === 'http' || proto === 'https' ? proto : 'https';
+        return `${safeProto}://${host}`;
+    }
+
+    try {
+        return new URL(req.url).origin;
+    } catch {
+        return '';
+    }
+}
+
+/**
+ * ✅ normaliza URL de imagem:
+ * - se vier absoluta (http/https), mantém
+ * - se vier "/uploads/..." vira "<origin>/uploads/..."
+ * - se vier "uploads/..." (sem /) também normaliza
+ * - se origin falhar, devolve ao menos o path
+ */
+function normalizeImageUrl(origin: string, raw: unknown): string | null {
+    const s = String(raw ?? '').trim();
+    if (!s) return null;
+
+    const lower = s.toLowerCase();
+    if (lower.startsWith('http://') || lower.startsWith('https://')) return s;
+
+    const path = s.startsWith('/') ? s : `/${s}`;
+    const base = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+    return base ? `${base}${path}` : path;
+}
+
 function isValidLogoUrl(logoUrl: string) {
     const s = String(logoUrl ?? '').trim();
     if (!s) return false;
@@ -89,6 +152,9 @@ function isValidLogoUrl(logoUrl: string) {
 
     // dev/prod: nosso endpoint retorna /uploads/...
     if (s.startsWith('/uploads/')) return true;
+
+    // tolera "uploads/..." sem "/"
+    if (s.startsWith('uploads/')) return true;
 
     // fallback: URL absoluta
     if (lowered.startsWith('http://') || lowered.startsWith('https://'))
@@ -141,15 +207,19 @@ function normalizeCompanyIds(raw: unknown): string[] {
 /**
  * GET /api/plataform/partners/:partnerId
  * - retorna o parceiro + companyIds já vinculados (PartnerVisibility)
+ *
+ * ✅ Normaliza logoUrl para absoluta quando for "/uploads/..."
  */
 export async function GET(
-    _request: Request,
+    request: Request,
     ctx: { params: Promise<{ partnerId: string }> }
 ) {
     const auth = await requirePlatformForModuleApi('PARTNERS');
     if (auth instanceof NextResponse) return auth;
 
     try {
+        const origin = getRequestOrigin(request);
+
         const { partnerId } = await ctx.params;
         const id = normalizeString(partnerId);
         if (!id) return jsonErr('partnerId é obrigatório.', 400);
@@ -184,11 +254,14 @@ export async function GET(
         const visibilityMode = normalizeVisibilityMode(partner.visibilityMode);
         const ctaUrl = normalizeCtaUrl(partner.ctaUrl);
 
+        // ✅ já devolve pronto para a UI/app
+        const logoUrl = normalizeImageUrl(origin, partner.logoUrl);
+
         return jsonOk({
             partner: {
                 id: partner.id,
                 name: partner.name,
-                logoUrl: partner.logoUrl ?? null,
+                logoUrl,
                 logoKey: partner.logoKey ?? null,
                 discountPct: toInt(partner.discountPct, 0, {
                     min: 0,
@@ -227,6 +300,8 @@ export async function GET(
  * - Se mudar visibilityMode para ALL: limpa vínculos
  * - Se mudar visibilityMode para SELECTED: companyIds é obrigatório e não pode ser vazio
  * - Se só mandar companyIds: sincroniza mantendo SELECTED (ou muda para SELECTED se vier assim)
+ *
+ * ✅ Também normaliza logoUrl na resposta (quando for "/uploads/...")
  */
 export async function PATCH(
     request: Request,
@@ -236,6 +311,8 @@ export async function PATCH(
     if (auth instanceof NextResponse) return auth;
 
     try {
+        const origin = getRequestOrigin(request);
+
         const { partnerId } = await ctx.params;
         const id = normalizeString(partnerId);
         if (!id) return jsonErr('partnerId é obrigatório.', 400);
@@ -298,7 +375,7 @@ export async function PATCH(
         const name =
             u.name !== undefined ? normalizeString(u.name) : current.name;
 
-        const logoUrl =
+        const logoUrlRaw =
             u.logoUrl !== undefined
                 ? normalizeNullableString(u.logoUrl)
                 : (current.logoUrl ?? null);
@@ -357,8 +434,8 @@ export async function PATCH(
         // validações básicas
         if (!name) return jsonErr('Nome é obrigatório.', 400);
 
-        if (!logoUrl) return jsonErr('logoUrl é obrigatório.', 400);
-        if (!isValidLogoUrl(logoUrl)) {
+        if (!logoUrlRaw) return jsonErr('logoUrl é obrigatório.', 400);
+        if (!isValidLogoUrl(logoUrlRaw)) {
             return jsonErr(
                 'logoUrl inválida. Envie uma imagem (upload) ou forneça uma URL http(s) válida.',
                 400
@@ -403,7 +480,7 @@ export async function PATCH(
                 where: { id: current.id },
                 data: {
                     name,
-                    logoUrl,
+                    logoUrl: logoUrlRaw,
                     logoKey,
                     discountPct,
                     description,
@@ -481,12 +558,18 @@ export async function PATCH(
             effectiveCompanyIds = vis.map((v) => v.companyId);
         }
 
+        // ✅ normaliza logoUrl na resposta
+        const logoUrl = normalizeImageUrl(
+            origin,
+            result.partnerUpdated.logoUrl
+        );
+
         return jsonOk({
             id: result.partnerUpdated.id,
             partner: {
                 id: result.partnerUpdated.id,
                 name: result.partnerUpdated.name,
-                logoUrl: result.partnerUpdated.logoUrl ?? null,
+                logoUrl,
                 logoKey: result.partnerUpdated.logoKey ?? null,
                 discountPct: toInt(result.partnerUpdated.discountPct, 0, {
                     min: 0,

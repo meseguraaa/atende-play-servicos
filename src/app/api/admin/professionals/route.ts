@@ -1,5 +1,6 @@
 // src/app/api/admin/professionals/route.ts
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 
 import { prisma } from '@/lib/prisma';
 import { requireAdminForModule } from '@/lib/admin-permissions';
@@ -53,6 +54,50 @@ async function hashPasswordIfPossible(password: string): Promise<string> {
     }
 }
 
+// ==============================
+// ✅ URL pública p/ imagens (server-side)
+// - Se vier http/https -> mantém
+// - Se vier "/uploads/..." ou "uploads/..." -> prefixa origin do request
+// ==============================
+function getBaseOrigin(): string {
+    try {
+        const h = headers();
+
+        const proto =
+            h.get('x-forwarded-proto') ||
+            (process.env.NODE_ENV === 'development' ? 'http' : 'https');
+
+        const host =
+            h.get('x-forwarded-host') ||
+            h.get('host') ||
+            process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '') ||
+            '';
+
+        const cleanHost = String(host).trim();
+        const cleanProto = String(proto).trim() || 'https';
+
+        if (!cleanHost) return '';
+
+        return `${cleanProto}://${cleanHost}`;
+    } catch {
+        return '';
+    }
+}
+
+function normalizePublicImageUrl(raw: unknown): string | null {
+    const s = String(raw ?? '').trim();
+    if (!s) return null;
+
+    const lower = s.toLowerCase();
+    if (lower.startsWith('http://') || lower.startsWith('https://')) return s;
+
+    const origin = getBaseOrigin();
+    const path = s.startsWith('/') ? s : `/${s}`;
+
+    if (!origin) return path; // fallback: mantém relativo
+    return `${origin}${path}`;
+}
+
 /**
  * GET /api/admin/professionals
  */
@@ -82,7 +127,10 @@ export async function GET() {
             email: p.email,
             phone: p.phone,
             isActive: p.isActive,
-            imageUrl: p.imageUrl,
+
+            // ✅ normaliza URL (absoluta quando vier relativa)
+            imageUrl: normalizePublicImageUrl(p.imageUrl),
+
             createdAt: p.createdAt,
             updatedAt: p.updatedAt,
             userId: p.userId,
@@ -128,7 +176,9 @@ export async function POST(request: Request) {
         const phoneDigits = phoneRaw ? onlyDigits(phoneRaw) : '';
         const phone = phoneRaw ? phoneRaw : null;
 
+        // ✅ mantém no banco como veio (normalização é só no output)
         const imageUrl = body.imageUrl ? normalizeString(body.imageUrl) : null;
+
         const unitIds = normalizeUnitIds(body.unitIds);
         const password = body.password ? normalizeString(body.password) : null;
 
@@ -251,7 +301,10 @@ export async function POST(request: Request) {
                 name: created.name,
                 email: created.email,
                 phone: created.phone,
-                imageUrl: created.imageUrl,
+
+                // ✅ devolve já normalizado
+                imageUrl: normalizePublicImageUrl(created.imageUrl),
+
                 isActive: created.isActive,
                 createdAt: created.createdAt,
                 updatedAt: created.updatedAt,

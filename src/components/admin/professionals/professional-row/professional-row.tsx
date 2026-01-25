@@ -127,11 +127,28 @@ function buildWeeklyMap(weekly: WeeklyAvailabilityRow[]) {
     return map;
 }
 
+// ✅ normaliza URL de imagem no Admin (browser)
+function normalizeAdminImageUrl(raw: unknown): string | null {
+    const s = String(raw ?? '').trim();
+    if (!s) return null;
+
+    const lower = s.toLowerCase();
+    if (lower.startsWith('http://') || lower.startsWith('https://')) return s;
+
+    // relative -> prefixa origin do navegador (admin)
+    const path = s.startsWith('/') ? s : `/${s}`;
+    return `${window.location.origin}${path}`;
+}
+
 export function ProfessionalRow({ row, units }: ProfessionalRowProps) {
     const router = useRouter();
     const [isPending, setIsPending] = useState(false);
 
-    const avatarToShow = row.imageUrl ?? null;
+    const avatarToShow = useMemo(() => {
+        if (!row.imageUrl) return null;
+        return normalizeAdminImageUrl(row.imageUrl);
+    }, [row.imageUrl]);
+
     const isActive = Boolean(row.isActive);
 
     const selectedUnitIds = row.selectedUnitIds ?? [];

@@ -1,5 +1,6 @@
 // src/app/api/admin/professionals/[professionalId]/route.ts
 import { NextResponse } from 'next/server';
+import { headers } from 'next/headers';
 
 import { prisma } from '@/lib/prisma';
 import { requireAdminForModule } from '@/lib/admin-permissions';
@@ -53,6 +54,50 @@ async function hashPasswordIfPossible(password: string): Promise<string> {
             'Dependência de hash não encontrada (bcryptjs). Instale bcryptjs para usar senha.'
         );
     }
+}
+
+// ==============================
+// ✅ URL pública p/ imagens (server-side)
+// - Se vier http/https -> mantém
+// - Se vier "/uploads/..." ou "uploads/..." -> prefixa origin do request
+// ==============================
+function getBaseOrigin(): string {
+    try {
+        const h = headers();
+
+        const proto =
+            h.get('x-forwarded-proto') ||
+            (process.env.NODE_ENV === 'development' ? 'http' : 'https');
+
+        const host =
+            h.get('x-forwarded-host') ||
+            h.get('host') ||
+            process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, '') ||
+            '';
+
+        const cleanHost = String(host).trim();
+        const cleanProto = String(proto).trim() || 'https';
+
+        if (!cleanHost) return '';
+
+        return `${cleanProto}://${cleanHost}`;
+    } catch {
+        return '';
+    }
+}
+
+function normalizePublicImageUrl(raw: unknown): string | null {
+    const s = String(raw ?? '').trim();
+    if (!s) return null;
+
+    const lower = s.toLowerCase();
+    if (lower.startsWith('http://') || lower.startsWith('https://')) return s;
+
+    const origin = getBaseOrigin();
+    const path = s.startsWith('/') ? s : `/${s}`;
+
+    if (!origin) return path; // fallback: mantém relativo
+    return `${origin}${path}`;
 }
 
 // Next (algumas versões) entregam ctx.params como Promise. Garantimos compat.
@@ -354,7 +399,11 @@ export async function PATCH(request: Request, ctx: unknown) {
 
         if (!updated) return jsonErr('Profissional não encontrado.', 404);
 
-        return jsonOk(updated);
+        // ✅ devolve a imagem já normalizada, como fizemos em produtos/parceiros
+        return jsonOk({
+            ...updated,
+            imageUrl: normalizePublicImageUrl(updated.imageUrl),
+        });
     } catch (e: any) {
         const msg = typeof e?.message === 'string' ? e.message : '';
 

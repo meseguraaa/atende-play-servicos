@@ -92,6 +92,9 @@ type UploadResponse =
       }
     | { ok: false; error?: string };
 
+const MAX_UPLOAD_MB = 5;
+const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
+
 function toMoneyNumber(raw: string): number {
     const s = String(raw ?? '')
         .trim()
@@ -218,38 +221,50 @@ export function ProductEditDialog({ product }: { product: ProductForRow }) {
     const fileInputRef = React.useRef<HTMLInputElement | null>(null);
     const [uploadingImage, setUploadingImage] = React.useState(false);
 
+    // ✅ snapshot dos valores iniciais pra montar payload parcial (não sobrescrever sem querer)
+    const initialRef = React.useRef<{
+        name: string;
+        imageUrl: string;
+        description: string;
+        category: string;
+        price: string;
+        barberPercentage: string;
+        stockQuantity: string;
+        pickupDeadlineDays: string;
+        isFeatured: boolean;
+        birthdayEnabled: boolean;
+        birthdayLevel: CustomerLevel;
+        levelDiscounts: Record<CustomerLevel, string>;
+    } | null>(null);
+
     React.useEffect(() => {
         if (!open) return;
 
-        // ao abrir, reseta pros valores do item atual (evita stale state)
-        setIsFeatured(Boolean(product.isFeatured));
-        setName(product.name ?? '');
-        setImageUrl(product.imageUrl ?? '');
-        setDescription(product.description ?? '');
+        const nextIsFeatured = Boolean(product.isFeatured);
+        const nextName = product.name ?? '';
+        const nextImageUrl = product.imageUrl ?? '';
+        const nextDescription = product.description ?? '';
+        const nextCategory = product.category ?? '';
 
-        setPrice(String(product.price ?? ''));
-
-        setBarberPercentage(() => {
+        const nextPrice = String(product.price ?? '');
+        const nextBarberPct = (() => {
             const v = product.barberPercentage;
             return v === null || v === undefined ? '' : String(v);
-        });
+        })();
+        const nextStock = String(product.stockQuantity ?? 0);
 
-        setStockQuantity(String(product.stockQuantity ?? 0));
-        setCategory(product.category ?? '');
-
-        setPickupDeadlineDays(() => {
+        const nextDeadline = (() => {
             const v = product.pickupDeadlineDays;
             const n =
                 typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 2;
             return String(n);
-        });
+        })();
 
-        setBirthdayEnabled(Boolean(product.birthdayBenefitEnabled));
-        setBirthdayLevel(
-            (product.birthdayPriceLevel as CustomerLevel) || 'DIAMANTE'
-        );
+        const nextBirthdayEnabled = Boolean(product.birthdayBenefitEnabled);
+        const nextBirthdayLevel =
+            (product.birthdayPriceLevel as CustomerLevel) || 'DIAMANTE';
 
-        setLevelDiscounts({
+        const nextLevelDiscounts: Record<CustomerLevel, string> = {
             BRONZE:
                 product.levelDiscounts?.BRONZE &&
                 product.levelDiscounts.BRONZE > 0
@@ -269,13 +284,55 @@ export function ProductEditDialog({ product }: { product: ProductForRow }) {
                 product.levelDiscounts.DIAMANTE > 0
                     ? String(product.levelDiscounts.DIAMANTE)
                     : '',
-        });
+        };
+
+        setIsFeatured(nextIsFeatured);
+        setName(nextName);
+        setImageUrl(nextImageUrl);
+        setDescription(nextDescription);
+
+        setPrice(nextPrice);
+        setBarberPercentage(nextBarberPct);
+
+        setStockQuantity(nextStock);
+        setCategory(nextCategory);
+
+        setPickupDeadlineDays(nextDeadline);
+
+        setBirthdayEnabled(nextBirthdayEnabled);
+        setBirthdayLevel(nextBirthdayLevel);
+
+        setLevelDiscounts(nextLevelDiscounts);
+
+        initialRef.current = {
+            name: nextName,
+            imageUrl: nextImageUrl,
+            description: nextDescription,
+            category: nextCategory,
+            price: nextPrice,
+            barberPercentage: nextBarberPct,
+            stockQuantity: nextStock,
+            pickupDeadlineDays: nextDeadline,
+            isFeatured: nextIsFeatured,
+            birthdayEnabled: nextBirthdayEnabled,
+            birthdayLevel: nextBirthdayLevel,
+            levelDiscounts: nextLevelDiscounts,
+        };
 
         setUploadingImage(false);
         if (fileInputRef.current) fileInputRef.current.value = '';
     }, [open, product]);
 
     async function uploadImage(file: File) {
+        if (!file.type?.startsWith('image/')) {
+            toast.error('Selecione um arquivo de imagem.');
+            return;
+        }
+        if (file.size > MAX_UPLOAD_BYTES) {
+            toast.error(`Imagem muito grande. Máximo: ${MAX_UPLOAD_MB}MB.`);
+            return;
+        }
+
         setUploadingImage(true);
         try {
             const fd = new FormData();
@@ -310,9 +367,9 @@ export function ProductEditDialog({ product }: { product: ProductForRow }) {
 
     const birthdayInvalid = birthdayEnabled && !birthdayLevel;
 
+    // ✅ imagem não é obrigatória (pode remover)
     const requiredInvalid =
         !name.trim() ||
-        !imageUrl.trim() ||
         !description.trim() ||
         !category.trim() ||
         !price.trim() ||
@@ -322,7 +379,9 @@ export function ProductEditDialog({ product }: { product: ProductForRow }) {
 
     const formInvalid = birthdayInvalid || requiredInvalid || uploadingImage;
 
-    function buildPayload() {
+    function buildPayloadPartial() {
+        const init = initialRef.current;
+
         const priceN = toMoneyNumber(price);
         const barberPct = Number(String(barberPercentage).replace(',', '.'));
         const stockN = Number(String(stockQuantity).replace(',', '.'));
@@ -334,25 +393,31 @@ export function ProductEditDialog({ product }: { product: ProductForRow }) {
             if (pct !== null) discounts[lvl] = pct;
         });
 
-        return {
+        // sempre enviar os campos base que a API valida (nome, descrição, etc.)
+        // mas agora podemos evitar sobrescrever imageUrl sem alteração
+        const payload: any = {
             name: name.trim(),
-            imageUrl: imageUrl.trim(),
             description: description.trim(),
             category: category.trim(),
-
             price: priceN,
             barberPercentage: barberPct,
-
             stockQuantity: stockN,
             pickupDeadlineDays: deadlineN,
-
             isFeatured,
-
             birthdayBenefitEnabled: birthdayEnabled,
             birthdayPriceLevel: birthdayEnabled ? birthdayLevel : null,
-
             levelDiscounts: discounts,
         };
+
+        // ✅ só manda imageUrl se mudou (inclui remoção '')
+        if (
+            init &&
+            String(imageUrl ?? '').trim() !== String(init.imageUrl ?? '').trim()
+        ) {
+            payload.imageUrl = String(imageUrl ?? '').trim(); // pode ser ''
+        }
+
+        return payload;
     }
 
     async function handleSave() {
@@ -361,7 +426,7 @@ export function ProductEditDialog({ product }: { product: ProductForRow }) {
             return;
         }
 
-        const payload = buildPayload();
+        const payload = buildPayloadPartial();
 
         if (!Number.isFinite(payload.price) || payload.price <= 0) {
             toast.error('Preço inválido.');
@@ -396,7 +461,6 @@ export function ProductEditDialog({ product }: { product: ProductForRow }) {
                 const res = await fetch(`/api/admin/products/${product.id}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    // ✅ sua API espera { update: {...} }
                     body: JSON.stringify({ update: payload }),
                 });
 
@@ -505,7 +569,9 @@ export function ProductEditDialog({ product }: { product: ProductForRow }) {
                     <div className="space-y-2">
                         <label className="text-label-small text-content-secondary">
                             Foto do produto{' '}
-                            <span className="text-red-500">*</span>
+                            <span className="text-content-secondary/70">
+                                (opcional)
+                            </span>
                         </label>
 
                         <input
@@ -531,7 +597,7 @@ export function ProductEditDialog({ product }: { product: ProductForRow }) {
                                     <Input
                                         value={previewUrl ?? ''}
                                         readOnly
-                                        placeholder="Escolha seu arquivo clicando em Upload."
+                                        placeholder="Clique em Upload para escolher uma imagem."
                                         className={cn(
                                             'pl-10 pr-10',
                                             INPUT_BASE

@@ -58,6 +58,63 @@ type AppointmentGetResponse = {
     };
 };
 
+// ✅ mesmo padrão da Home: corrige urls vindas da API (inclui localhost)
+function normalizeApiImageUrl(raw: unknown): string | null {
+    const s = String(raw ?? '').trim();
+    if (!s) return null;
+
+    const lower = s.toLowerCase();
+    const isHttp = lower.startsWith('http://') || lower.startsWith('https://');
+
+    const getRealHostOrigin = () => {
+        try {
+            const full = (api as any)?.getUri
+                ? (api as any).getUri({ url: '/api/health' })
+                : null;
+
+            if (typeof full === 'string' && full.includes('://')) {
+                const u = new URL(full);
+                return `${u.protocol}//${u.host}`;
+            }
+        } catch {}
+
+        return null as string | null;
+    };
+
+    // data uri (base64)
+    if (lower.startsWith('data:image/')) return s;
+
+    if (isHttp) {
+        try {
+            const u = new URL(s);
+            const host = u.hostname;
+
+            if (host === 'localhost' || host === '127.0.0.1') {
+                const real = getRealHostOrigin();
+                if (!real) return s;
+                return `${real}${u.pathname}${u.search}`;
+            }
+
+            return s;
+        } catch {
+            return s;
+        }
+    }
+
+    const baseFromApi =
+        (api as any)?.defaults?.baseURL ||
+        (api as any)?.defaults?.baseUrl ||
+        '';
+
+    const base = String(baseFromApi ?? '').trim();
+    const path = s.startsWith('/') ? s : `/${s}`;
+
+    if (!base) return path;
+
+    const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
+    return `${cleanBase}${path}`;
+}
+
 const ProfessionalRow = memo(function ProfessionalRow({
     item,
     onPress,
@@ -69,14 +126,22 @@ const ProfessionalRow = memo(function ProfessionalRow({
     showDivider: boolean;
     isCurrent: boolean;
 }) {
+    const [imgOk, setImgOk] = useState(true);
+
+    useEffect(() => {
+        setImgOk(true);
+    }, [item.imageUrl]);
+
     return (
         <Pressable onPress={onPress} style={S.row}>
             <View style={S.rowLeft}>
                 <View style={S.avatar}>
-                    {item.imageUrl ? (
+                    {item.imageUrl && imgOk ? (
                         <Image
                             source={{ uri: item.imageUrl }}
                             style={S.avatarImg}
+                            fadeDuration={0}
+                            onError={() => setImgOk(false)}
                         />
                     ) : (
                         <FontAwesome
@@ -240,6 +305,11 @@ export default function BookingProfessional() {
             }>(`/api/mobile/professional?unitId=${encodeURIComponent(unitId)}`);
 
             const list = (res?.professionals ?? [])
+                .map((p) => ({
+                    ...p,
+                    // ✅ garante url estável (localhost/baseURL/path)
+                    imageUrl: normalizeApiImageUrl(p?.imageUrl) || null,
+                }))
                 .slice()
                 .sort((a, b) =>
                     String(a?.name ?? '').localeCompare(String(b?.name ?? ''))
@@ -527,7 +597,7 @@ const S = StyleSheet.create({
         justifyContent: 'center',
         overflow: 'hidden',
     },
-    avatarImg: { width: 70, height: 70, borderRadius: 12 },
+    avatarImg: { width: 75, height: 75, borderRadius: 12 },
 
     rowTitleLine: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     rowTitle: { fontWeight: '700', color: UI.brand.primaryText, fontSize: 14 },

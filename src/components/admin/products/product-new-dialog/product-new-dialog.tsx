@@ -72,6 +72,9 @@ type UploadResponse =
       }
     | { ok: false; error?: string };
 
+const MAX_UPLOAD_MB = 5;
+const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
+
 function toMoneyNumber(raw: string): number {
     const s = String(raw ?? '')
         .trim()
@@ -139,7 +142,7 @@ export function ProductNewDialog({
     const [isFeatured, setIsFeatured] = React.useState(false);
 
     const [name, setName] = React.useState('');
-    const [imageUrl, setImageUrl] = React.useState(''); // preenchido pelo upload
+    const [imageUrl, setImageUrl] = React.useState(''); // preenchido pelo upload (opcional)
     const [description, setDescription] = React.useState('');
 
     const [price, setPrice] = React.useState('');
@@ -167,8 +170,6 @@ export function ProductNewDialog({
 
     React.useEffect(() => {
         if (!open) return;
-
-        // ao abrir: tenta selecionar unidade ativa (se ainda não selecionou)
         setSelectedUnitId((prev) => prev || firstActiveUnitId);
     }, [open, firstActiveUnitId]);
 
@@ -198,9 +199,9 @@ export function ProductNewDialog({
     const unitInvalid = !hasUnits || !selectedUnitId;
     const birthdayInvalid = birthdayEnabled && !birthdayLevel;
 
+    // ✅ imagem NÃO é obrigatória aqui (backend também não exige mais)
     const requiredInvalid =
         !name.trim() ||
-        !imageUrl.trim() ||
         !description.trim() ||
         !category.trim() ||
         !price.trim() ||
@@ -212,6 +213,16 @@ export function ProductNewDialog({
         unitInvalid || birthdayInvalid || requiredInvalid || uploadingImage;
 
     async function uploadImage(file: File) {
+        // validações client-side (UX + evita bater no limite do server)
+        if (!file.type?.startsWith('image/')) {
+            toast.error('Selecione um arquivo de imagem.');
+            return;
+        }
+        if (file.size > MAX_UPLOAD_BYTES) {
+            toast.error(`Imagem muito grande. Máximo: ${MAX_UPLOAD_MB}MB.`);
+            return;
+        }
+
         setUploadingImage(true);
         try {
             const fd = new FormData();
@@ -227,7 +238,6 @@ export function ProductNewDialog({
                 .json()
                 .catch(() => null)) as UploadResponse | null;
 
-            // ✅ Narrow correto para liberar json.data
             if (!res.ok || !json || json.ok !== true) {
                 const msg =
                     (json && json.ok === false && json.error) ||
@@ -257,10 +267,9 @@ export function ProductNewDialog({
             if (pct !== null) discounts[lvl] = pct;
         });
 
-        return {
+        const payload: any = {
             unitId: selectedUnitId,
             name: name.trim(),
-            imageUrl: imageUrl.trim(),
             description: description.trim(),
             category: category.trim(),
 
@@ -278,6 +287,12 @@ export function ProductNewDialog({
 
             levelDiscounts: discounts,
         };
+
+        // ✅ só manda imageUrl se existir
+        const img = imageUrl.trim();
+        if (img) payload.imageUrl = img;
+
+        return payload;
     }
 
     async function handleCreate() {
@@ -449,7 +464,9 @@ export function ProductNewDialog({
                     <div className="space-y-2">
                         <label className="text-label-small text-content-secondary">
                             Foto do produto{' '}
-                            <span className="text-red-500">*</span>
+                            <span className="text-content-secondary/70">
+                                (opcional)
+                            </span>
                         </label>
 
                         <input
@@ -475,7 +492,7 @@ export function ProductNewDialog({
                                     <Input
                                         value={previewUrl ?? ''}
                                         readOnly
-                                        placeholder="Escolha seu arquivo clicando em Upload."
+                                        placeholder="Clique em Upload para escolher uma imagem."
                                         className={cn(
                                             'pl-10 pr-10',
                                             INPUT_BASE
