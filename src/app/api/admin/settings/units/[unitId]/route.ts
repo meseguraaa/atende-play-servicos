@@ -50,7 +50,8 @@ function jsonErr(error: string, status = 400, extra?: any) {
             ? { ok: false, error }
             : { ok: false, error, extra };
 
-    return NextResponse.json(payload as const, { status });
+    // ✅ sem `as const` (TS1355)
+    return NextResponse.json(payload, { status });
 }
 
 function asTrimmedOrNull(v: unknown): string | null {
@@ -99,7 +100,9 @@ function getJwtSecretKey() {
 }
 
 async function requireAdminSession(): Promise<MinimalAdminSession> {
-    const token = cookies().get(SESSION_COOKIE_NAME)?.value || '';
+    // ✅ Next 14/15: cookies() pode ser Promise (TS2339)
+    const cookieStore = await cookies();
+    const token = cookieStore.get(SESSION_COOKIE_NAME)?.value || '';
     if (!token) throw new Error('UNAUTHORIZED');
 
     const { payload } = await jwtVerify(token, getJwtSecretKey());
