@@ -16,7 +16,7 @@ type CreateProductPayload = {
     unitId?: string | null;
 
     name?: string;
-    imageUrl?: string;
+    imageUrl?: string; // agora opcional
     description?: string;
 
     price?: number | string; // aceita string também
@@ -78,6 +78,11 @@ function normalizeString(raw: unknown) {
     return s.length ? s : '';
 }
 
+function normalizeNullableString(raw: unknown): string | null {
+    const s = String(raw ?? '').trim();
+    return s.length ? s : null;
+}
+
 function isValidImageUrl(imageUrl: string) {
     const s = String(imageUrl ?? '').trim();
     if (!s) return false;
@@ -87,7 +92,7 @@ function isValidImageUrl(imageUrl: string) {
     if (lowered.startsWith('javascript:')) return false;
     if (lowered.startsWith('data:')) return false;
 
-    // dev: nosso endpoint retorna /uploads/...
+    // nosso endpoint retorna /uploads/...
     if (s.startsWith('/uploads/')) return true;
 
     // fallback: URL absoluta
@@ -178,7 +183,6 @@ export async function GET(request: Request) {
         });
 
         // (Opcional) manter cookie sincronizado com query param se vier
-        // Obs: só escreve cookie quando o admin pode ver todas
         if ((session as any)?.canSeeAllUnits) {
             const url = new URL(request.url);
             const qp = url.searchParams.get('unit');
@@ -241,7 +245,7 @@ export async function GET(request: Request) {
             return {
                 id: p.id,
                 name: p.name,
-                imageUrl: p.imageUrl,
+                imageUrl: p.imageUrl, // pode ser null
                 description: p.description,
                 price: Number(p.price),
                 barberPercentage: Number(p.professionalPercentage), // compat UI
@@ -308,17 +312,20 @@ export async function POST(request: Request) {
         if (!unit) return jsonErr('Unidade inválida para esta empresa.', 400);
 
         const name = normalizeString(body.name);
-        const imageUrl = normalizeString(body.imageUrl);
+        const imageUrl = normalizeNullableString(body.imageUrl);
         const description = normalizeString(body.description);
         const category = normalizeString(body.category);
 
         if (!name) return jsonErr('Nome é obrigatório.');
-        if (!imageUrl) return jsonErr('imageUrl é obrigatório.');
-        if (!isValidImageUrl(imageUrl))
+
+        // ✅ imageUrl opcional: valida só se vier
+        if (imageUrl && !isValidImageUrl(imageUrl)) {
             return jsonErr(
                 'imageUrl inválida. Envie uma imagem (upload) ou forneça uma URL http(s) válida.',
                 400
             );
+        }
+
         if (!description) return jsonErr('Descrição é obrigatória.');
         if (!category) return jsonErr('Categoria é obrigatória.');
 
@@ -358,7 +365,7 @@ export async function POST(request: Request) {
                 companyId,
                 unitId,
                 name,
-                imageUrl,
+                imageUrl, // ✅ pode ser null
                 description,
                 price,
                 professionalPercentage,

@@ -581,46 +581,13 @@ function normalizeApiImageUrl(raw: unknown): string | null {
     if (!s) return null;
 
     const lower = s.toLowerCase();
-    const isHttp = lower.startsWith('http://') || lower.startsWith('https://');
 
-    // helper: host do "mundo real" (mesmo que defaults.baseURL seja null)
-    const getRealHostOrigin = () => {
-        try {
-            // axios: tenta montar uma uri completa
-            const full = (api as any)?.getUri
-                ? (api as any).getUri({ url: '/api/health' })
-                : null;
-
-            if (typeof full === 'string' && full.includes('://')) {
-                const u = new URL(full);
-                return `${u.protocol}//${u.host}`; // ex: https://xxxx.ngrok-free.app
-            }
-        } catch {}
-
-        // fallback manual (se nada der certo)
-        // 👇 TROQUE para seu host/IP/NGROK se necessário
-        return null as string | null;
-    };
-
-    // 1) se já é absoluta, mas é localhost -> reescreve
-    if (isHttp) {
-        try {
-            const u = new URL(s);
-            const host = u.hostname;
-
-            if (host === 'localhost' || host === '127.0.0.1') {
-                const real = getRealHostOrigin();
-                if (!real) return s; // não piora
-                return `${real}${u.pathname}${u.search}`;
-            }
-
-            return s;
-        } catch {
-            return s;
-        }
+    // ✅ 1) absoluta: mantém como veio (API já devolve origin correto)
+    if (lower.startsWith('http://') || lower.startsWith('https://')) {
+        return s;
     }
 
-    // 2) se é relativa, tenta usar baseURL (se existir)
+    // ✅ 2) relativa: usa baseURL do axios (quando existir)
     const baseFromApi =
         (api as any)?.defaults?.baseURL ||
         (api as any)?.defaults?.baseUrl ||
@@ -1487,30 +1454,6 @@ export default function Products() {
                   ? ((res as any).products as FeaturedApiProduct[])
                   : [];
 
-            // ============================
-            // 🔎 DEBUG (1 vez por fetch)
-            // ============================
-            try {
-                const baseURL =
-                    (api as any)?.defaults?.baseURL ||
-                    (api as any)?.defaults?.baseUrl ||
-                    null;
-
-                const first = list?.[0] ?? null;
-
-                console.log('[featured] baseURL:', baseURL);
-                console.log('[featured] count:', list.length);
-                console.log('[featured] first raw:', first);
-                console.log(
-                    '[featured] first imageUrl:',
-                    (first as any)?.imageUrl ?? null
-                );
-                console.log(
-                    '[featured] first normalized:',
-                    normalizeApiImageUrl((first as any)?.imageUrl)
-                );
-            } catch {}
-
             const mapped: FeaturedProduct[] = list
                 .map((p) => {
                     const basePrice = safeNumber((p as any)?.basePrice, NaN);
@@ -1545,9 +1488,7 @@ export default function Products() {
                         : safeNumber(p.price, 0);
 
                     // ✅ imagem: normaliza + fallback pra garantir que algo apareça
-                    const img =
-                        normalizeApiImageUrl((p as any)?.imageUrl) ||
-                        'https://picsum.photos/seed/featured-placeholder/600/420';
+                    const img = normalizeApiImageUrl((p as any)?.imageUrl);
 
                     return {
                         id: String((p as any)?.id ?? ''),

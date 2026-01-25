@@ -286,8 +286,9 @@ export async function OPTIONS() {
 /**
  * ✅ normaliza imagem (mesmo padrão do /products, com PLUS):
  * - se vier absoluta (http/https), mantém
- * - MAS se for localhost/127.0.0.1, reescreve pro origin calculado
+ * - MAS se for localhost/127.0.0.1, reescreve pro origin calculado (se existir)
  * - se vier "/uploads/...", transforma em "<origin>/uploads/..."
+ * - se origin estiver vazio, devolve só o path (não quebra local)
  * - se vier vazia, null
  */
 function normalizeImageUrl(origin: string, raw: unknown): string | null {
@@ -295,16 +296,21 @@ function normalizeImageUrl(origin: string, raw: unknown): string | null {
     if (!s) return null;
 
     const lower = s.toLowerCase();
+    const originTrim = String(origin ?? '').trim();
+    const hasOrigin = Boolean(originTrim);
 
     // absoluta
     if (lower.startsWith('http://') || lower.startsWith('https://')) {
+        // se não temos origin, não tenta reescrever (mantém)
+        if (!hasOrigin) return s;
+
         try {
             const u = new URL(s);
             const h = u.hostname?.toLowerCase?.() ?? '';
             if (h === 'localhost' || h === '127.0.0.1') {
-                const base = origin.endsWith('/')
-                    ? origin.slice(0, -1)
-                    : origin;
+                const base = originTrim.endsWith('/')
+                    ? originTrim.slice(0, -1)
+                    : originTrim;
                 return `${base}${u.pathname}${u.search}`;
             }
         } catch {
@@ -315,7 +321,13 @@ function normalizeImageUrl(origin: string, raw: unknown): string | null {
 
     // relativa
     const path = s.startsWith('/') ? s : `/${s}`;
-    const base = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+
+    // ✅ fallback seguro: sem origin, devolve path
+    if (!hasOrigin) return path;
+
+    const base = originTrim.endsWith('/')
+        ? originTrim.slice(0, -1)
+        : originTrim;
     return `${base}${path}`;
 }
 

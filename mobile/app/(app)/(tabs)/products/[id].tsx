@@ -165,6 +165,36 @@ function safeNumber(v: any, fallback = 0) {
     return Number.isFinite(n) ? n : fallback;
 }
 
+// ✅ normaliza url de imagem vinda da API:
+// - aceita http/https (mantém como veio)
+// - se vier "/uploads/..." vira "<API_BASE_URL>/uploads/..."
+// - se vier "uploads/..." também vira "<API_BASE_URL>/uploads/..."
+// - se vier vazia, retorna null
+function normalizeApiImageUrl(raw: unknown): string | null {
+    const s = String(raw ?? '').trim();
+    if (!s) return null;
+
+    const lower = s.toLowerCase();
+
+    // ✅ absoluta: mantém como veio (API já devolve origin correto quando precisa)
+    if (lower.startsWith('http://') || lower.startsWith('https://')) {
+        return s;
+    }
+
+    // ✅ relativa: usa baseURL do axios (quando existir)
+    const baseFromApi =
+        (api as any)?.defaults?.baseURL ||
+        (api as any)?.defaults?.baseUrl ||
+        '';
+
+    const base = String(baseFromApi ?? '').trim();
+    if (!base) return null;
+
+    const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
+    const path = s.startsWith('/') ? s : `/${s}`;
+    return `${cleanBase}${path}`;
+}
+
 export default function ProductDetails() {
     const insets = useSafeAreaInsets();
     const router = useRouter();
@@ -252,6 +282,10 @@ export default function ProductDetails() {
                       }
                     : null;
 
+            // ✅ regra: BIRTHDAY não aparece no detalhe também (se quiser consistência total)
+            const safeBadge: ProductBadge =
+                badge?.type === 'BIRTHDAY' ? null : badge;
+
             const final = Number.isFinite(finalPrice)
                 ? finalPrice
                 : safeNumber(p?.price, 0);
@@ -259,7 +293,10 @@ export default function ProductDetails() {
             const mapped: ApiProduct = {
                 id: String(p.id),
                 name: String(p.name ?? 'Produto'),
-                imageUrl: typeof p.imageUrl === 'string' ? p.imageUrl : null,
+                imageUrl: normalizeApiImageUrl(
+                    typeof p.imageUrl === 'string' ? p.imageUrl : null
+                ),
+
                 description: String(p.description ?? ''),
 
                 // compat: price = final
@@ -270,7 +307,7 @@ export default function ProductDetails() {
                     ? finalPrice
                     : undefined,
                 hasDiscount,
-                badge,
+                badge: safeBadge,
 
                 category: p.category ? String(p.category) : null,
                 stockQuantity: safeNumber(p.stockQuantity, 0),
@@ -610,7 +647,9 @@ export default function ProductDetails() {
                                     'https://picsum.photos/seed/product-placeholder/900/900',
                             }}
                             style={S.heroImage}
+                            fadeDuration={0}
                         />
+
                         <View style={S.heroOverlay} />
 
                         {/* 🎂 / ⭐ badge do motor */}

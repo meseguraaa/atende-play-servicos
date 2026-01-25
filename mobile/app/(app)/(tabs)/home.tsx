@@ -853,8 +853,10 @@ export default function Home() {
                             : undefined,
                         hasDiscount,
                         badge: badge?.label ? badge : null,
-                        imageUrl:
-                            typeof p?.imageUrl === 'string' ? p.imageUrl : null,
+                        imageUrl: normalizeApiImageUrl(
+                            typeof p?.imageUrl === 'string' ? p.imageUrl : null
+                        ),
+
                         unitName: String(p?.unitName ?? '—'),
                         isOutOfStock: !!p?.isOutOfStock,
                     };

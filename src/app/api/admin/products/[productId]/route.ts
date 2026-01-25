@@ -11,7 +11,7 @@ type CustomerLevel = 'BRONZE' | 'PRATA' | 'OURO' | 'DIAMANTE';
 type UpdateProductPayload = {
     // ⚠️ não permitimos trocar unitId aqui (estoque é por unidade)
     name?: string;
-    imageUrl?: string;
+    imageUrl?: string; // agora opcional (e pode vir vazio pra "remover")
     description?: string;
 
     price?: number | string;
@@ -79,6 +79,24 @@ function toMoneyNumber(raw: unknown): number {
         .replace(',', '.');
     const n = Number(s);
     return Number.isFinite(n) ? n : NaN;
+}
+
+function isValidImageUrl(imageUrl: string) {
+    const s = String(imageUrl ?? '').trim();
+    if (!s) return false;
+
+    const lowered = s.toLowerCase();
+    if (lowered.startsWith('javascript:')) return false;
+    if (lowered.startsWith('data:')) return false;
+
+    // nosso endpoint retorna /uploads/...
+    if (s.startsWith('/uploads/')) return true;
+
+    // fallback: URL absoluta
+    if (lowered.startsWith('http://') || lowered.startsWith('https://'))
+        return true;
+
+    return false;
 }
 
 function normalizeLevelDiscounts(
@@ -206,21 +224,38 @@ export async function PATCH(
         // merge com current (permite payload parcial sem quebrar)
         const name =
             u.name !== undefined ? normalizeString(u.name) : current.name;
-        const imageUrl =
-            u.imageUrl !== undefined
-                ? normalizeString(u.imageUrl)
-                : current.imageUrl;
+
+        // ✅ imageUrl NÃO é mais obrigatório:
+        // - se vier undefined -> mantém current
+        // - se vier string vazia -> permite "remover" (salva '')
+        // - se vier preenchida -> valida
+        let imageUrl: string = current.imageUrl ?? '';
+        if (u.imageUrl !== undefined) {
+            const candidate = String(u.imageUrl ?? '').trim();
+            if (!candidate) {
+                imageUrl = ''; // remove imagem (mais seguro que null)
+            } else {
+                if (!isValidImageUrl(candidate)) {
+                    return jsonErr(
+                        'imageUrl inválida. Use /uploads/... (do nosso upload) ou uma URL http(s) válida.',
+                        400
+                    );
+                }
+                imageUrl = candidate;
+            }
+        }
+
         const description =
             u.description !== undefined
                 ? normalizeString(u.description)
                 : current.description;
+
         const category =
             u.category !== undefined
                 ? normalizeString(u.category)
                 : current.category;
 
         if (!name) return jsonErr('Nome é obrigatório.', 400);
-        if (!imageUrl) return jsonErr('imageUrl é obrigatório.', 400);
         if (!description) return jsonErr('Descrição é obrigatória.', 400);
         if (!category) return jsonErr('Categoria é obrigatória.', 400);
 
@@ -300,7 +335,7 @@ export async function PATCH(
                 where: { id: current.id },
                 data: {
                     name,
-                    imageUrl,
+                    imageUrl, // ✅ agora pode ficar '' e não exige no payload
                     description,
                     category,
                     price,

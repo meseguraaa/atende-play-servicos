@@ -95,6 +95,18 @@ const INPUT_BASE =
 const SELECT_TRIGGER =
     'h-10 w-full justify-between text-left font-normal bg-background-tertiary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0 focus-visible:border-border-brand';
 
+// ✅ normaliza URL de imagem no Admin (browser)
+function normalizeAdminImageUrl(raw: unknown): string | null {
+    const s = String(raw ?? '').trim();
+    if (!s) return null;
+
+    const lower = s.toLowerCase();
+    if (lower.startsWith('http://') || lower.startsWith('https://')) return s;
+
+    const path = s.startsWith('/') ? s : `/${s}`;
+    return `${window.location.origin}${path}`;
+}
+
 async function uploadProfessionalImage(file: File) {
     const fd = new FormData();
     fd.append('file', file);
@@ -227,7 +239,12 @@ export function ProfessionalEditDialog({
         toast.success('Imagem enviada!');
     }
 
-    const previewUrl = imageUrl.trim() ? imageUrl.trim() : null;
+    // ✅ usa normalização (caso venha relativa ou com host estranho)
+    const previewUrl = useMemo(() => {
+        const raw = imageUrl.trim();
+        if (!raw) return null;
+        return normalizeAdminImageUrl(raw);
+    }, [imageUrl]);
 
     const busy = isPending || uploadingImage;
     const unitInvalid = !hasUnits || !selectedUnitId;

@@ -62,6 +62,44 @@ function StatusBadge({
     );
 }
 
+function initials(name: string) {
+    return (name || '?')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((n) => n[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase();
+}
+
+// ✅ fallback para quando img falhar/carregar errado
+function PartnerLogo({ src, name }: { src?: string | null; name: string }) {
+    const [broken, setBroken] = React.useState(false);
+
+    const hasSrc = Boolean(src && String(src).trim().length);
+    const showImg = hasSrc && !broken;
+
+    return (
+        <div className="h-10 w-10 overflow-hidden rounded-lg border border-border-primary bg-background-secondary flex items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {showImg ? (
+                <img
+                    src={String(src)}
+                    alt={name}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                    onError={() => setBroken(true)}
+                />
+            ) : (
+                <span className="text-[11px] font-semibold text-content-secondary">
+                    {initials(name)}
+                </span>
+            )}
+        </div>
+    );
+}
+
 export function PartnerRow({ partner }: { partner: PartnerForRow }) {
     const router = useRouter();
     const [isPending, startTransition] = React.useTransition();
@@ -107,16 +145,8 @@ export function PartnerRow({ partner }: { partner: PartnerForRow }) {
         <tr className="border-t border-border-primary">
             <td className="px-4 py-3">
                 <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 overflow-hidden rounded-lg border border-border-primary bg-background-secondary">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        {partner.logoUrl ? (
-                            <img
-                                src={partner.logoUrl}
-                                alt={partner.name}
-                                className="h-full w-full object-cover"
-                            />
-                        ) : null}
-                    </div>
+                    {/* ✅ agora com fallback quando a imagem quebra */}
+                    <PartnerLogo src={partner.logoUrl} name={partner.name} />
 
                     <div className="min-w-0">
                         <p className="truncate font-semibold text-content-primary">

@@ -1,6 +1,6 @@
 // src/app/api/admin/uploads/route.ts
 import { NextResponse } from 'next/server';
-import { mkdir, writeFile } from 'fs/promises';
+import { mkdir, writeFile, stat } from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 
@@ -11,7 +11,16 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs'; // precisamos de fs (salvar em /public)
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
-const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
+
+/**
+ * ✅ Locaweb/local friendly:
+ * - por padrão salva em <project>/public/uploads
+ * - se precisar, você pode setar UPLOADS_PUBLIC_DIR para apontar pra outro lugar
+ *   (mas recomendado manter dentro de /public pra servir estático sem proxy)
+ */
+const UPLOADS_PUBLIC_DIR =
+    process.env.UPLOADS_PUBLIC_DIR?.trim() ||
+    path.join(process.cwd(), 'public', 'uploads');
 
 type UploadModule = 'PRODUCTS' | 'PROFESSIONALS' | 'PARTNERS';
 type UploadCategory = 'products' | 'professionals' | 'partners';
@@ -22,14 +31,14 @@ const MODULE_TO_CATEGORY: Record<UploadModule, UploadCategory> = {
     PARTNERS: 'partners',
 };
 
-// ✅ resolve TS: requireAdminForModule espera AdminModule (seu app já usa SETTINGS nas rotas de parceiros)
+// ✅ resolve TS: requireAdminForModule espera AdminModule
 type AdminModuleLike = Parameters<typeof requireAdminForModule>[0];
 
 const MODULE_TO_PERMISSION: Record<UploadModule, AdminModuleLike> = {
     PRODUCTS: 'PRODUCTS' as AdminModuleLike,
     PROFESSIONALS: 'PROFESSIONALS' as AdminModuleLike,
 
-    // ✅ (IMPORTANTE) aqui não manda mais. Parceiros agora são PLATAFORMA.
+    // ✅ Parceiros agora são PLATAFORMA.
     // Mantemos só por compat de tipo, mas não será usado quando module=PARTNERS.
     PARTNERS: 'SETTINGS' as AdminModuleLike,
 };
@@ -50,8 +59,6 @@ function normalizeString(raw: unknown) {
 /**
  * ✅ TS FIX:
  * Em alguns setups, o tipo `FormData` no ambiente server não expõe `.get()`
- * (normalmente por falta da lib "dom" no tsconfig).
- * Aqui chamamos `.get()` via `any` para destravar build, mantendo runtime correto.
  */
 function formGet(formData: unknown, key: string): unknown {
     const anyForm = formData as any;
@@ -62,7 +69,6 @@ function formGet(formData: unknown, key: string): unknown {
 function safeExtFrom(fileName: string, mime: string) {
     const byName = path.extname(fileName || '').toLowerCase();
 
-    // lista pequena e segura (pode expandir depois)
     const allowed = new Set([
         '.jpg',
         '.jpeg',
@@ -75,7 +81,6 @@ function safeExtFrom(fileName: string, mime: string) {
 
     if (allowed.has(byName)) return byName;
 
-    // fallback por mime
     const m = String(mime || '').toLowerCase();
     if (m === 'image/jpeg') return '.jpg';
     if (m === 'image/png') return '.png';
@@ -84,7 +89,6 @@ function safeExtFrom(fileName: string, mime: string) {
     if (m === 'image/svg+xml') return '.svg';
     if (m === 'image/avif') return '.avif';
 
-    // se não reconheceu, bloqueia
     return '';
 }
 
@@ -124,6 +128,13 @@ async function resolveScopeForModule(
     }
 
     return { kind: 'company', companyId };
+}
+
+async function ensureWritableDir(dir: string) {
+    await mkdir(dir, { recursive: true });
+
+    // “provinha” rápida: stat pra confirmar que existe e é acessível
+    await stat(dir);
 }
 
 /**
@@ -191,15 +202,16 @@ export async function POST(request: Request) {
         }
 
         const category = MODULE_TO_CATEGORY[module];
-
         const key = crypto.randomUUID();
         const fileName = `${key}${ext}`;
 
-        // ✅ monta path conforme scope
+        // ✅ namespace conforme scope
         const namespace = scope.kind === 'global' ? 'global' : scope.companyId;
 
-        const targetDir = path.join(UPLOADS_DIR, namespace, category);
-        await mkdir(targetDir, { recursive: true });
+        const targetDir = path.join(UPLOADS_PUBLIC_DIR, namespace, category);
+
+        // ✅ garante pasta acessível e gravável
+        await ensureWritableDir(targetDir);
 
         const arrayBuffer = await file.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
@@ -221,7 +233,30 @@ export async function POST(request: Request) {
             },
             { status: 201 }
         );
-    } catch {
-        return jsonErr('Sem permissão para enviar uploads.', 403);
+    } catch (e: any) {
+        // ✅ aqui a gente para de “mascarar” tudo como permissão
+        const msg = String(e?.message || e || 'Erro desconhecido');
+        const code = String((e as any)?.code || '');
+
+        // erros comuns de filesystem em produção
+        if (code === 'EACCES' || code === 'EPERM') {
+            return jsonErr(
+                `Sem permissão para gravar em "${UPLOADS_PUBLIC_DIR}". Verifique permissões da pasta public/uploads no servidor.`,
+                500
+            );
+        }
+        if (code === 'ENOENT') {
+            return jsonErr(
+                `Caminho inválido para uploads: "${UPLOADS_PUBLIC_DIR}". Verifique se o deploy inclui a pasta public.`,
+                500
+            );
+        }
+
+        // erros de auth/permission vindos dos guards
+        if (msg === 'missing_token' || msg === 'unauthorized') {
+            return jsonErr('Não autenticado.', 401);
+        }
+
+        return jsonErr(`Falha no upload: ${msg}`, 500);
     }
 }
