@@ -1,7 +1,7 @@
 // src/app/admin/services/page.tsx
 import type { Metadata } from 'next';
-import { headers, cookies } from 'next/headers';
 
+import { prisma } from '@/lib/prisma';
 import { requireAdminForModule } from '@/lib/admin-permissions';
 
 import { ServiceRow } from '@/components/admin/services/service-row';
@@ -13,150 +13,69 @@ export const metadata: Metadata = {
     title: 'Admin | Serviços',
 };
 
-export type ServiceForRow = {
-    id: string;
-    unitId: string | null;
-
-    name: string;
-
-    // Prisma Decimal -> string (vindo da API)
-    price: string;
-    durationMinutes: number;
-
-    isActive: boolean;
-
-    // Prisma Decimal -> string (vindo da API)
-    professionalPercentage: string;
-    cancelLimitHours: number | null;
-    cancelFeePercentage: string | null;
-
-    createdAt: string | Date;
-    updatedAt: string | Date;
-};
-
-type ProfessionalForPicker = {
-    id: string;
-    name: string;
-    isActive: boolean;
-};
-
-type ServicesApiResponse = {
-    ok: boolean;
-    data?: {
-        services: ServiceForRow[];
-        professionals: ProfessionalForPicker[];
-        units?: { id: string; name: string; isActive: boolean }[];
-    };
-    error?: string;
-};
-
-function getBaseUrlFromHeaders(h: Headers) {
-    const host = h.get('x-forwarded-host') ?? h.get('host');
-    const proto = h.get('x-forwarded-proto') ?? 'http';
-    if (!host) return null;
-    return `${proto}://${host}`;
-}
-
-// ✅ parser robusto pt-BR: "1.234,56" -> 1234.56
-function toNumberOrNull(value: unknown): number | null {
-    if (value === null || value === undefined) return null;
-
-    if (typeof value === 'number') {
-        return Number.isFinite(value) ? value : null;
-    }
-
-    if (typeof value === 'string') {
-        const normalized = value
-            .trim()
-            .replace(/\s/g, '')
-            .replace(/\./g, '')
-            .replace(',', '.');
-
-        if (!normalized) return null;
-
-        const n = Number(normalized);
-        return Number.isFinite(n) ? n : null;
-    }
-
-    return null;
-}
-
-function decimalToCents(value: unknown): number | null {
-    const n = toNumberOrNull(value);
-    if (n === null) return null;
-    return Math.round(n * 100);
-}
+type SessionWithCompanyId = { companyId?: string };
 
 export default async function AdminServicesPage() {
-    await requireAdminForModule('SERVICES');
+    const session = (await requireAdminForModule(
+        'SERVICES'
+    )) as unknown as SessionWithCompanyId;
 
-    const h = await headers();
-    const baseUrl = getBaseUrlFromHeaders(h);
+    const companyId = session.companyId?.trim();
 
-    const cookieStore = await cookies();
-    const cookieHeader = cookieStore
-        .getAll()
-        .map((c: { name: string; value: string }) => `${c.name}=${c.value}`)
-        .join('; ');
+    // Se por algum motivo a sessão vier sem companyId, mostramos mensagem clara
+    if (!companyId) {
+        return (
+            <div className="max-w-7xl space-y-6">
+                <header className="flex items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-title text-content-primary">
+                            Serviços
+                        </h1>
+                        <p className="text-paragraph-medium-size text-content-secondary">
+                            Gerencie os serviços, duração, comissões e regras de
+                            cancelamento.
+                        </p>
+                    </div>
 
-    let services: ServiceForRow[] = [];
+                    <ServiceNewDialog />
+                </header>
 
-    try {
-        const url = baseUrl
-            ? `${baseUrl}/api/admin/services`
-            : '/api/admin/services';
-
-        const res = await fetch(url, {
-            method: 'GET',
-            cache: 'no-store',
-            headers: {
-                cookie: cookieHeader,
-                accept: 'application/json',
-            },
-        });
-
-        const json = (await res
-            .json()
-            .catch(() => null)) as ServicesApiResponse | null;
-
-        if (res.ok && json?.ok && json.data) {
-            services = json.data.services ?? [];
-        } else {
-            services = [];
-        }
-    } catch {
-        services = [];
+                <section className="rounded-xl border border-border-primary bg-background-tertiary p-6">
+                    <p className="text-paragraph-medium-size text-content-secondary">
+                        Sessão sem <b>companyId</b>. Este painel é multi-tenant:
+                        vincule o admin a uma empresa.
+                    </p>
+                </section>
+            </div>
+        );
     }
 
-    // Bridge: ServiceRow aceita tanto shape UI quanto "prisma-like".
-    // Aqui entregamos um shape UI consistente (priceInCents/durationInMinutes/barberPercentage)
-    // para a tabela renderizar corretamente.
+    // ✅ Busca direta no Prisma (evita fetch interno + cookies + baseUrl em prod)
+    const services = await prisma.service.findMany({
+        where: { companyId },
+        orderBy: { name: 'asc' },
+        select: {
+            id: true,
+            unitId: true,
+            companyId: true,
+            name: true,
+            price: true,
+            durationMinutes: true,
+            isActive: true,
+            professionalPercentage: true,
+            cancelLimitHours: true,
+            cancelFeePercentage: true,
+        },
+    });
+
+    // ✅ Shape que o ServiceRow espera (UI)
     const servicesForTable = services.map((s) => {
-        const priceInCents =
-            // se por acaso vier no formato novo no futuro
-            (s as any).priceInCents !== undefined
-                ? (s as any).priceInCents
-                : decimalToCents((s as any).price);
-
-        const durationInMinutes =
-            (s as any).durationInMinutes !== undefined
-                ? (s as any).durationInMinutes
-                : typeof (s as any).durationMinutes === 'number'
-                  ? (s as any).durationMinutes
-                  : null;
-
-        const barberPercentage =
-            (s as any).barberPercentage !== undefined
-                ? (s as any).barberPercentage
-                : toNumberOrNull((s as any).professionalPercentage);
-
-        const cancelFeePercentage =
-            (s as any).cancelFeePercentage === null ||
-            (s as any).cancelFeePercentage === undefined
+        const priceNum = Number(s.price.toString());
+        const pctNum = Number(s.professionalPercentage.toString());
+        const feePctNum =
+            s.cancelFeePercentage === null
                 ? null
-                : typeof (s as any).cancelFeePercentage === 'number'
-                  ? (s as any).cancelFeePercentage
-                  : toNumberOrNull((s as any).cancelFeePercentage);
+                : Number(s.cancelFeePercentage.toString());
 
         return {
             id: s.id,
@@ -165,15 +84,25 @@ export default async function AdminServicesPage() {
             name: s.name,
             description: null as string | null,
 
-            priceInCents,
-            durationInMinutes,
+            priceInCents: Number.isFinite(priceNum)
+                ? Math.round(priceNum * 100)
+                : null,
 
-            barberPercentage,
+            durationInMinutes:
+                typeof s.durationMinutes === 'number'
+                    ? s.durationMinutes
+                    : null,
+
+            barberPercentage: Number.isFinite(pctNum) ? pctNum : null,
+
             cancelLimitHours: s.cancelLimitHours ?? null,
-            cancelFeePercentage,
+            cancelFeePercentage:
+                feePctNum !== null && Number.isFinite(feePctNum)
+                    ? feePctNum
+                    : null,
 
             isActive: Boolean(s.isActive),
-            companyId: (s as any).companyId ?? null,
+            companyId: s.companyId ?? null,
         };
     });
 
