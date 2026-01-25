@@ -61,9 +61,9 @@ async function hashPasswordIfPossible(password: string): Promise<string> {
 // - Se vier http/https -> mantém
 // - Se vier "/uploads/..." ou "uploads/..." -> prefixa origin do request
 // ==============================
-function getBaseOrigin(): string {
+async function getBaseOrigin(): Promise<string> {
     try {
-        const h = headers();
+        const h = await headers();
 
         const proto =
             h.get('x-forwarded-proto') ||
@@ -86,14 +86,14 @@ function getBaseOrigin(): string {
     }
 }
 
-function normalizePublicImageUrl(raw: unknown): string | null {
+async function normalizePublicImageUrl(raw: unknown): Promise<string | null> {
     const s = String(raw ?? '').trim();
     if (!s) return null;
 
     const lower = s.toLowerCase();
     if (lower.startsWith('http://') || lower.startsWith('https://')) return s;
 
-    const origin = getBaseOrigin();
+    const origin = await getBaseOrigin();
     const path = s.startsWith('/') ? s : `/${s}`;
 
     if (!origin) return path; // fallback: mantém relativo
@@ -402,7 +402,7 @@ export async function PATCH(request: Request, ctx: unknown) {
         // ✅ devolve a imagem já normalizada, como fizemos em produtos/parceiros
         return jsonOk({
             ...updated,
-            imageUrl: normalizePublicImageUrl(updated.imageUrl),
+            imageUrl: await normalizePublicImageUrl(updated.imageUrl),
         });
     } catch (e: any) {
         const msg = typeof e?.message === 'string' ? e.message : '';

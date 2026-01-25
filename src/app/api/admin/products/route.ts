@@ -16,7 +16,7 @@ type CreateProductPayload = {
     unitId?: string | null;
 
     name?: string;
-    imageUrl?: string; // agora opcional
+    imageUrl?: string; // agora opcional no payload
     description?: string;
 
     price?: number | string; // aceita string também
@@ -245,7 +245,10 @@ export async function GET(request: Request) {
             return {
                 id: p.id,
                 name: p.name,
-                imageUrl: p.imageUrl, // pode ser null
+
+                // ✅ garante string no retorno (evita vazar null)
+                imageUrl: String(p.imageUrl ?? ''),
+
                 description: p.description,
                 price: Number(p.price),
                 barberPercentage: Number(p.professionalPercentage), // compat UI
@@ -365,7 +368,13 @@ export async function POST(request: Request) {
                 companyId,
                 unitId,
                 name,
-                imageUrl, // ✅ pode ser null
+
+                /**
+                 * ✅ Prisma CreateInput exige string.
+                 * Enquanto o schema não for String?, enviamos '' quando não houver imagem.
+                 */
+                imageUrl: imageUrl ?? '',
+
                 description,
                 price,
                 professionalPercentage,
