@@ -84,6 +84,16 @@ export function ProductRow({ product }: ProductRowProps) {
 
     const hasAnyBadge = isFeatured || birthdayBenefitEnabled || hasLevelPrices;
 
+    // ✅ fallback caso a URL esteja quebrada (evita ícone de imagem quebrada)
+    const [imgFailed, setImgFailed] = React.useState(false);
+    const imgSrc = String(product.imageUrl ?? '').trim();
+    const shouldShowImg = Boolean(imgSrc) && !imgFailed;
+
+    React.useEffect(() => {
+        // quando trocar de produto/URL, reseta o erro
+        setImgFailed(false);
+    }, [imgSrc]);
+
     function handleToggleActive() {
         startTransition(async () => {
             try {
@@ -124,12 +134,13 @@ export function ProductRow({ product }: ProductRowProps) {
             <td className="px-4 py-3">
                 <div className="flex items-center gap-4">
                     <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border-primary bg-background-secondary">
-                        {product.imageUrl ? (
+                        {shouldShowImg ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                                src={product.imageUrl}
+                                src={imgSrc}
                                 alt={product.name}
                                 className="h-full w-full object-cover"
+                                onError={() => setImgFailed(true)}
                             />
                         ) : (
                             <div className="flex h-full w-full items-center justify-center text-[10px] text-content-secondary">

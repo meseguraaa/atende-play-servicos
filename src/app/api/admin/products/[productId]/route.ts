@@ -88,9 +88,13 @@ function isValidImageUrl(imageUrl: string) {
     const lowered = s.toLowerCase();
     if (lowered.startsWith('javascript:')) return false;
     if (lowered.startsWith('data:')) return false;
+    if (lowered.startsWith('blob:')) return false;
 
-    // nosso endpoint retorna /uploads/...
+    // legado: nginx /uploads/...
     if (s.startsWith('/uploads/')) return true;
+
+    // ✅ nosso upload atual retorna /media/...
+    if (s.startsWith('/media/')) return true;
 
     // fallback: URL absoluta
     if (lowered.startsWith('http://') || lowered.startsWith('https://'))
@@ -229,19 +233,25 @@ export async function PATCH(
         // - se vier undefined -> mantém current
         // - se vier string vazia -> permite "remover" (salva '')
         // - se vier preenchida -> valida
+        // - se vier blob:... -> IGNORA (é preview do browser) e mantém current
         let imageUrl: string = current.imageUrl ?? '';
         if (u.imageUrl !== undefined) {
-            const candidate = String(u.imageUrl ?? '').trim();
-            if (!candidate) {
+            const raw = String(u.imageUrl ?? '').trim();
+            const lowered = raw.toLowerCase();
+
+            if (!raw) {
                 imageUrl = ''; // remove imagem (mais seguro que null)
+            } else if (lowered.startsWith('blob:')) {
+                // ✅ preview local do browser, não é URL pública: mantém a imagem atual
+                imageUrl = current.imageUrl ?? '';
             } else {
-                if (!isValidImageUrl(candidate)) {
+                if (!isValidImageUrl(raw)) {
                     return jsonErr(
-                        'imageUrl inválida. Use /uploads/... (do nosso upload) ou uma URL http(s) válida.',
+                        'imageUrl inválida. Use /media/... (do nosso upload), /uploads/... (legado) ou uma URL http(s) válida.',
                         400
                     );
                 }
-                imageUrl = candidate;
+                imageUrl = raw;
             }
         }
 

@@ -16,7 +16,10 @@ export const metadata: Metadata = {
 export type ProductForRow = {
     id: string;
     name: string;
-    imageUrl: string | null;
+
+    // ✅ API sempre retorna string ('' quando não tem imagem)
+    imageUrl: string;
+
     description: string | null;
     price: number;
     barberPercentage: number | null;
