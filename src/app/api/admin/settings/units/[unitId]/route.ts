@@ -50,7 +50,6 @@ function jsonErr(error: string, status = 400, extra?: any) {
             ? { ok: false, error }
             : { ok: false, error, extra };
 
-    // ✅ sem `as const` (TS1355)
     return NextResponse.json(payload, { status });
 }
 
@@ -100,7 +99,6 @@ function getJwtSecretKey() {
 }
 
 async function requireAdminSession(): Promise<MinimalAdminSession> {
-    // ✅ Next 14/15: cookies() pode ser Promise (TS2339)
     const cookieStore = await cookies();
     const token = cookieStore.get(SESSION_COOKIE_NAME)?.value || '';
     if (!token) throw new Error('UNAUTHORIZED');
@@ -108,14 +106,31 @@ async function requireAdminSession(): Promise<MinimalAdminSession> {
     const { payload } = await jwtVerify(token, getJwtSecretKey());
     const p = payload as unknown as PainelTokenPayload;
 
-    // Ajuste aqui se sua role de admin tiver outro nome
-    if (p.role !== 'ADMIN') throw new Error('UNAUTHORIZED');
-
     if (!p.companyId) throw new Error('COMPANY_ID_MISSING');
+    if (!p.sub) throw new Error('UNAUTHORIZED');
+
+    // ⚠️ Em produção o JWT pode não carregar isOwner corretamente (token antigo, claim ausente, etc.)
+    // ✅ Fonte de verdade: banco
+    const user = await prisma.user.findFirst({
+        where: {
+            id: p.sub,
+            companyId: p.companyId,
+        },
+        select: {
+            id: true,
+            role: true,
+            isOwner: true,
+        },
+    });
+
+    if (!user) throw new Error('UNAUTHORIZED');
+
+    // Ajuste aqui se sua role admin tiver outro nome
+    if (user.role !== 'ADMIN') throw new Error('UNAUTHORIZED');
 
     return {
         companyId: p.companyId,
-        isOwner: Boolean(p.isOwner),
+        isOwner: Boolean(user.isOwner),
     };
 }
 
