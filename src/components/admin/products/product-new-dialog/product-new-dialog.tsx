@@ -1,4 +1,4 @@
-// src/components/product-new-dialog/product-new-dialog.tsx
+// src/components/admin/products/product-new-dialog/product-new-dialog.tsx
 'use client';
 
 import * as React from 'react';
@@ -92,6 +92,30 @@ function clampPct(raw: string): number | null {
     return Math.max(0, Math.min(100, Math.floor(n)));
 }
 
+function isValidProductImageUrl(raw: unknown): boolean {
+    const s = String(raw ?? '').trim();
+    if (!s) return false;
+
+    const lowered = s.toLowerCase();
+
+    // bloqueios óbvios
+    if (lowered.startsWith('javascript:')) return false;
+    if (lowered.startsWith('data:')) return false;
+    if (lowered.startsWith('blob:')) return false;
+
+    // ✅ nosso upload atual
+    if (s.startsWith('/media/')) return true;
+
+    // legado
+    if (s.startsWith('/uploads/')) return true;
+
+    // URL absoluta
+    if (lowered.startsWith('http://') || lowered.startsWith('https://'))
+        return true;
+
+    return false;
+}
+
 function IconInput(
     props: React.ComponentProps<typeof Input> & {
         icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
@@ -118,41 +142,6 @@ const INPUT_SECONDARY =
 
 const SELECT_TRIGGER =
     'h-10 w-full justify-between text-left font-normal bg-background-tertiary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0 focus-visible:border-border-brand';
-
-// ✅ Mantém o front alinhado com a validação do backend
-function normalizeUploadedImageUrl(raw: string): string {
-    const s = String(raw ?? '').trim();
-    if (!s) return '';
-
-    const lowered = s.toLowerCase();
-
-    // preview local do browser, nunca deve ir pro backend
-    if (lowered.startsWith('blob:')) return '';
-
-    // se vier "uploads/..." sem barra, normaliza
-    if (s.startsWith('uploads/')) return `/${s}`;
-
-    return s;
-}
-
-function isAcceptableImageUrlForApi(url: string): boolean {
-    const s = String(url ?? '').trim();
-    if (!s) return false;
-
-    const lowered = s.toLowerCase();
-    if (lowered.startsWith('javascript:')) return false;
-    if (lowered.startsWith('data:')) return false;
-    if (lowered.startsWith('blob:')) return false;
-
-    // backend aceita /uploads/...
-    if (s.startsWith('/uploads/')) return true;
-
-    // backend aceita URL absoluta
-    if (lowered.startsWith('http://') || lowered.startsWith('https://'))
-        return true;
-
-    return false;
-}
 
 export function ProductNewDialog({
     units = [],
@@ -281,18 +270,17 @@ export function ProductNewDialog({
                 return;
             }
 
-            const normalized = normalizeUploadedImageUrl(json.data.url);
+            const url = String(json.data.url ?? '').trim();
 
-            // ✅ proteção extra: se o upload devolver algo fora do padrão aceito no backend,
-            // não salvamos e mostramos um erro claro (pra não “travar” depois no POST)
-            if (!isAcceptableImageUrlForApi(normalized)) {
+            // ✅ AQUI estava o problema: agora aceita /media/ também
+            if (!isValidProductImageUrl(url)) {
                 toast.error(
-                    'Upload retornou uma URL inválida para o produto. O esperado é /uploads/... ou http(s).'
+                    'Upload retornou uma URL inválida para o produto. O esperado é /media/... (recomendado), /uploads/... (legado) ou http(s).'
                 );
                 return;
             }
 
-            setImageUrl(normalized);
+            setImageUrl(url);
             toast.success('Imagem enviada!');
         } catch {
             toast.error('Erro de rede ao fazer upload da imagem.');

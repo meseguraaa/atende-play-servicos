@@ -164,7 +164,8 @@ function isAcceptableImageUrlForApi(url: string): boolean {
     if (lowered.startsWith('data:')) return false;
     if (lowered.startsWith('blob:')) return false;
 
-    // backend aceita /uploads/...
+    // ✅ backend aceita /media/... (novo) e /uploads/... (legado)
+    if (s.startsWith('/media/')) return true;
     if (s.startsWith('/uploads/')) return true;
 
     // backend aceita URL absoluta
@@ -396,8 +397,9 @@ export function ProductEditDialog({ product }: { product: ProductForRow }) {
             // ✅ evita salvar URL fora do padrão aceito no backend
             if (!isAcceptableImageUrlForApi(normalized)) {
                 toast.error(
-                    'Upload retornou uma URL inválida para o produto. O esperado é /uploads/... ou http(s).'
+                    'Upload retornou uma URL inválida para o produto. O esperado é /media/... (recomendado), /uploads/... (legado) ou http(s).'
                 );
+
                 return;
             }
 
