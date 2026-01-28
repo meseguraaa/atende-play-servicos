@@ -91,9 +91,14 @@ function isValidImageUrl(imageUrl: string) {
     const lowered = s.toLowerCase();
     if (lowered.startsWith('javascript:')) return false;
     if (lowered.startsWith('data:')) return false;
+    if (lowered.startsWith('blob:')) return false;
 
-    // nosso endpoint retorna /uploads/...
+    // ✅ URLs internas aceitas
+    // legado /uploads/...
     if (s.startsWith('/uploads/')) return true;
+
+    // ✅ NOVO: nosso endpoint de upload retorna /media/...
+    if (s.startsWith('/media/')) return true;
 
     // fallback: URL absoluta
     if (lowered.startsWith('http://') || lowered.startsWith('https://'))

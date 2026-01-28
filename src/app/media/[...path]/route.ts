@@ -1,6 +1,6 @@
 // src/app/media/[...path]/route.ts
 import { NextResponse } from 'next/server';
-import { readFile } from 'fs/promises';
+import { readFile, stat } from 'fs/promises';
 import path from 'path';
 
 export const runtime = 'nodejs';
@@ -37,10 +37,27 @@ function safeJoin(base: string, parts: string[]) {
     const normalizedBase = path.resolve(base);
     const normalizedJoined = path.resolve(joined);
 
-    if (!normalizedJoined.startsWith(normalizedBase + path.sep)) {
+    // ✅ permite tanto "<base>/..." quanto exatamente "<base>" (edge case)
+    if (
+        normalizedJoined !== normalizedBase &&
+        !normalizedJoined.startsWith(normalizedBase + path.sep)
+    ) {
         throw new Error('invalid_path');
     }
+
     return normalizedJoined;
+}
+
+function sanitizeParts(parts: unknown): string[] {
+    if (!Array.isArray(parts) || parts.length === 0) return [];
+
+    // ✅ só aceita strings “normais”; remove vazios; bloqueia ".." explicitamente
+    const cleaned = parts
+        .map((p) => String(p ?? '').trim())
+        .filter(Boolean)
+        .filter((p) => p !== '.' && p !== '..');
+
+    return cleaned;
 }
 
 export async function GET(
@@ -48,28 +65,43 @@ export async function GET(
     ctx: { params: Promise<{ path: string[] }> }
 ) {
     try {
-        const { path: parts } = await ctx.params;
+        const { path: rawParts } = await ctx.params;
 
-        if (!Array.isArray(parts) || parts.length === 0) {
+        const parts = sanitizeParts(rawParts);
+        if (parts.length === 0) {
             return new NextResponse('Not Found', { status: 404 });
         }
 
         const absPath = safeJoin(UPLOADS_DIR, parts);
+
+        // ✅ garante que é arquivo (não diretório)
+        const st = await stat(absPath).catch(() => null);
+        if (!st || !st.isFile()) {
+            return new NextResponse('Not Found', { status: 404 });
+        }
+
         const buf = await readFile(absPath);
 
         const ext = path.extname(absPath);
         const contentType = mimeFromExt(ext);
 
-        // cache leve (pode ajustar depois)
         return new NextResponse(buf, {
             status: 200,
             headers: {
                 'Content-Type': contentType,
+                'Content-Disposition': 'inline',
                 'Cache-Control': 'public, max-age=31536000, immutable',
+                'X-Content-Type-Options': 'nosniff',
+                Vary: 'Accept-Encoding',
             },
         });
     } catch (e: any) {
-        // arquivo inexistente ou path inválido
+        const msg = String(e?.message || '');
+        if (msg === 'invalid_path') {
+            // path traversal / inválido
+            return new NextResponse('Forbidden', { status: 403 });
+        }
+
         return new NextResponse('Not Found', { status: 404 });
     }
 }
