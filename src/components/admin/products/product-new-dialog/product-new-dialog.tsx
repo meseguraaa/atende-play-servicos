@@ -92,8 +92,27 @@ function clampPct(raw: string): number | null {
     return Math.max(0, Math.min(100, Math.floor(n)));
 }
 
-function isValidProductImageUrl(raw: unknown): boolean {
+function normalizeProductImageUrl(raw: unknown): string {
     const s = String(raw ?? '').trim();
+    if (!s) return '';
+
+    const lowered = s.toLowerCase();
+
+    // preview local do browser, nunca deve ir pro backend
+    if (lowered.startsWith('blob:')) return '';
+
+    // se vier sem a barra inicial, normaliza
+    if (s.startsWith('media/')) return `/${s}`;
+    if (s.startsWith('uploads/')) return `/${s}`;
+
+    return s;
+}
+
+function isValidProductImageUrl(raw: unknown): boolean {
+    const s0 = String(raw ?? '').trim();
+    if (!s0) return false;
+
+    const s = normalizeProductImageUrl(s0);
     if (!s) return false;
 
     const lowered = s.toLowerCase();
@@ -270,7 +289,7 @@ export function ProductNewDialog({
                 return;
             }
 
-            const url = String(json.data.url ?? '').trim();
+            const url = normalizeProductImageUrl(json.data.url);
 
             // ✅ AQUI estava o problema: agora aceita /media/ também
             if (!isValidProductImageUrl(url)) {
