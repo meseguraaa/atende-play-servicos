@@ -22,6 +22,7 @@ type UnitPayload = {
 
 type MinimalAdminSession = {
     companyId: string;
+    userId: string;
     isOwner: boolean;
 };
 
@@ -44,7 +45,6 @@ function jsonOk<T>(data: T, init?: ResponseInit) {
 }
 
 function jsonErr(error: string, status = 400, extra?: any) {
-    // Em produção, não vaza detalhes
     const payload =
         process.env.NODE_ENV === 'production'
             ? { ok: false, error }
@@ -106,31 +106,37 @@ async function requireAdminSession(): Promise<MinimalAdminSession> {
     const { payload } = await jwtVerify(token, getJwtSecretKey());
     const p = payload as unknown as PainelTokenPayload;
 
-    if (!p.companyId) throw new Error('COMPANY_ID_MISSING');
     if (!p.sub) throw new Error('UNAUTHORIZED');
+    if (!p.companyId) throw new Error('COMPANY_ID_MISSING');
 
-    // ⚠️ Em produção o JWT pode não carregar isOwner corretamente (token antigo, claim ausente, etc.)
-    // ✅ Fonte de verdade: banco
-    const user = await prisma.user.findFirst({
-        where: {
-            id: p.sub,
-            companyId: p.companyId,
-        },
-        select: {
-            id: true,
-            role: true,
-            isOwner: true,
-        },
+    // ✅ Fonte de verdade para role ADMIN e flag isOwner (global)
+    const user = await prisma.user.findUnique({
+        where: { id: p.sub },
+        select: { id: true, role: true, isOwner: true, isActive: true },
     });
 
-    if (!user) throw new Error('UNAUTHORIZED');
-
-    // Ajuste aqui se sua role admin tiver outro nome
+    if (!user || !user.isActive) throw new Error('UNAUTHORIZED');
     if (user.role !== 'ADMIN') throw new Error('UNAUTHORIZED');
+
+    // ✅ Vínculo do usuário com a company vem de CompanyMember
+    const membership = await prisma.companyMember.findUnique({
+        where: {
+            companyId_userId: {
+                companyId: p.companyId,
+                userId: p.sub,
+            },
+        },
+        select: { id: true, role: true, isActive: true },
+    });
+
+    if (!membership || !membership.isActive) throw new Error('UNAUTHORIZED');
+
+    const isOwner = Boolean(user.isOwner) || membership.role === 'OWNER';
 
     return {
         companyId: p.companyId,
-        isOwner: Boolean(user.isOwner),
+        userId: p.sub,
+        isOwner,
     };
 }
 
