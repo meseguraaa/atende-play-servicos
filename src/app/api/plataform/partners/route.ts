@@ -83,10 +83,7 @@ function getHeaderCI(req: Request, key: string): string | null {
 }
 
 /**
- * ✅ resolve origin correto atrás de proxy (ngrok/vercel/etc)
- * - prioriza x-forwarded-proto + x-forwarded-host
- * - fallback host
- * - fallback final: req.url origin
+ * ✅ resolve origin correto atrás de proxy
  */
 function getRequestOrigin(req: Request): string {
     const protoRaw = getHeaderCI(req, 'x-forwarded-proto');
@@ -117,9 +114,8 @@ function getRequestOrigin(req: Request): string {
 /**
  * ✅ normaliza URL de imagem:
  * - se vier absoluta (http/https), mantém
- * - se vier "/uploads/..." vira "<origin>/uploads/..."
- * - se vier "uploads/..." (sem /) também normaliza
- * - se origin falhar, devolve ao menos o path
+ * - se vier "/media/..." ou "/uploads/..." vira "<origin>/..."
+ * - se vier "media/..." ou "uploads/..." (sem /) também normaliza
  */
 function normalizeImageUrl(origin: string, raw: unknown): string | null {
     const s = String(raw ?? '').trim();
@@ -140,14 +136,17 @@ function isValidLogoUrl(logoUrl: string) {
     const lowered = s.toLowerCase();
     if (lowered.startsWith('javascript:')) return false;
     if (lowered.startsWith('data:')) return false;
+    if (lowered.startsWith('blob:')) return false;
 
-    // dev/prod: nosso endpoint retorna /uploads/...
+    // ✅ novos uploads
+    if (s.startsWith('/media/')) return true;
+    if (s.startsWith('media/')) return true;
+
+    // ✅ legado
     if (s.startsWith('/uploads/')) return true;
-
-    // tolera "uploads/..." sem "/"
     if (s.startsWith('uploads/')) return true;
 
-    // fallback: URL absoluta
+    // ✅ URL absoluta
     if (lowered.startsWith('http://') || lowered.startsWith('https://'))
         return true;
 
@@ -182,7 +181,6 @@ function normalizeCompanyIds(raw: unknown): string[] {
     if (!Array.isArray(raw)) return [];
     const ids = raw.map((v) => String(v ?? '').trim()).filter(Boolean);
 
-    // unique preservando ordem
     const seen = new Set<string>();
     const out: string[] = [];
     for (const id of ids) {
@@ -195,13 +193,6 @@ function normalizeCompanyIds(raw: unknown): string[] {
 
 /**
  * GET /api/plataform/partners
- * ✅ Rota de PLATAFORMA (AtendePlay):
- * - lista parceiros globais (catálogo)
- * - filtros:
- *   ?q=texto (nome)
- *   ?active=1|0
- *
- * ✅ Normaliza logoUrl para absoluta quando for "/uploads/..."
  */
 export async function GET(request: Request) {
     const auth = await requirePlatformForModuleApi('PARTNERS');
@@ -247,8 +238,6 @@ export async function GET(request: Request) {
                 sortOrder: true,
                 createdAt: true,
                 updatedAt: true,
-
-                // ✅ para UI editar SELECTED
                 companies: {
                     where: { isEnabled: true },
                     select: { companyId: true },
@@ -259,12 +248,9 @@ export async function GET(request: Request) {
         return jsonOk({
             partners: partners.map((p) => {
                 const ctaUrl = normalizeCtaUrl(p.ctaUrl);
-
                 const visibilityMode = normalizeVisibilityMode(
                     p.visibilityMode
                 );
-
-                // ✅ aqui é o “pulo do gato” 🐈‍⬛: deixa pronto pro app/UI
                 const logoUrl = normalizeImageUrl(origin, p.logoUrl);
 
                 return {
@@ -283,7 +269,6 @@ export async function GET(request: Request) {
                         min: 0,
                         max: 100000,
                     }),
-                    // ✅ só faz sentido quando SELECTED
                     companyIds:
                         visibilityMode === 'SELECTED'
                             ? p.companies.map((c) => c.companyId)
@@ -301,9 +286,6 @@ export async function GET(request: Request) {
 
 /**
  * POST /api/plataform/partners
- * ✅ Rota de PLATAFORMA (AtendePlay):
- * - cria parceiro
- * - ✅ se visibilityMode=SELECTED, grava vínculos em PartnerVisibility
  */
 export async function POST(request: Request) {
     const auth = await requirePlatformForModuleApi('PARTNERS');
@@ -322,14 +304,12 @@ export async function POST(request: Request) {
         if (!logoUrl) return jsonErr('logoUrl é obrigatório.');
         if (!isValidLogoUrl(logoUrl))
             return jsonErr(
-                'logoUrl inválida. Envie uma imagem (upload) ou forneça uma URL http(s) válida.',
+                'logoUrl inválida. Envie uma imagem (/media ou /uploads) ou forneça uma URL http(s) válida.',
                 400
             );
 
         const logoKey = normalizeNullableString(body.logoKey);
-
         const discountPct = toInt(body.discountPct, 0, { min: 0, max: 100 });
-
         const description = normalizeNullableString(body.description);
         const rules = normalizeNullableString(body.rules);
 
@@ -348,12 +328,9 @@ export async function POST(request: Request) {
             typeof body.isActive === 'boolean' ? body.isActive : true;
 
         const visibilityMode = normalizeVisibilityMode(body.visibilityMode);
-
         const sortOrder = toInt(body.sortOrder, 100, { min: 0, max: 100000 });
-
         const companyIds = normalizeCompanyIds(body.companyIds);
 
-        // ✅ regra do SELECTED
         if (visibilityMode === 'SELECTED' && companyIds.length === 0) {
             return jsonErr(
                 'visibilityMode=SELECTED exige pelo menos 1 empresa em companyIds.',
@@ -372,9 +349,8 @@ export async function POST(request: Request) {
                 ctaUrl,
                 ctaLabel,
                 isActive,
-                visibilityMode: visibilityMode as any, // prisma enum
+                visibilityMode: visibilityMode as any,
                 sortOrder,
-
                 ...(visibilityMode === 'SELECTED'
                     ? {
                           companies: {

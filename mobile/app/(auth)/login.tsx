@@ -112,8 +112,9 @@ export default function Login() {
     const [password, setPassword] = useState('');
     const [showPass, setShowPass] = useState(false);
 
-    const apiOk = useMemo(() => Boolean(API_BASE_URL), []);
-    const companyOk = useMemo(() => Boolean(COMPANY_ID), []);
+    // ✅ NEW: não “congela” o valor na primeira render
+    const apiOk = useMemo(() => Boolean(API_BASE_URL), [API_BASE_URL]);
+    const companyOk = useMemo(() => Boolean(COMPANY_ID), [COMPANY_ID]);
 
     const emailOk = useMemo(() => normalizeEmail(email).length > 3, [email]);
     const passOk = useMemo(
@@ -125,14 +126,17 @@ export default function Login() {
         if (loading) return;
 
         try {
-            if (!apiOk || !companyOk) return;
+            if (!apiOk) return; // ✅ NEW: não bloqueia só por companyId (fallback existe)
 
             setLoading(true);
 
             const start = new URL(
                 `${API_BASE_URL}/api/mobile/auth/google/start`
             );
-            start.searchParams.set('companyId', COMPANY_ID);
+
+            // ✅ NEW: só manda companyId se existir (mas com env setado, vai existir)
+            if (COMPANY_ID) start.searchParams.set('companyId', COMPANY_ID);
+
             start.searchParams.set('redirect_uri', String(redirectUri));
 
             const result = await WebBrowser.openAuthSessionAsync(
@@ -148,7 +152,9 @@ export default function Login() {
 
             // ✅ auth-redirect devolve token JWT e params extras
             const token = String(url.searchParams.get('token') || '').trim();
-            const companyId =
+
+            // ✅ NEW: companyId resolve com prioridade do redirect; cai no env se faltar
+            const resolvedCompanyId =
                 String(url.searchParams.get('companyId') || '').trim() ||
                 COMPANY_ID;
 
@@ -178,10 +184,10 @@ export default function Login() {
             const payload = ensureCompanyIdInSession(
                 {
                     token,
-                    companyId,
+                    companyId: resolvedCompanyId || null,
                     profile_complete,
                 },
-                companyId
+                resolvedCompanyId
             );
 
             await signIn(JSON.stringify(payload));
@@ -199,7 +205,16 @@ export default function Login() {
         const e = normalizeEmail(email);
         const p = String(password ?? '');
 
-        if (!apiOk || !companyOk) return;
+        if (!apiOk) return; // ✅ NEW
+
+        // ✅ NEW: company pode vir do env, se não vier, alerta claro
+        if (!COMPANY_ID) {
+            Alert.alert(
+                'Login',
+                'Empresa não configurada no app (EXPO_PUBLIC_COMPANY_ID).'
+            );
+            return;
+        }
 
         if (!e) {
             Alert.alert('Login', 'Informe seu email.');
@@ -224,7 +239,7 @@ export default function Login() {
                 body: JSON.stringify({
                     email: e,
                     password: p,
-                    companyId: COMPANY_ID, // pode ser slug também, se quiser
+                    companyId: COMPANY_ID,
                 }),
             });
 
@@ -268,7 +283,8 @@ export default function Login() {
     const keyboardOffset =
         UI.spacing.headerH + insets.top + (Platform.OS === 'ios' ? 8 : 0);
 
-    const canSignup = apiOk && companyOk && !loading;
+    // ✅ NEW: signup não precisa travar por companyOk aqui, mas mantém UX no DEV
+    const canSignup = apiOk && !loading;
     const canLogin = apiOk && companyOk && emailOk && passOk && !loading;
 
     return (
