@@ -121,6 +121,7 @@ export async function proxy(req: NextRequest) {
     const { pathname } = req.nextUrl;
 
     // ✅ ignora assets e APIs
+    // IMPORTANTÍSSIMO: /media também precisa passar direto (senão quebra imagens do app)
     if (
         pathname.startsWith('/api') ||
         pathname.startsWith('/_next') ||
@@ -162,7 +163,6 @@ export async function proxy(req: NextRequest) {
         const ok = await isValidPainelSessionForTenant(token, safeTenantSlug);
 
         // ✅ token inválido/tenant diferente: volta pro login com motivo explícito
-        // (não deleta cookie aqui, porque cookie com domain compartilhado pode não ser removido corretamente no Edge)
         if (!ok) {
             return redirectToLogin(req, 'session_invalid');
         }
