@@ -67,6 +67,9 @@ type CompanyOption = {
     isActive?: boolean;
 };
 
+const MAX_UPLOAD_MB = 5;
+const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
+
 function clampPct(raw: string): number | null {
     const s = String(raw ?? '').trim();
     if (!s) return null;
@@ -106,6 +109,30 @@ function initials(name: string) {
         .join('')
         .slice(0, 2)
         .toUpperCase();
+}
+
+function isValidPartnerLogoUrl(raw: unknown): boolean {
+    const s = String(raw ?? '').trim();
+    if (!s) return false;
+
+    const lowered = s.toLowerCase();
+
+    // bloqueios óbvios
+    if (lowered.startsWith('javascript:')) return false;
+    if (lowered.startsWith('data:')) return false;
+    if (lowered.startsWith('blob:')) return false;
+
+    // ✅ nosso upload atual
+    if (s.startsWith('/media/')) return true;
+
+    // ✅ legado
+    if (s.startsWith('/uploads/')) return true;
+
+    // URL absoluta
+    if (lowered.startsWith('http://') || lowered.startsWith('https://'))
+        return true;
+
+    return false;
 }
 
 function IconInput(
@@ -276,7 +303,7 @@ export function PartnerNewDialog() {
         };
     }, [open]);
 
-    // ✅ se trocar pra ALL, limpa seleção (não faz sentido carregar seleção escondida)
+    // ✅ se trocar pra ALL, limpa seleção
     React.useEffect(() => {
         if (visibilityMode !== 'ALL') return;
         if (selectedCompanyIds.length === 0) return;
@@ -310,7 +337,6 @@ export function PartnerNewDialog() {
     const selectedInvalid =
         visibilityMode === 'SELECTED' && selectedCompanyIds.length === 0;
 
-    // ✅ se SELECTED e ainda tá carregando a lista, bloqueia o create (pra não criar sem vínculo)
     const loadingSelectedData =
         visibilityMode === 'SELECTED' && companiesLoading;
 
@@ -321,15 +347,13 @@ export function PartnerNewDialog() {
         loadingSelectedData;
 
     async function uploadImage(file: File) {
-        // ✅ validações rápidas (alinhadas com os outros módulos)
         if (!file.type?.startsWith('image/')) {
             toast.error('Selecione um arquivo de imagem.');
             return;
         }
 
-        const maxBytes = 5 * 1024 * 1024;
-        if (file.size > maxBytes) {
-            toast.error('Imagem muito grande. Máximo: 5MB.');
+        if (file.size > MAX_UPLOAD_BYTES) {
+            toast.error(`Imagem muito grande. Máximo: ${MAX_UPLOAD_MB}MB.`);
             return;
         }
 
@@ -356,8 +380,18 @@ export function PartnerNewDialog() {
                 return;
             }
 
-            setLogoUrl(json.data.url);
-            setLogoKey(json.data.key ?? '');
+            const url = String(json.data.url ?? '').trim();
+
+            // ✅ valida retorno do upload (aceita /media, /uploads, http(s))
+            if (!isValidPartnerLogoUrl(url)) {
+                toast.error(
+                    'Upload retornou uma URL inválida para o parceiro. O esperado é /media/... (recomendado), /uploads/... (legado) ou http(s).'
+                );
+                return;
+            }
+
+            setLogoUrl(url);
+            setLogoKey(String(json.data.key ?? '').trim());
             setPreviewBroken(false);
             toast.success('Logo enviada!');
         } catch {
@@ -392,7 +426,6 @@ export function PartnerNewDialog() {
             visibilityMode,
             sortOrder: Number.isFinite(so as any) ? Number(so) : 100,
 
-            // ✅ usado quando SELECTED
             companyIds,
         };
     }
@@ -405,6 +438,10 @@ export function PartnerNewDialog() {
             }
             if (selectedInvalid) {
                 toast.error('Selecione pelo menos 1 empresa para SELECTED.');
+                return;
+            }
+            if (!logoUrl.trim()) {
+                toast.error('Logo é obrigatória.');
                 return;
             }
             toast.error('Preencha os campos obrigatórios antes de criar.');
@@ -420,6 +457,14 @@ export function PartnerNewDialog() {
 
         if (!payload.logoUrl) {
             toast.error('Logo é obrigatória.');
+            return;
+        }
+
+        // ✅ valida também no client (pra não depender do backend)
+        if (!isValidPartnerLogoUrl(payload.logoUrl)) {
+            toast.error(
+                'logoUrl inválida. Envie uma imagem (/media ou /uploads) ou forneça uma URL http(s) válida.'
+            );
             return;
         }
 
@@ -707,7 +752,6 @@ export function PartnerNewDialog() {
                             </SelectContent>
                         </Select>
 
-                        {/* UI de empresas quando SELECTED */}
                         {visibilityMode === 'SELECTED' ? (
                             <div className="mt-3 space-y-2">
                                 <div className="flex items-center justify-between gap-2">

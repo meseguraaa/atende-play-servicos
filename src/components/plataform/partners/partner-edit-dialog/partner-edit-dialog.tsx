@@ -90,6 +90,9 @@ type CompanyOption = {
     isActive?: boolean;
 };
 
+const MAX_UPLOAD_MB = 5;
+const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
+
 function clampPct(raw: string): number | null {
     const s = String(raw ?? '').trim();
     if (!s) return null;
@@ -129,6 +132,30 @@ function initials(name: string) {
         .join('')
         .slice(0, 2)
         .toUpperCase();
+}
+
+function isValidPartnerLogoUrl(raw: unknown): boolean {
+    const s = String(raw ?? '').trim();
+    if (!s) return false;
+
+    const lowered = s.toLowerCase();
+
+    // bloqueios óbvios
+    if (lowered.startsWith('javascript:')) return false;
+    if (lowered.startsWith('data:')) return false;
+    if (lowered.startsWith('blob:')) return false;
+
+    // ✅ nosso upload atual
+    if (s.startsWith('/media/')) return true;
+
+    // legado
+    if (s.startsWith('/uploads/')) return true;
+
+    // URL absoluta
+    if (lowered.startsWith('http://') || lowered.startsWith('https://'))
+        return true;
+
+    return false;
 }
 
 function IconInput(
@@ -220,12 +247,12 @@ async function fetchCompaniesPlatform(): Promise<CompanyOption[]> {
 /**
  * Busca companyIds já vinculados ao parceiro (para pré-seleção no EDIT).
  *
- * ✅ Agora existe GET /api/plataform/partners/:partnerId
- * (retorna { ok:true, data:{ partner, companyIds } }).
+ * ✅ GET /api/plataform/partners/:partnerId
+ * retorna { ok:true, data:{ partner, companyIds } }.
  */
 async function fetchPartnerCompanyIds(partnerId: string): Promise<string[]> {
     const urls = [
-        `/api/plataform/partners/${partnerId}`, // ✅ principal
+        `/api/plataform/partners/${partnerId}`,
         `/api/plataform/partners/${partnerId}/companies`,
         `/api/plataform/partners/${partnerId}/visibility`,
     ];
@@ -238,7 +265,6 @@ async function fetchPartnerCompanyIds(partnerId: string): Promise<string[]> {
             const json = await safeReadJson<any>(res);
             if (!json) continue;
 
-            // formato esperado: { ok:true, data:{ companyIds: [] } }
             const ids1 =
                 json?.companyIds ??
                 json?.data?.companyIds ??
@@ -253,7 +279,6 @@ async function fetchPartnerCompanyIds(partnerId: string): Promise<string[]> {
                 return Array.from(new Set(ids));
             }
 
-            // fallback: lista de objetos [{companyId}] ou [{id}]
             const ids2 =
                 json?.companies ??
                 json?.data?.companies ??
@@ -338,7 +363,6 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
     React.useEffect(() => {
         if (!open) return;
 
-        // reseta pros valores atuais (evita stale state)
         setName(partner.name ?? '');
         setLogoUrl(partner.logoUrl ?? '');
 
@@ -405,11 +429,8 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
                 }
 
                 setCompanies(list);
-
-                // ✅ pré-seleciona ids vindos do backend
                 setSelectedCompanyIds(ids);
 
-                // ✅ se já está em SELECTED no parceiro, mantém; senão, fica ALL
                 const v = String(partner.visibilityMode ?? 'ALL')
                     .trim()
                     .toUpperCase();
@@ -431,7 +452,6 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open, partner.id]);
 
-    // ✅ se mudar logoUrl, reseta o "broken" do preview
     React.useEffect(() => {
         setPreviewBroken(false);
     }, [logoUrl]);
@@ -455,15 +475,13 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
     }, [companies, companiesQuery]);
 
     async function uploadImage(file: File) {
-        // ✅ validações rápidas (alinhadas com os outros módulos)
         if (!file.type?.startsWith('image/')) {
             toast.error('Selecione um arquivo de imagem.');
             return;
         }
 
-        const maxBytes = 5 * 1024 * 1024;
-        if (file.size > maxBytes) {
-            toast.error('Imagem muito grande. Máximo: 5MB.');
+        if (file.size > MAX_UPLOAD_BYTES) {
+            toast.error(`Imagem muito grande. Máximo: ${MAX_UPLOAD_MB}MB.`);
             return;
         }
 
@@ -471,8 +489,6 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
         try {
             const fd = new FormData();
             fd.append('file', file);
-
-            // ✅ parceiros são globais (mas upload permanece em /api/admin/uploads)
             fd.append('module', 'PARTNERS');
 
             const res = await fetch('/api/admin/uploads', {
@@ -492,7 +508,17 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
                 return;
             }
 
-            setLogoUrl(json.data.url);
+            const url = String(json.data.url ?? '').trim();
+
+            // ✅ valida retorno do upload (aceita /media, /uploads, http(s))
+            if (!isValidPartnerLogoUrl(url)) {
+                toast.error(
+                    'Upload retornou uma URL inválida para o parceiro. O esperado é /media/... (recomendado), /uploads/... (legado) ou http(s).'
+                );
+                return;
+            }
+
+            setLogoUrl(url);
             setLogoKey(String(json.data.key ?? '').trim());
             setPreviewBroken(false);
 
@@ -515,7 +541,6 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
     const selectedInvalid =
         visibilityMode === 'SELECTED' && selectedCompanyIds.length === 0;
 
-    // ✅ só bloqueia por companiesLoading quando estiver em SELECTED
     const loadingSelectedData =
         visibilityMode === 'SELECTED' && companiesLoading;
 
@@ -549,7 +574,6 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
             visibilityMode,
             sortOrder: Number.isFinite(so as any) ? Number(so) : 100,
 
-            // ✅ usado quando SELECTED
             companyIds,
         };
     }
@@ -564,11 +588,23 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
                 toast.error('Selecione pelo menos 1 empresa para SELECTED.');
                 return;
             }
+            if (!logoUrl.trim()) {
+                toast.error('Logo é obrigatória.');
+                return;
+            }
             toast.error('Preencha os campos obrigatórios antes de salvar.');
             return;
         }
 
         const payload = buildPayload();
+
+        // ✅ valida logo também no client
+        if (!isValidPartnerLogoUrl(payload.logoUrl)) {
+            toast.error(
+                'logoUrl inválida. Envie uma imagem (/media ou /uploads) ou forneça uma URL http(s) válida.'
+            );
+            return;
+        }
 
         const pct = Number(payload.discountPct);
         if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
@@ -768,7 +804,6 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
                             </Button>
                         </div>
 
-                        {/* ✅ preview com fallback se quebrar */}
                         {previewUrl ? (
                             <div className="overflow-hidden rounded-xl border border-border-primary bg-background-tertiary">
                                 <div className="h-40 w-full flex items-center justify-center">
@@ -866,8 +901,9 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
                                 placeholder="https://... ou www..."
                                 className={INPUT_SECONDARY}
                             />
-                            {/* ✅ corrigido: LinkIcon (não existe Link no lucide import) */}
-                            {/* (mantemos o IconInput acima com cast, mas vamos trocar abaixo no retorno real) */}
+                            <p className="text-[11px] text-content-secondary/70">
+                                Aceita http(s) e “www.” (o servidor normaliza).
+                            </p>
                         </div>
 
                         <div className="space-y-2">
@@ -886,7 +922,7 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
                         </div>
                     </div>
 
-                    {/* VISIBILIDADE + EMPRESAS (igual ao NEW) */}
+                    {/* VISIBILIDADE + EMPRESAS */}
                     <div className="space-y-2 rounded-xl border border-border-primary bg-background-tertiary p-3">
                         <div className="flex items-start justify-between gap-4">
                             <div>
@@ -1112,14 +1148,3 @@ export function PartnerEditDialog({ partner }: { partner: PartnerForRow }) {
         </Dialog>
     );
 }
-
-/**
- * ✅ Pequena correção importante:
- * No JSX acima eu deixei um IconInput com `icon={Link as any}` apenas pra não quebrar
- * durante a colagem, mas o correto é usar `LinkIcon` (que já está importado).
- *
- * Troque ESSA LINHA:
- *   icon={Link as any}
- * POR:
- *   icon={LinkIcon}
- */

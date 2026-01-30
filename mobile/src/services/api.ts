@@ -45,17 +45,21 @@ function clearMemoryCompany() {
 /**
  * Base URL do backend
  *
- * ✅ Regra: EXPO_PUBLIC_API_URL define o backend em DEV/PROD.
- * Em DEV, se não houver EXPO_PUBLIC_API_URL, usa localhost.
+ * ✅ Regra (multi-app): se EXPO_PUBLIC_API_URL existir, ela manda.
+ * ✅ Caso contrário, este app é "hardcoded" para o tenant atendeplay.
+ *
+ * Importante:
+ * - NUNCA usar localhost como fallback (quebra no celular físico).
+ * - Mantemos override por env pra você gerar outros apps sem alterar código.
  */
-const API_URL =
-    process.env.EXPO_PUBLIC_API_URL?.trim() ||
-    (__DEV__ ? 'http://localhost:3000' : '');
+const DEFAULT_API_URL = 'https://atendeplay.atendeplay.com.br';
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL?.trim() || DEFAULT_API_URL;
 
 // Em produção, não aceitamos base vazia.
 if (!API_URL) {
     throw new Error(
-        '[api] EXPO_PUBLIC_API_URL é obrigatório em produção. Defina no .env do app.'
+        '[api] EXPO_PUBLIC_API_URL é obrigatório (ou use DEFAULT_API_URL).'
     );
 }
 

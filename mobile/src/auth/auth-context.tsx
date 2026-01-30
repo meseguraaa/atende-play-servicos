@@ -286,6 +286,12 @@ async function readStoredCompanyId(): Promise<string | null> {
     }
 }
 
+// ✅ NEW: fallback do env (o “tenant fixo” do app)
+function readEnvCompanyId(): string | null {
+    const raw = (process.env.EXPO_PUBLIC_COMPANY_ID || '').trim();
+    return raw.length ? raw : null;
+}
+
 function sleep(ms: number) {
     return new Promise((r) => setTimeout(r, ms));
 }
@@ -526,6 +532,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const meCompanyId = pickCompanyId(u);
             if (meCompanyId) {
                 await setCompanyId(meCompanyId);
+            } else {
+                // ✅ NEW: se o /me não retornar, garante env como fallback
+                const envCompanyId = readEnvCompanyId();
+                if (envCompanyId) await setCompanyId(envCompanyId);
             }
 
             await ensureAvatarReady(u?.image ?? null);
@@ -552,8 +562,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             try {
                 const stored = await SecureStore.getItemAsync(AUTH_STORAGE_KEY);
                 const storedCompanyId = await readStoredCompanyId();
+                const envCompanyId = readEnvCompanyId(); // ✅ NEW
 
-                lastCompanyIdPersistedRef.current = storedCompanyId;
+                const initialCompanyId = storedCompanyId ?? envCompanyId; // ✅ NEW
+
+                // ✅ NEW: se não tinha no SecureStore, persiste o env pra evitar “null” em boots futuros
+                if (!storedCompanyId && envCompanyId) {
+                    try {
+                        await SecureStore.setItemAsync(
+                            COMPANY_ID_STORAGE_KEY,
+                            envCompanyId
+                        );
+                    } catch {}
+                }
+
+                lastCompanyIdPersistedRef.current = initialCompanyId;
 
                 if (!stored) {
                     if (!alive) return;
@@ -563,13 +586,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     setSessionJson(null);
                     setAvatarReady(false);
 
-                    setCompanyIdState(storedCompanyId);
-                    companyIdRef.current = storedCompanyId;
+                    setCompanyIdState(initialCompanyId);
+                    companyIdRef.current = initialCompanyId;
 
                     // ✅ injeta em memória (mesmo sem sessão)
                     setApiAuthToken(null);
-                    setApiCompanyId(storedCompanyId);
-                    tryApplyCompanyIdToApi(storedCompanyId);
+                    setApiCompanyId(initialCompanyId);
+                    tryApplyCompanyIdToApi(initialCompanyId);
 
                     return;
                 }
@@ -590,12 +613,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     setSessionJson(null);
                     setAvatarReady(false);
 
-                    setCompanyIdState(storedCompanyId);
-                    companyIdRef.current = storedCompanyId;
+                    setCompanyIdState(initialCompanyId);
+                    companyIdRef.current = initialCompanyId;
 
                     setApiAuthToken(null);
-                    setApiCompanyId(storedCompanyId);
-                    tryApplyCompanyIdToApi(storedCompanyId);
+                    setApiCompanyId(initialCompanyId);
+                    tryApplyCompanyIdToApi(initialCompanyId);
 
                     return;
                 }
@@ -619,11 +642,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 })();
 
                 const fromUser = s.user ? pickCompanyId(s.user) : null;
+
+                // ✅ NEW: env como fallback final
                 const resolvedCompanyId =
                     s.companyId ||
                     fromSessionObj ||
                     fromUser ||
-                    storedCompanyId;
+                    storedCompanyId ||
+                    envCompanyId;
 
                 setCompanyIdState(resolvedCompanyId);
                 companyIdRef.current = resolvedCompanyId;
@@ -656,14 +682,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setAvatarReady(false);
 
                 const storedCompanyId = await readStoredCompanyId();
-                lastCompanyIdPersistedRef.current = storedCompanyId;
+                const envCompanyId = readEnvCompanyId(); // ✅ NEW
+                const fallbackCompanyId = storedCompanyId ?? envCompanyId; // ✅ NEW
 
-                setCompanyIdState(storedCompanyId);
-                companyIdRef.current = storedCompanyId;
+                lastCompanyIdPersistedRef.current = fallbackCompanyId;
+
+                setCompanyIdState(fallbackCompanyId);
+                companyIdRef.current = fallbackCompanyId;
 
                 setApiAuthToken(null);
-                setApiCompanyId(storedCompanyId);
-                tryApplyCompanyIdToApi(storedCompanyId);
+                setApiCompanyId(fallbackCompanyId);
+                tryApplyCompanyIdToApi(fallbackCompanyId);
             } finally {
                 if (alive) setIsBooting(false);
             }
@@ -785,6 +814,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const meCompanyId = pickCompanyId(u);
                 if (meCompanyId) {
                     await setCompanyId(meCompanyId);
+                } else {
+                    // ✅ NEW: fallback env quando /me não traz
+                    const envCompanyId = readEnvCompanyId();
+                    if (envCompanyId) await setCompanyId(envCompanyId);
                 }
 
                 await ensureAvatarReady(u?.image ?? null);
@@ -907,20 +940,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 })();
 
                 const fromUser = s.user ? pickCompanyId(s.user) : null;
+
+                // ✅ NEW: env como fallback final no signIn
                 const resolvedCompanyId =
-                    s.companyId || fromLoginObj || fromUser || null;
+                    s.companyId ||
+                    fromLoginObj ||
+                    fromUser ||
+                    readEnvCompanyId() ||
+                    null;
 
                 if (resolvedCompanyId) {
                     await setCompanyId(resolvedCompanyId);
                 } else {
                     const storedCompanyId = await readStoredCompanyId();
-                    lastCompanyIdPersistedRef.current = storedCompanyId;
+                    const envCompanyId = readEnvCompanyId(); // ✅ NEW
+                    const fallbackCompanyId = storedCompanyId ?? envCompanyId; // ✅ NEW
 
-                    setCompanyIdState(storedCompanyId);
-                    companyIdRef.current = storedCompanyId;
+                    lastCompanyIdPersistedRef.current = fallbackCompanyId;
 
-                    setApiCompanyId(storedCompanyId);
-                    tryApplyCompanyIdToApi(storedCompanyId);
+                    setCompanyIdState(fallbackCompanyId);
+                    companyIdRef.current = fallbackCompanyId;
+
+                    setApiCompanyId(fallbackCompanyId);
+                    tryApplyCompanyIdToApi(fallbackCompanyId);
+
+                    // ✅ NEW: persiste env se precisar
+                    if (!storedCompanyId && envCompanyId) {
+                        try {
+                            await SecureStore.setItemAsync(
+                                COMPANY_ID_STORAGE_KEY,
+                                envCompanyId
+                            );
+                        } catch {}
+                    }
                 }
 
                 avatarRunIdRef.current += 1;

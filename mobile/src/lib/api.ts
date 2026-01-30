@@ -7,14 +7,21 @@ const AUTH_STORAGE_KEY = 'auth_session';
 /**
  * ✅ Mesma regra do src/services/api.ts
  * Evita autenticar num host e chamar APIs em outro.
+ *
+ * ✅ Regra (multi-app): se EXPO_PUBLIC_API_URL existir, ela manda.
+ * ✅ Caso contrário, este app é "hardcoded" para o tenant atendeplay.
+ *
+ * Importante:
+ * - NUNCA usar localhost como fallback (quebra no celular físico).
+ * - Mantemos override por env pra você gerar outros apps sem alterar código.
  */
-const API_URL =
-    process.env.EXPO_PUBLIC_API_URL?.trim() ||
-    (__DEV__ ? 'http://localhost:3000' : '');
+const DEFAULT_API_URL = 'https://atendeplay.atendeplay.com.br';
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL?.trim() || DEFAULT_API_URL;
 
 if (!API_URL) {
     throw new Error(
-        '[apiFetch] EXPO_PUBLIC_API_URL é obrigatório em produção. Defina no .env do app.'
+        '[apiFetch] EXPO_PUBLIC_API_URL é obrigatório (ou use DEFAULT_API_URL).'
     );
 }
 

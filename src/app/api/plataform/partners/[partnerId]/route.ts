@@ -12,7 +12,6 @@ type PartnerVisibilityMode = 'ALL' | 'SELECTED';
 type UpdatePartnerPayload = {
     name?: string;
 
-    // ✅ upload já existe
     logoUrl?: string | null;
     logoKey?: string | null;
 
@@ -24,11 +23,10 @@ type UpdatePartnerPayload = {
     ctaUrl?: string;
     ctaLabel?: string | null;
 
-    isActive?: boolean; // (não usado aqui, mas deixo compat)
+    isActive?: boolean;
     visibilityMode?: PartnerVisibilityMode;
     sortOrder?: number | string;
 
-    // ✅ usado quando visibilityMode = SELECTED
     companyIds?: string[];
 };
 
@@ -79,7 +77,6 @@ function toInt(
     return Math.max(min, Math.min(max, i));
 }
 
-// ✅ header case-insensitive
 function getHeaderCI(req: Request, key: string): string | null {
     const target = key.toLowerCase();
     for (const [k, v] of req.headers.entries()) {
@@ -91,12 +88,6 @@ function getHeaderCI(req: Request, key: string): string | null {
     return null;
 }
 
-/**
- * ✅ resolve origin correto atrás de proxy (ngrok/vercel/etc)
- * - prioriza x-forwarded-proto + x-forwarded-host
- * - fallback host
- * - fallback final: req.url origin
- */
 function getRequestOrigin(req: Request): string {
     const protoRaw = getHeaderCI(req, 'x-forwarded-proto');
     const hostRaw =
@@ -123,13 +114,6 @@ function getRequestOrigin(req: Request): string {
     }
 }
 
-/**
- * ✅ normaliza URL de imagem:
- * - se vier absoluta (http/https), mantém
- * - se vier "/uploads/..." vira "<origin>/uploads/..."
- * - se vier "uploads/..." (sem /) também normaliza
- * - se origin falhar, devolve ao menos o path
- */
 function normalizeImageUrl(origin: string, raw: unknown): string | null {
     const s = String(raw ?? '').trim();
     if (!s) return null;
@@ -149,14 +133,17 @@ function isValidLogoUrl(logoUrl: string) {
     const lowered = s.toLowerCase();
     if (lowered.startsWith('javascript:')) return false;
     if (lowered.startsWith('data:')) return false;
+    if (lowered.startsWith('blob:')) return false;
 
-    // dev/prod: nosso endpoint retorna /uploads/...
+    // ✅ novos uploads
+    if (s.startsWith('/media/')) return true;
+    if (s.startsWith('media/')) return true;
+
+    // ✅ legado
     if (s.startsWith('/uploads/')) return true;
-
-    // tolera "uploads/..." sem "/"
     if (s.startsWith('uploads/')) return true;
 
-    // fallback: URL absoluta
+    // ✅ URL absoluta
     if (lowered.startsWith('http://') || lowered.startsWith('https://'))
         return true;
 
@@ -169,13 +156,10 @@ function normalizeCtaUrl(raw: unknown): string | null {
 
     const lower = s.toLowerCase();
 
-    // bloqueios óbvios
     if (lower.startsWith('javascript:')) return null;
     if (lower.startsWith('data:')) return null;
 
     if (lower.startsWith('http://') || lower.startsWith('https://')) return s;
-
-    // se vier "www.x.com" sem protocolo
     if (lower.startsWith('www.')) return `https://${s}`;
 
     return null;
@@ -193,7 +177,6 @@ function normalizeCompanyIds(raw: unknown): string[] {
     if (!Array.isArray(raw)) return [];
     const ids = raw.map((v) => String(v ?? '').trim()).filter(Boolean);
 
-    // unique + mantém ordem
     const seen = new Set<string>();
     const out: string[] = [];
     for (const id of ids) {
@@ -204,12 +187,6 @@ function normalizeCompanyIds(raw: unknown): string[] {
     return out;
 }
 
-/**
- * GET /api/plataform/partners/:partnerId
- * - retorna o parceiro + companyIds já vinculados (PartnerVisibility)
- *
- * ✅ Normaliza logoUrl para absoluta quando for "/uploads/..."
- */
 export async function GET(
     request: Request,
     ctx: { params: Promise<{ partnerId: string }> }
@@ -253,8 +230,6 @@ export async function GET(
 
         const visibilityMode = normalizeVisibilityMode(partner.visibilityMode);
         const ctaUrl = normalizeCtaUrl(partner.ctaUrl);
-
-        // ✅ já devolve pronto para a UI/app
         const logoUrl = normalizeImageUrl(origin, partner.logoUrl);
 
         return jsonOk({
@@ -291,18 +266,6 @@ export async function GET(
     }
 }
 
-/**
- * PATCH /api/plataform/partners/:partnerId
- * - toggleActive: alterna isActive do parceiro
- * - update: edita campos do parceiro + sincroniza visibilidade (PartnerVisibility)
- *
- * Regras:
- * - Se mudar visibilityMode para ALL: limpa vínculos
- * - Se mudar visibilityMode para SELECTED: companyIds é obrigatório e não pode ser vazio
- * - Se só mandar companyIds: sincroniza mantendo SELECTED (ou muda para SELECTED se vier assim)
- *
- * ✅ Também normaliza logoUrl na resposta (quando for "/uploads/...")
- */
 export async function PATCH(
     request: Request,
     ctx: { params: Promise<{ partnerId: string }> }
@@ -327,18 +290,14 @@ export async function PATCH(
             select: {
                 id: true,
                 isActive: true,
-
                 name: true,
                 logoUrl: true,
                 logoKey: true,
-
                 discountPct: true,
                 description: true,
                 rules: true,
-
                 ctaUrl: true,
                 ctaLabel: true,
-
                 visibilityMode: true,
                 sortOrder: true,
             },
@@ -346,9 +305,6 @@ export async function PATCH(
 
         if (!current) return jsonErr('Parceiro não encontrado.', 404);
 
-        // =========================
-        // TOGGLE ACTIVE
-        // =========================
         if ('toggleActive' in body && body.toggleActive === true) {
             const updated = await prisma.partner.update({
                 where: { id: current.id },
@@ -359,9 +315,6 @@ export async function PATCH(
             return jsonOk({ id: updated.id, isActive: updated.isActive });
         }
 
-        // =========================
-        // UPDATE
-        // =========================
         if (
             !('update' in body) ||
             !body.update ||
@@ -431,13 +384,12 @@ export async function PATCH(
             ? normalizeCompanyIds(u.companyIds)
             : [];
 
-        // validações básicas
         if (!name) return jsonErr('Nome é obrigatório.', 400);
 
         if (!logoUrlRaw) return jsonErr('logoUrl é obrigatório.', 400);
         if (!isValidLogoUrl(logoUrlRaw)) {
             return jsonErr(
-                'logoUrl inválida. Envie uma imagem (upload) ou forneça uma URL http(s) válida.',
+                'logoUrl inválida. Envie uma imagem (/media ou /uploads) ou forneça uma URL http(s) válida.',
                 400
             );
         }
@@ -449,7 +401,6 @@ export async function PATCH(
             );
         }
 
-        // ✅ Se está mudando para SELECTED, companyIds passa a ser obrigatório
         const isChangingVisibility =
             u.visibilityMode !== undefined &&
             visibilityMode !== currentVisibility;
@@ -472,7 +423,6 @@ export async function PATCH(
             }
         }
 
-        // ✅ Decide quando sincronizar vínculos:
         const shouldSyncVisibility = hasCompanyIds || isChangingVisibility;
 
         const result = await prisma.$transaction(async (tx) => {
@@ -493,18 +443,14 @@ export async function PATCH(
                 select: {
                     id: true,
                     isActive: true,
-
                     name: true,
                     logoUrl: true,
                     logoKey: true,
-
                     discountPct: true,
                     description: true,
                     rules: true,
-
                     ctaUrl: true,
                     ctaLabel: true,
-
                     visibilityMode: true,
                     sortOrder: true,
                     updatedAt: true,
@@ -519,7 +465,6 @@ export async function PATCH(
                     return { partnerUpdated, companyIds: [] as string[] };
                 }
 
-                // SELECTED
                 await tx.partnerVisibility.deleteMany({
                     where: { partnerId: partnerUpdated.id },
                 });
@@ -541,7 +486,6 @@ export async function PATCH(
             return { partnerUpdated, companyIds: null as string[] | null };
         });
 
-        // se não sincronizou, devolve os ids atuais
         let effectiveCompanyIds: string[] = [];
         const effectiveVisibilityMode = normalizeVisibilityMode(
             result.partnerUpdated.visibilityMode ?? 'ALL'
@@ -558,7 +502,6 @@ export async function PATCH(
             effectiveCompanyIds = vis.map((v) => v.companyId);
         }
 
-        // ✅ normaliza logoUrl na resposta
         const logoUrl = normalizeImageUrl(
             origin,
             result.partnerUpdated.logoUrl

@@ -125,6 +125,7 @@ export async function proxy(req: NextRequest) {
         pathname.startsWith('/api') ||
         pathname.startsWith('/_next') ||
         pathname.startsWith('/uploads') ||
+        pathname.startsWith('/media') ||
         pathname === '/favicon.ico' ||
         pathname === '/robots.txt' ||
         pathname === '/sitemap.xml'

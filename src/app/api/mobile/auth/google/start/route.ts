@@ -148,7 +148,9 @@ export async function GET(req: NextRequest) {
         return NextResponse.json(
             {
                 ok: false,
-                error: 'Parâmetros obrigatórios: companyId (ou tenant/slug) e redirect_uri',
+                error: 'missing_company_id_or_redirect_uri',
+                message:
+                    'Parâmetros obrigatórios: companyId (ou tenant/slug) e redirect_uri',
             },
             { status: 400 }
         );
