@@ -6,14 +6,14 @@ const prisma = new PrismaClient();
 
 async function main() {
     const COMPANY_SLUG = 'atendeplay';
-    const COMPANY_NAME = 'AtendePlay (Seed)';
-    const UNIT_NAME = 'Matriz';
+    const COMPANY_NAME = 'AtendePlay';
+    const UNIT_NAME = 'Unidade - SBC';
 
     const ADMIN_EMAIL = 'admin@atendeplay.com.br';
     const PROF_EMAIL = 'jeff@atendeplay.com.br';
 
     // ✅ NOVO: usuário da plataforma (não depende de CompanyMember/AdminAccess)
-    const PLATFORM_EMAIL = 'platform@atendeplay.com.br';
+    const PLATFORM_EMAIL = 'plataform@atendeplay.com.br';
 
     const PASSWORD = 'Mesegura@2468';
 
