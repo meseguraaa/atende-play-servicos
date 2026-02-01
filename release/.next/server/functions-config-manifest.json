@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "functions": {
+    "/api/admin/uploads": {},
+    "/api/mobile/cart/items/[itemId]": {},
+    "/api/mobile/me/appointments/[id]/reschedule": {},
+    "/api/mobile/availability": {},
+    "/api/mobile/me/avatar": {},
+    "/api/mobile/me/history": {},
+    "/api/mobile/me/history/preview": {},
+    "/api/mobile/reviews/dismiss": {},
+    "/api/mobile/reviews": {},
+    "/api/mobile/reviews/pending": {},
+    "/media/[...path]": {},
+    "/_middleware": {
+      "runtime": "nodejs",
+      "matchers": [
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?(?:\\/((?:[^\\/#\\?]+?)(?:\\/(?:[^\\/#\\?]+?))*))?(\\.json)?[\\/#\\?]?$",
+          "originalSource": "/:path*"
+        }
+      ]
+    }
+  }
+}

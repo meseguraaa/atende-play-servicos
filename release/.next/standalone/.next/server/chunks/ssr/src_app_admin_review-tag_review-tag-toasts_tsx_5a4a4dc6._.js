@@ -1,0 +1,3 @@
+module.exports=[495545,a=>{"use strict";var b=a.i(107439),c=a.i(259849),d=a.i(156916);function e({success:a,error:e}){let f=(0,c.useRouter)(),g=(0,c.usePathname)(),h=(0,c.useSearchParams)(),i=b.useRef("");return b.useEffect(()=>{if(!a&&!e)return;let b=`${g}::${h.toString()}::${a??""}::${e??""}`;if(i.current===b)return;i.current=b,a&&d.toast.success(a),e&&d.toast.error(e);let c=new URLSearchParams(h.toString());c.delete("success"),c.delete("error");let j=c.toString();f.replace(j?`${g}?${j}`:g,{scroll:!1})},[a,e,g]),null}a.s(["default",()=>e])}];
+
+//# sourceMappingURL=src_app_admin_review-tag_review-tag-toasts_tsx_5a4a4dc6._.js.map

@@ -1,0 +1,50 @@
+{
+  "node": {
+    "400951c187b1d723111ea29ee3cb9fd978894382a4": {
+      "workers": {
+        "app/admin/review-tag/page": {
+          "moduleId": 800740,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_1",
+          "filename": "src/app/admin/review-tag/page.tsx"
+        }
+      },
+      "layer": {
+        "app/admin/review-tag/page": "rsc"
+      },
+      "exportedName": "$$RSC_SERVER_ACTION_1",
+      "filename": "src/app/admin/review-tag/page.tsx"
+    },
+    "40cba2ae4428f67f94428f273229d845ffed72692b": {
+      "workers": {
+        "app/admin/review-tag/page": {
+          "moduleId": 800740,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_2",
+          "filename": "src/app/admin/review-tag/page.tsx"
+        }
+      },
+      "layer": {
+        "app/admin/review-tag/page": "rsc"
+      },
+      "exportedName": "$$RSC_SERVER_ACTION_2",
+      "filename": "src/app/admin/review-tag/page.tsx"
+    },
+    "40e10aa6ba2d41bb5ac5e74b8f2c8896be5e90f6bb": {
+      "workers": {
+        "app/admin/review-tag/page": {
+          "moduleId": 800740,
+          "async": false,
+          "exportedName": "$$RSC_SERVER_ACTION_0",
+          "filename": "src/app/admin/review-tag/page.tsx"
+        }
+      },
+      "layer": {
+        "app/admin/review-tag/page": "rsc"
+      },
+      "exportedName": "$$RSC_SERVER_ACTION_0",
+      "filename": "src/app/admin/review-tag/page.tsx"
+    }
+  },
+  "edge": {}
+}

@@ -1,0 +1,3 @@
+{
+  "/api/admin/finance/expenses/[expenseId]/paid/route": "app/api/admin/finance/expenses/[expenseId]/paid/route.js"
+}

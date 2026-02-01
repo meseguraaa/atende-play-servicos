@@ -1,0 +1,20 @@
+{
+  "node": {
+    "40bb9c154d58e19894eefec5fb0690ea4038323f4c": {
+      "workers": {
+        "app/painel/login/page": {
+          "moduleId": 307488,
+          "async": false,
+          "exportedName": "loginPainel",
+          "filename": "src/app/painel/login/actions.ts"
+        }
+      },
+      "layer": {
+        "app/painel/login/page": "rsc"
+      },
+      "exportedName": "loginPainel",
+      "filename": "src/app/painel/login/actions.ts"
+    }
+  },
+  "edge": {}
+}
