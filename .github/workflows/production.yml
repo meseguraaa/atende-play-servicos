@@ -1,0 +1,77 @@
+name: Production CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: CI (Ubuntu 20.04, build Linux + Prisma)
+    runs-on: ubuntu-20.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prisma generate (Linux)
+        run: pnpm prisma generate
+
+      - name: Guardrail: fail if Prisma engines include darwin
+        run: |
+          if find node_modules -path "*@prisma*" -o -path "*\.prisma*" | grep -i darwin; then
+            echo "❌ Prisma contains darwin artifacts. Aborting."
+            exit 1
+          fi
+
+      - name: Lint (if present)
+        run: pnpm -s lint
+        continue-on-error: false
+
+      - name: Tests (if present)
+        run: pnpm -s test
+        continue-on-error: false
+
+      - name: Build
+        env:
+          NODE_ENV: production
+        run: pnpm build
+
+  deploy:
+    name: Deploy (SSH -> deploy.sh)
+    needs: [ci]
+    runs-on: ubuntu-20.04
+    environment: production
+
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: ${{ secrets.PROD_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          port: ${{ secrets.PROD_SSH_PORT }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd "${{ secrets.PROD_APP_DIR }}"
+            ./deploy.sh "${{ github.sha }}"
