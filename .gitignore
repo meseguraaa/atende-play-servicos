@@ -46,3 +46,6 @@ next-env.d.ts
 # generated files
 src/generated/
 /src/generated/prisma
+
+release.tgz
+*.tgz
