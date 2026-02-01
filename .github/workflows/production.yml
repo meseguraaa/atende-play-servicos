@@ -2,7 +2,8 @@ name: Production CI/CD
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   workflow_dispatch:
 
 concurrency:
@@ -28,7 +29,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "pnpm"
+          cache: pnpm
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -45,11 +46,9 @@ jobs:
 
       - name: Lint (if present)
         run: pnpm -s lint
-        continue-on-error: false
 
       - name: Tests (if present)
         run: pnpm -s test
-        continue-on-error: false
 
       - name: Build
         env:
@@ -58,7 +57,8 @@ jobs:
 
   deploy:
     name: Deploy (SSH -> deploy.sh)
-    needs: [ci]
+    needs:
+      - ci
     runs-on: ubuntu-20.04
     environment: production
 
