@@ -126,7 +126,7 @@ export default function Login() {
         if (loading) return;
 
         try {
-            if (!apiOk) return; // ✅ NEW: não bloqueia só por companyId (fallback existe)
+            if (!apiOk) return;
 
             setLoading(true);
 
@@ -134,7 +134,6 @@ export default function Login() {
                 `${API_BASE_URL}/api/mobile/auth/google/start`
             );
 
-            // ✅ NEW: só manda companyId se existir (mas com env setado, vai existir)
             if (COMPANY_ID) start.searchParams.set('companyId', COMPANY_ID);
 
             start.searchParams.set('redirect_uri', String(redirectUri));
@@ -150,10 +149,8 @@ export default function Login() {
             const url = safeParseUrl(result.url);
             if (!url) return;
 
-            // ✅ auth-redirect devolve token JWT e params extras
             const token = String(url.searchParams.get('token') || '').trim();
 
-            // ✅ NEW: companyId resolve com prioridade do redirect; cai no env se faltar
             const resolvedCompanyId =
                 String(url.searchParams.get('companyId') || '').trim() ||
                 COMPANY_ID;
@@ -180,7 +177,6 @@ export default function Login() {
                 url.searchParams.get('profile_complete')
             );
 
-            // ✅ payload compatível com o que suas rotas mobile esperam
             const payload = ensureCompanyIdInSession(
                 {
                     token,
@@ -205,9 +201,8 @@ export default function Login() {
         const e = normalizeEmail(email);
         const p = String(password ?? '');
 
-        if (!apiOk) return; // ✅ NEW
+        if (!apiOk) return;
 
-        // ✅ NEW: company pode vir do env, se não vier, alerta claro
         if (!COMPANY_ID) {
             Alert.alert(
                 'Login',
@@ -250,7 +245,6 @@ export default function Login() {
                 json = null;
             }
 
-            // ✅ backend pode responder 200 com ok:false
             const ok = Boolean(res.ok) && Boolean(json?.ok !== false);
             if (!ok) {
                 const raw =
@@ -283,7 +277,6 @@ export default function Login() {
     const keyboardOffset =
         UI.spacing.headerH + insets.top + (Platform.OS === 'ios' ? 8 : 0);
 
-    // ✅ NEW: signup não precisa travar por companyOk aqui, mas mantém UX no DEV
     const canSignup = apiOk && !loading;
     const canLogin = apiOk && companyOk && emailOk && passOk && !loading;
 
@@ -329,7 +322,12 @@ export default function Login() {
                 resizeMode="cover"
                 style={{ flex: 1 }}
             >
-                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' }}>
+                <View
+                    style={{
+                        flex: 1,
+                        backgroundColor: UI.overlay.dim,
+                    }}
+                >
                     <KeyboardAvoidingView
                         style={{ flex: 1 }}
                         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -352,7 +350,6 @@ export default function Login() {
                                 Platform.OS === 'ios' ? 'never' : undefined
                             }
                         >
-                            {/* ✅ deixa o padding horizontal no body, pra não duplicar */}
                             <View
                                 style={[
                                     styles.body,
@@ -374,7 +371,9 @@ export default function Login() {
                                     <View style={{ gap: 10, marginTop: 12 }}>
                                         <TextInput
                                             placeholder="Email"
-                                            placeholderTextColor="rgba(255,255,255,0.6)"
+                                            placeholderTextColor={
+                                                UI.auth.placeholder
+                                            }
                                             value={email}
                                             onChangeText={setEmail}
                                             style={local.input}
@@ -387,7 +386,9 @@ export default function Login() {
                                         <View style={{ position: 'relative' }}>
                                             <TextInput
                                                 placeholder="Senha"
-                                                placeholderTextColor="rgba(255,255,255,0.6)"
+                                                placeholderTextColor={
+                                                    UI.auth.placeholder
+                                                }
                                                 value={password}
                                                 onChangeText={setPassword}
                                                 secureTextEntry={!showPass}
@@ -416,12 +417,11 @@ export default function Login() {
                                                             : 'eye'
                                                     }
                                                     size={14}
-                                                    color="#fff"
+                                                    color={UI.auth.inputText}
                                                 />
                                             </Pressable>
                                         </View>
 
-                                        {/* ✅ BOTÃO ENTRAR */}
                                         <Pressable
                                             onPress={handleEmailLogin}
                                             style={({ pressed }) => [
@@ -486,7 +486,7 @@ export default function Login() {
                                                 <AntDesign
                                                     name="google"
                                                     size={20}
-                                                    color="#DB4437"
+                                                    color={UI.auth.google.brand}
                                                 />
                                             )}
 
@@ -500,7 +500,6 @@ export default function Login() {
                                         </Pressable>
                                     </View>
 
-                                    {/* ✅ BOTÃO ROXO BRAND */}
                                     <Pressable
                                         onPress={handleGoSignup}
                                         style={({ pressed }) => [
@@ -545,12 +544,12 @@ export default function Login() {
 const local = {
     input: {
         height: 48,
-        borderRadius: 12,
+        borderRadius: UI.radius.input,
         paddingHorizontal: 14,
-        backgroundColor: 'rgba(255,255,255,0.08)',
+        backgroundColor: UI.auth.inputBg,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.22)',
-        color: '#fff',
+        borderColor: UI.auth.inputBorder,
+        color: UI.auth.inputText,
     },
     eyeBtn: {
         position: 'absolute' as const,
@@ -566,7 +565,7 @@ const local = {
         paddingHorizontal: 8,
     },
     linkText: {
-        color: '#fff',
+        color: UI.auth.link,
         fontSize: 13,
         textDecorationLine: 'underline' as const,
     },

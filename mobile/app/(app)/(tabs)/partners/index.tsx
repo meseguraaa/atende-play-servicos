@@ -30,8 +30,12 @@ import { trackEvent } from '../../../../src/services/analytics';
 
 import { ScreenGate } from '../../../../src/components/layout/ScreenGate';
 import { PartnersSkeleton } from '../../../../src/components/loading/PartnersSkeleton';
+import {
+    AppTopBar,
+    STICKY_ROW_H as TOPBAR_H,
+} from '../../../../src/components/layout/AppTopBar';
 
-const STICKY_ROW_H = 74;
+const STICKY_ROW_H = TOPBAR_H;
 
 // ✅ normaliza página (evita "/x/" e "/x" contarem diferente)
 function normalizePage(pathname: string) {
@@ -859,135 +863,30 @@ export default function Partners() {
     return (
         <ScreenGate dataReady={dataReady} skeleton={<PartnersSkeleton />}>
             <View style={S.page}>
-                <View style={S.fixedTop}>
-                    <View style={safeTopStyle} />
-
-                    {/* ✅ HEADER PADRONIZADO (igual Home) */}
-                    <View style={S.stickyRow}>
-                        <View style={S.profileRow}>
-                            {hasAvatar ? (
-                                <Image
-                                    source={{ uri: avatarUrl as string }}
-                                    style={S.avatar}
-                                />
-                            ) : (
-                                <View style={S.avatarFallback}>
-                                    <FontAwesome
-                                        name="user"
-                                        size={18}
-                                        color={UI.colors.white}
-                                    />
-                                </View>
-                            )}
-
-                            <View>
-                                <Text style={S.hello}>Olá,</Text>
-                                <Text style={S.name} numberOfLines={1}>
-                                    {displayName} {meLoading ? '…' : ''}
-                                </Text>
-                            </View>
-                        </View>
-
-                        <View style={S.topRightRow}>
-                            {birthdayBadgeLabel ? (
-                                <Pressable
-                                    style={S.iconBtn}
-                                    onPress={onPressBirthday}
-                                    hitSlop={8}
-                                >
-                                    <FontAwesome
-                                        name="birthday-cake"
-                                        size={18}
-                                        color={UI.colors.white}
-                                    />
-                                    <View style={S.birthdayDot}>
-                                        <Text style={S.birthdayDotText}>!</Text>
-                                    </View>
-                                </Pressable>
-                            ) : null}
-
-                            {userLevelLabel ? (
-                                <Pressable
-                                    style={[
-                                        S.iconBtn,
-                                        S.levelBtn,
-                                        userLevelStyle?.container,
-                                    ]}
-                                    onPress={() => {
-                                        const cid = companyIdRef.current;
-                                        if (!cid) return;
-                                        try {
-                                            trackEvent('action_click', {
-                                                page: normalizePage(
-                                                    pathname || '/'
-                                                ),
-                                                action: 'level_chip',
-                                                level: userLevelLabel,
-                                                companyId: cid,
-                                            });
-                                        } catch {}
-                                    }}
-                                    hitSlop={8}
-                                >
-                                    <FontAwesome
-                                        name={userLevelIcon as any}
-                                        size={18}
-                                        color={
-                                            userLevelStyle?.icon?.color ??
-                                            UI.colors.white
-                                        }
-                                    />
-                                    <Text
-                                        style={[
-                                            S.levelMiniText,
-                                            userLevelStyle?.text,
-                                        ]}
-                                        numberOfLines={1}
-                                    >
-                                        {userLevelLabel}
-                                    </Text>
-                                </Pressable>
-                            ) : null}
-
-                            <Pressable style={S.iconBtn} onPress={goCart}>
-                                <FontAwesome
-                                    name="shopping-bag"
-                                    size={18}
-                                    color={UI.colors.white}
-                                />
-                                {pendingCartCount > 0 ? (
-                                    <View style={S.badge}>
-                                        <Text style={S.badgeText}>
-                                            {pendingCartCount > 99
-                                                ? '99+'
-                                                : String(pendingCartCount)}
-                                        </Text>
-                                    </View>
-                                ) : null}
-                            </Pressable>
-
-                            <Pressable
-                                style={S.iconBtn}
-                                onPress={goNotifications}
-                            >
-                                <FontAwesome
-                                    name="bell-o"
-                                    size={20}
-                                    color={UI.colors.white}
-                                />
-                                {pendingReviewCount > 0 ? (
-                                    <View style={S.badge}>
-                                        <Text style={S.badgeText}>
-                                            {pendingReviewCount > 99
-                                                ? '99+'
-                                                : String(pendingReviewCount)}
-                                        </Text>
-                                    </View>
-                                ) : null}
-                            </Pressable>
-                        </View>
-                    </View>
-                </View>
+                <AppTopBar
+                    insetsTop={insets.top}
+                    displayName={displayName}
+                    meLoading={meLoading}
+                    avatarUrl={avatarUrl}
+                    birthdayBadgeLabel={birthdayBadgeLabel}
+                    onPressBirthday={onPressBirthday}
+                    userLevelLabel={userLevelLabel}
+                    userLevelIcon={userLevelIcon as any}
+                    userLevelStyle={userLevelStyle}
+                    onPressLevel={() => {
+                        const cid = companyIdRef.current;
+                        trackEvent('action_click', {
+                            from: 'home',
+                            action: 'level_chip',
+                            level: userLevelLabel,
+                            companyId: cid ?? null,
+                        });
+                    }}
+                    pendingCartCount={pendingCartCount}
+                    pendingReviewCount={pendingReviewCount}
+                    onPressCart={goCart}
+                    onPressNotifications={goNotifications}
+                />
 
                 <FlatList
                     data={filtered}

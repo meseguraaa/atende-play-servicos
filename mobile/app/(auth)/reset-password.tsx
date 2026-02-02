@@ -70,8 +70,8 @@ export default function ResetPassword() {
     const [confirm, setConfirm] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const apiOk = useMemo(() => Boolean(API_BASE_URL), []);
-    const companyOk = useMemo(() => Boolean(COMPANY_ID), []);
+    const apiOk = useMemo(() => Boolean(API_BASE_URL), [API_BASE_URL]);
+    const companyOk = useMemo(() => Boolean(COMPANY_ID), [COMPANY_ID]);
 
     const canSubmit = useMemo(() => {
         if (!apiOk || !companyOk) return false;
@@ -205,7 +205,7 @@ export default function ResetPassword() {
                 resizeMode="cover"
                 style={{ flex: 1 }}
             >
-                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' }}>
+                <View style={{ flex: 1, backgroundColor: UI.overlay.dim }}>
                     <KeyboardAvoidingView
                         style={{ flex: 1 }}
                         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -264,7 +264,9 @@ export default function ResetPassword() {
                                                 value={token}
                                                 onChangeText={setToken}
                                                 placeholder="Token"
-                                                placeholderTextColor="rgba(255,255,255,0.65)"
+                                                placeholderTextColor={
+                                                    UI.colors.textDim
+                                                }
                                                 autoCapitalize="none"
                                                 autoCorrect={false}
                                                 style={local.input}
@@ -277,7 +279,9 @@ export default function ResetPassword() {
                                                 value={password}
                                                 onChangeText={setPassword}
                                                 placeholder="Nova senha"
-                                                placeholderTextColor="rgba(255,255,255,0.65)"
+                                                placeholderTextColor={
+                                                    UI.colors.textDim
+                                                }
                                                 secureTextEntry
                                                 autoCapitalize="none"
                                                 autoCorrect={false}
@@ -291,7 +295,9 @@ export default function ResetPassword() {
                                                 value={confirm}
                                                 onChangeText={setConfirm}
                                                 placeholder="Confirmar nova senha"
-                                                placeholderTextColor="rgba(255,255,255,0.65)"
+                                                placeholderTextColor={
+                                                    UI.colors.textDim
+                                                }
                                                 secureTextEntry
                                                 autoCapitalize="none"
                                                 autoCorrect={false}
@@ -387,15 +393,15 @@ const local = {
     inputWrap: {
         position: 'relative' as const,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.22)',
-        borderRadius: 12,
-        backgroundColor: 'rgba(255,255,255,0.08)',
+        borderColor: UI.auth.inputBorder,
+        borderRadius: UI.radius.input,
+        backgroundColor: UI.auth.inputBg,
         overflow: 'hidden' as const,
     },
     input: {
         height: 48,
         paddingHorizontal: 14,
-        color: UI.colors.white,
+        color: UI.auth.inputText,
         fontSize: 15,
     },
     primaryBtn: {
@@ -418,7 +424,7 @@ const local = {
         paddingVertical: 10,
     },
     backBtnText: {
-        color: 'rgba(255,255,255,0.92)',
+        color: UI.auth.link,
         fontSize: 13,
         textDecorationLine: 'underline' as const,
     },

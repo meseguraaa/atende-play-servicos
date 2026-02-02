@@ -99,8 +99,9 @@ export default function Signup() {
     const [pass2, setPass2] = useState('');
     const [showPass, setShowPass] = useState(false);
 
-    const apiOk = useMemo(() => Boolean(API_BASE_URL), []);
-    const companyOk = useMemo(() => Boolean(COMPANY_ID), []);
+    // ✅ não congela, mas também não precisa re-render extra
+    const apiOk = useMemo(() => Boolean(API_BASE_URL), [API_BASE_URL]);
+    const companyOk = useMemo(() => Boolean(COMPANY_ID), [COMPANY_ID]);
 
     const canSubmit = useMemo(() => {
         const n = name.trim().length >= 2;
@@ -251,7 +252,7 @@ export default function Signup() {
                 resizeMode="cover"
                 style={{ flex: 1 }}
             >
-                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)' }}>
+                <View style={{ flex: 1, backgroundColor: UI.overlay.dim }}>
                     <KeyboardAvoidingView
                         style={{ flex: 1 }}
                         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -308,7 +309,9 @@ export default function Signup() {
                                                 value={name}
                                                 onChangeText={setName}
                                                 placeholder="Nome"
-                                                placeholderTextColor="rgba(255,255,255,0.65)"
+                                                placeholderTextColor={
+                                                    UI.colors.textDim
+                                                }
                                                 autoCapitalize="words"
                                                 autoCorrect={false}
                                                 textContentType="name"
@@ -323,7 +326,9 @@ export default function Signup() {
                                                 value={email}
                                                 onChangeText={setEmail}
                                                 placeholder="Email"
-                                                placeholderTextColor="rgba(255,255,255,0.65)"
+                                                placeholderTextColor={
+                                                    UI.colors.textDim
+                                                }
                                                 keyboardType="email-address"
                                                 autoCapitalize="none"
                                                 autoCorrect={false}
@@ -343,7 +348,9 @@ export default function Signup() {
                                                     )
                                                 }
                                                 placeholder="Data de nascimento"
-                                                placeholderTextColor="rgba(255,255,255,0.65)"
+                                                placeholderTextColor={
+                                                    UI.colors.textDim
+                                                }
                                                 keyboardType="number-pad"
                                                 style={local.input}
                                                 maxLength={10}
@@ -359,7 +366,9 @@ export default function Signup() {
                                                     setPhone(maskPhoneBR(t))
                                                 }
                                                 placeholder="Telefone (00) 00000-0000"
-                                                placeholderTextColor="rgba(255,255,255,0.65)"
+                                                placeholderTextColor={
+                                                    UI.colors.textDim
+                                                }
                                                 keyboardType="phone-pad"
                                                 style={local.input}
                                                 maxLength={15}
@@ -373,7 +382,9 @@ export default function Signup() {
                                                 value={pass}
                                                 onChangeText={setPass}
                                                 placeholder="Senha"
-                                                placeholderTextColor="rgba(255,255,255,0.65)"
+                                                placeholderTextColor={
+                                                    UI.colors.textDim
+                                                }
                                                 secureTextEntry={!showPass}
                                                 autoCapitalize="none"
                                                 autoCorrect={false}
@@ -401,7 +412,7 @@ export default function Signup() {
                                                             : 'eye'
                                                     }
                                                     size={14}
-                                                    color="rgba(255,255,255,0.9)"
+                                                    color={UI.auth.inputText}
                                                 />
                                             </Pressable>
                                         </View>
@@ -411,7 +422,9 @@ export default function Signup() {
                                                 value={pass2}
                                                 onChangeText={setPass2}
                                                 placeholder="Confirmar senha"
-                                                placeholderTextColor="rgba(255,255,255,0.65)"
+                                                placeholderTextColor={
+                                                    UI.colors.textDim
+                                                }
                                                 secureTextEntry={!showPass}
                                                 autoCapitalize="none"
                                                 autoCorrect={false}
@@ -504,16 +517,16 @@ const local = {
     inputWrap: {
         position: 'relative' as const,
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.22)',
-        borderRadius: 12,
-        backgroundColor: 'rgba(255,255,255,0.08)',
+        borderColor: UI.auth.inputBorder,
+        borderRadius: UI.radius.input,
+        backgroundColor: UI.auth.inputBg,
         overflow: 'hidden' as const,
     },
     input: {
         height: 48,
         paddingHorizontal: 14,
         paddingRight: 44,
-        color: UI.colors.white,
+        color: UI.auth.inputText,
         fontSize: 15,
     },
     eyeBtn: {
@@ -527,7 +540,7 @@ const local = {
     },
     hintText: {
         marginTop: 8,
-        color: 'rgba(255,255,255,0.85)',
+        color: UI.colors.text,
         fontSize: 12,
         lineHeight: 16,
     },
@@ -551,7 +564,7 @@ const local = {
         paddingVertical: 10,
     },
     backBtnText: {
-        color: 'rgba(255,255,255,0.92)',
+        color: UI.auth.link,
         fontSize: 13,
         textDecorationLine: 'underline' as const,
     },
