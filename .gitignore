@@ -49,3 +49,30 @@ src/generated/
 
 release.tgz
 *.tgz
+
+# builds / outputs
+.next/
+release/
+dist/
+build/
+
+# deps
+node_modules/
+
+# expo / react native
+.expo/
+.expo-shared/
+
+# local databases / postgres
+pgdata/
+**/pgdata/
+**/pg_wal/
+
+# archives / big files
+*.zip
+*.tar
+*.tar.gz
+*.7z
+
+# logs
+*.log
