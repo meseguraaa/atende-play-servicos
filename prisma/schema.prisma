@@ -51,6 +51,10 @@ model Company {
   // ✅ NOVO: visibilidade de parceiros por company
   partnerVisibilities              PartnerVisibility[]
 
+  // ✅ NOVO: WhatsApp (canais e sessões)
+  whatsappChannels                 WhatsappChannel[]
+  whatsappSessions                 WhatsappSession[]
+
   @@index([segment])
   @@map("companies")
 }
@@ -189,9 +193,111 @@ model Unit {
   weeklyAvailabilities             UnitWeeklyAvailability[]
   company                          Company                          @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
+  // ✅ NOVO: WhatsApp (canais podem ter unidade default)
+  whatsappChannels                 WhatsappChannel[]
+  whatsappSessions                 WhatsappSession[]
+
   @@index([companyId])
   @@map("units")
 }
+
+/* =========================================================
+ * ✅ NOVO: WhatsApp (MVP)
+ * ========================================================= */
+
+enum WhatsappSessionStage {
+  MENU
+  IDENTIFY_BY_PHONE
+  CHOOSE_COMPANY
+  ASK_EMAIL
+
+  REGISTER_NAME
+  CONFIRM_PHONE
+  REGISTER_BIRTHDATE
+
+  ASK_UNIT
+  ASK_SERVICE
+  ASK_PROFESSIONAL
+  ASK_DAY
+  ASK_TIME
+  CONFIRM_APPOINTMENT
+
+  CANCEL_SELECT_APPOINTMENT
+  CANCEL_CONFIRM
+
+  RESCHEDULE_SELECT_APPOINTMENT
+  RESCHEDULE_CHANGE_WHAT
+  RESCHEDULE_PICK_UNIT
+  RESCHEDULE_PICK_SERVICE
+  RESCHEDULE_PICK_PROFESSIONAL
+  RESCHEDULE_PICK_DAY
+  RESCHEDULE_PICK_TIME
+  RESCHEDULE_CONFIRM
+
+  DONE
+}
+
+model WhatsappChannel {
+  id            String   @id @default(cuid())
+  phoneNumberId String   @unique
+
+  // número display é opcional, útil para painel/admin
+  displayPhone  String?
+
+  // canal pertence a uma empresa (escopo). Mesmo que usuário tenha cadastro em várias empresas,
+  // este canal define qual "universo" ele está falando.
+  companyId     String
+  defaultUnitId String?
+
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  defaultUnit   Unit?    @relation(fields: [defaultUnitId], references: [id], onDelete: SetNull)
+
+  sessions      WhatsappSession[]
+
+  @@index([companyId, isActive])
+  @@index([defaultUnitId])
+  @@map("whatsapp_channels")
+}
+
+model WhatsappSession {
+  id          String              @id @default(cuid())
+  channelId   String
+  companyId   String
+
+  // telefone do usuário (E.164 recomendado). Use exatamente o "from" do WhatsApp no MVP.
+  fromPhone   String
+
+  stage       WhatsappSessionStage @default(MENU)
+
+  // dados coletados durante o fluxo (unitId, serviceId, proId, date, time, chosenCompanyId etc.)
+  payload     Json?
+
+  // TTL da sessão (ex: now()+30min). Expirou = recomeça no MENU.
+  expiresAt   DateTime
+
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  channel     WhatsappChannel      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  company     Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // opcional: quando o usuário escolhe uma unidade já durante o fluxo,
+  // fica fácil consultar depois sem abrir o JSON.
+  unitId      String?
+  unit        Unit?                @relation(fields: [unitId], references: [id], onDelete: SetNull)
+
+  @@unique([channelId, fromPhone])
+  @@index([companyId, fromPhone])
+  @@index([expiresAt])
+  @@index([unitId])
+  @@map("whatsapp_sessions")
+}
+
+/* ========================================================= */
 
 model CustomerLevelConfig {
   id                  String        @id @default(cuid())

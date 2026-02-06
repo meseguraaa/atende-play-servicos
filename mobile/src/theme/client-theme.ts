@@ -6,10 +6,6 @@ export const UI = {
         primary: '#7C6CFF',
         primaryText: '#0B0B10',
     },
-
-    /**
-     * Cores base (fundação)
-     */
     colors: {
         bg: '#05070C',
         card: '#4c4c4c',
@@ -23,42 +19,27 @@ export const UI = {
         white: '#FFFFFF',
         black: '#0B0B10',
 
-        // overlays/utilidades (reduzir hardcode)
+        // ✅ overlays/utilidades (pra reduzir hardcode espalhado)
         overlay08: 'rgba(255,255,255,0.08)',
         overlay10: 'rgba(255,255,255,0.10)',
         overlay12: 'rgba(255,255,255,0.12)',
         overlay18: 'rgba(255,255,255,0.18)',
-
         black28: 'rgba(0,0,0,0.28)',
         black05: 'rgba(0,0,0,0.05)',
         black08: 'rgba(0,0,0,0.08)',
         black10: 'rgba(0,0,0,0.10)',
         black45: 'rgba(0,0,0,0.45)',
-
-        // “ink” (pretos usados em telas claras, ex: Home)
-        ink: '#141414',
-        inkPure: '#000000',
     },
-
-    /**
-     * Overlays globais (Auth/Home usam)
-     */
-    overlay: {
-        dim: 'rgba(0,0,0,0.55)',
-    },
-
     radius: {
         card: 18,
         input: 12,
         pill: 999,
     },
-
     spacing: {
         screenX: 22,
         headerH: 62,
         cardPad: 18,
     },
-
     shadow: {
         card: {
             shadowColor: '#fff',
@@ -67,72 +48,6 @@ export const UI = {
             shadowOffset: { width: 0, height: 10 },
             elevation: 12,
         },
-    },
-
-    /**
-     * =========================================================
-     * AUTH (login / signup / forgot / reset)
-     * =========================================================
-     */
-    auth: {
-        inputBg: 'rgba(255,255,255,0.08)',
-        inputBorder: 'rgba(255,255,255,0.22)',
-        inputText: '#FFFFFF',
-        link: 'rgba(255,255,255,0.92)',
-
-        // ✅ ADICIONADOS: usados pelo login.tsx
-        placeholder: 'rgba(255,255,255,0.55)',
-
-        // ✅ ADICIONADOS: login.tsx usa UI.auth.google.brand
-        google: {
-            brand: '#4285F4',
-        },
-    },
-
-    /**
-     * =========================================================
-     * HOME (tela clara dentro do app)
-     * =========================================================
-     */
-    home: {
-        // fundos claros
-        surface: '#FFFFFF',
-
-        // textos em área clara
-        text: '#141414',
-        textMuted: 'rgba(0,0,0,0.55)',
-        textSubtle: 'rgba(0,0,0,0.48)',
-        textFaint: 'rgba(0,0,0,0.40)',
-        textDim: 'rgba(0,0,0,0.65)',
-
-        // separadores/linhas
-        separator: 'rgba(0,0,0,0.10)',
-        divider: 'rgba(0,0,0,0.08)',
-
-        // cards/pills/badges do Home
-        heroBg: 'rgba(124,108,255,0.22)',
-        heroBorder: 'rgba(124,108,255,0.35)',
-
-        darkPillBg: 'rgba(20,20,20,0.92)',
-        darkPillBorder: 'rgba(255,255,255,0.22)',
-
-        inServiceBg: 'rgba(255,193,7,0.95)',
-
-        birthdayDotBg: 'rgba(124,108,255,0.95)',
-
-        historyIconBg: 'rgba(124,108,255,0.18)',
-
-        // botões “Ver todos” (pretão do home)
-        ctaBg: '#141414',
-        ctaText: '#FFFFFF',
-        ctaBorder: '#141414',
-
-        // botão de detalhe no card (borda e texto)
-        detailBorder: '#141414',
-        detailText: '#141414',
-
-        // placeholder bg de imagens em área clara
-        imagePlaceholder: 'rgba(0,0,0,0.05)',
     },
 } as const;
 
@@ -245,9 +160,10 @@ export const styles = StyleSheet.create({
     },
 
     /* ------------------------------------------------------------------
-     * Globais (reutilizados em Home/Products)
+     * ✅ Novos globais (reutilizados em Home/Products)
      * ------------------------------------------------------------------ */
 
+    // base do header escuro (sem altura fixa)
     stickyRowBase: {
         backgroundColor: UI.colors.bg,
         paddingHorizontal: UI.spacing.screenX,

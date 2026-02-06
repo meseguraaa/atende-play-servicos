@@ -4,7 +4,6 @@ import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
 const SESSION_COOKIE_NAME = 'painel_session';
-const DEV_DEFAULT_TENANT = 'atendeplay';
 
 // ✅ ajuste aqui se seu domínio base for diferente
 const BASE_DOMAIN = 'atendeplay.com.br';
@@ -15,11 +14,6 @@ function getJwtSecretKey() {
     return new TextEncoder().encode(secret);
 }
 
-/**
- * Pega o host "real" da requisição, respeitando proxies.
- * - Vercel/Cloudflare/Nginx normalmente setam x-forwarded-host
- * - Pode vir como lista separada por vírgula
- */
 function getHostFromRequest(req: NextRequest): string {
     const xfHost =
         req.headers.get('x-forwarded-host') ||
@@ -33,9 +27,15 @@ function getHostFromRequest(req: NextRequest): string {
 }
 
 /**
- * Resolve tenant slug pelo subdomínio:
- * clientea.atendeplay.com.br => "clientea"
- * ✅ domínio raiz (atendeplay.com.br / www.atendeplay.com.br) => null
+ * Resolve tenant slug pelo host.
+ *
+ * PROD:
+ *  - clientea.atendeplay.com.br -> "clientea"
+ *  - atendeplay.com.br / www.atendeplay.com.br -> null
+ *
+ * DEV:
+ *  - beautyacademy.localhost -> "beautyacademy"
+ *  - localhost -> null (ou você pode escolher um default, mas eu recomendo null)
  */
 function getTenantSlugFromHost(host: string): string | null {
     const cleanHost = String(host || '')
@@ -45,9 +45,15 @@ function getTenantSlugFromHost(host: string): string | null {
 
     if (!cleanHost) return null;
 
-    // ✅ DEV: localhost e *.localhost usam tenant padrão
-    if (cleanHost === 'localhost' || cleanHost.endsWith('.localhost')) {
-        return DEV_DEFAULT_TENANT;
+    // ✅ DEV: localhost puro NÃO tem tenant
+    if (cleanHost === 'localhost') return null;
+
+    // ✅ DEV: *.localhost usa o subdomínio como tenant
+    if (cleanHost.endsWith('.localhost')) {
+        const sub = cleanHost.replace(/\.localhost$/, '');
+        const parts = sub.split('.').filter(Boolean);
+        const first = parts[0] === 'www' ? parts[1] : parts[0];
+        return first ? String(first) : null;
     }
 
     // ✅ domínio raiz não tem tenant
@@ -60,12 +66,10 @@ function getTenantSlugFromHost(host: string): string | null {
         const sub = cleanHost.slice(0, -`.${BASE_DOMAIN}`.length);
         const parts = sub.split('.').filter(Boolean);
 
-        // ignora www caso exista (www.clientea.atendeplay.com.br)
         const first = parts[0] === 'www' ? parts[1] : parts[0];
         return first ? String(first) : null;
     }
 
-    // ✅ fallback: não tenta adivinhar tenant em domínio desconhecido
     return null;
 }
 
@@ -76,10 +80,6 @@ function isPlatformRole(role: unknown) {
     return r === 'PLATFORM_OWNER' || r === 'PLATFORM_STAFF';
 }
 
-/**
- * Valida o token do painel e garante que ele pertence ao tenant atual.
- * ✅ EXCEÇÃO: tokens de PLATAFORMA não são tenant-bound, então passam.
- */
 async function isValidPainelSessionForTenant(
     token: string,
     tenantSlug: string
@@ -88,7 +88,6 @@ async function isValidPainelSessionForTenant(
         const { payload } = await jwtVerify(token, getJwtSecretKey());
         const p = payload as any;
 
-        // ✅ plataforma: não valida tenantSlug
         if (isPlatformRole(p?.role)) return true;
 
         const tokenTenant = String(p?.tenantSlug ?? '')
@@ -120,8 +119,6 @@ function redirectToLogin(req: NextRequest, error?: string) {
 export async function proxy(req: NextRequest) {
     const { pathname } = req.nextUrl;
 
-    // ✅ ignora assets e APIs
-    // IMPORTANTÍSSIMO: /media também precisa passar direto (senão quebra imagens do app)
     if (
         pathname.startsWith('/api') ||
         pathname.startsWith('/_next') ||
@@ -144,25 +141,21 @@ export async function proxy(req: NextRequest) {
         return res;
     }
 
-    // Se tentar acessar painel sem tenant, manda pro login
     if (isPainelArea(pathname) && !tenantSlug) {
         return redirectToLogin(req, 'tenant_not_found');
     }
 
-    // Protege rotas do painel
     if (isPainelArea(pathname)) {
         const safeTenantSlug = tenantSlug as string;
 
         const token = req.cookies.get(SESSION_COOKIE_NAME)?.value;
 
-        // ✅ sem cookie: volta pro login com motivo explícito
         if (!token) {
             return redirectToLogin(req, 'session_missing');
         }
 
         const ok = await isValidPainelSessionForTenant(token, safeTenantSlug);
 
-        // ✅ token inválido/tenant diferente: volta pro login com motivo explícito
         if (!ok) {
             return redirectToLogin(req, 'session_invalid');
         }

@@ -6,6 +6,8 @@ import type { AuthenticatedUser } from './auth';
 
 const SESSION_COOKIE_NAME = 'painel_session';
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 8; // 8h
+
+// ✅ opcional: quando for SOMENTE "localhost" (sem subdomínio)
 const DEV_DEFAULT_TENANT = 'atendeplay';
 
 // ✅ ajuste aqui se seu domínio base for diferente
@@ -42,7 +44,6 @@ function getHostFromHeaders(h: Headers): string {
  * Detecta se a requisição está chegando via HTTPS (mesmo atrás de proxy).
  */
 function isHttpsFromHeaders(h: Headers): boolean {
-    // padrão em proxies (Vercel/Nginx/Ingress)
     const xfProtoRaw = (h.get('x-forwarded-proto') || '').toLowerCase();
     const xfProto = xfProtoRaw.split(',')[0]?.trim() ?? '';
 
@@ -55,11 +56,9 @@ function isHttpsFromHeaders(h: Headers): boolean {
         return true;
     }
 
-    // alguns proxies setam isso
     const xfSsl = (h.get('x-forwarded-ssl') || '').toLowerCase();
     if (xfSsl === 'on') return true;
 
-    // fallback: se não sabemos, assume false
     return false;
 }
 
@@ -78,7 +77,6 @@ function getCookieDomainForHost(host: string): string | undefined {
         return undefined;
     }
 
-    // só aplica o domain compartilhado se for realmente do domínio base
     if (cleanHost === BASE_DOMAIN || cleanHost.endsWith(`.${BASE_DOMAIN}`)) {
         return COOKIE_DOMAIN_PROD;
     }
@@ -87,20 +85,35 @@ function getCookieDomainForHost(host: string): string | undefined {
 }
 
 /**
- * Resolve tenant slug pelo subdomínio:
- * clientea.atendeplay.com.br => "clientea"
+ * Resolve tenant slug pelo host/subdomínio.
+ * - DEV:
+ *   - localhost -> DEV_DEFAULT_TENANT (opcional)
+ *   - beautyacademy.localhost -> beautyacademy ✅
+ * - PROD:
+ *   - clientea.atendeplay.com.br -> clientea ✅
+ *   - atendeplay.com.br -> null (sem tenant)
  */
 function getTenantSlugFromHost(host: string): string | null {
     const cleanHost = String(host || '')
         .trim()
         .toLowerCase()
         .split(':')[0];
-
     if (!cleanHost) return null;
 
-    // ✅ DEV: localhost e *.localhost usam tenant padrão
-    if (cleanHost === 'localhost' || cleanHost.endsWith('.localhost')) {
+    // ✅ DEV: localhost "puro" (sem subdomínio)
+    if (cleanHost === 'localhost') {
+        // se você preferir FORÇAR tenant no localhost, mantém default.
+        // se preferir obrigar subdomínio, retorne null.
         return DEV_DEFAULT_TENANT;
+    }
+
+    // ✅ DEV: *.localhost -> pega o subdomínio (igual seu proxy.ts)
+    // ex: beautyacademy.localhost -> beautyacademy
+    if (cleanHost.endsWith('.localhost')) {
+        const sub = cleanHost.replace(/\.localhost$/, '');
+        const parts = sub.split('.').filter(Boolean);
+        const first = parts[0] === 'www' ? parts[1] : parts[0];
+        return first ? String(first) : null;
     }
 
     // ✅ domínio raiz não tem tenant (evita tratar "atendeplay" como tenant)
@@ -113,22 +126,12 @@ function getTenantSlugFromHost(host: string): string | null {
         const sub = cleanHost.slice(0, -`.${BASE_DOMAIN}`.length);
         const parts = sub.split('.').filter(Boolean);
 
-        // ignora www caso exista (www.clientea.atendeplay.com.br)
         const first = parts[0] === 'www' ? parts[1] : parts[0];
         return first ? String(first) : null;
     }
 
-    /**
-     * Fallback genérico (caso você use outros domínios)
-     * Regras:
-     * - precisa ter pelo menos 3 partes para "subdomínio + domínio + tld"
-     * - ignora www
-     */
-    const parts = cleanHost.split('.').filter(Boolean);
-    if (parts.length < 3) return null;
-
-    const first = parts[0] === 'www' ? parts[1] : parts[0];
-    return first ? String(first) : null;
+    // ✅ fallback: não tenta adivinhar em domínio desconhecido
+    return null;
 }
 
 async function getTenantSlugFromRequestHeaders(): Promise<string> {
@@ -137,9 +140,7 @@ async function getTenantSlugFromRequestHeaders(): Promise<string> {
 
     const slug = getTenantSlugFromHost(host);
 
-    // ✅ em prod, sem tenant = sem painel de empresa
     if (!slug) throw new Error('tenant_not_found');
-
     return slug;
 }
 
@@ -155,10 +156,6 @@ export type PainelSessionPayload = {
     email: string;
     name?: string | null;
 
-    /**
-     * ✅ Tenant-only fields
-     * (Admin/Professional)
-     */
     tenantSlug?: string;
     companyId?: string;
 
@@ -191,12 +188,6 @@ async function resolveCompanyByTenantSlug(tenantSlug: string) {
     };
 }
 
-/**
- * Resolve PROFESSIONAL dentro da company do tenant.
- * - Preferência: userId
- * - Fallback: email
- * - unitId automático se houver 1 unidade ativa
- */
 async function resolveProfessionalContext(params: {
     companyId: string;
     userId: string;
@@ -264,7 +255,6 @@ type AdminAccessPerms = {
 };
 
 function defaultAdminPerms(): AdminAccessPerms {
-    // ✅ defaults do painel (mesmos que você usa na UI)
     return {
         canAccessDashboard: true,
         canAccessReports: false,
@@ -311,12 +301,11 @@ export async function createSessionToken(
             .sign(getJwtSecretKey());
     }
 
-    // ✅ Abaixo daqui: tenant-only (ADMIN / PROFESSIONAL)
     if (!isTenantRole(role)) {
         throw new Error('permissao');
     }
 
-    // ✅ Tenant vem do host (com suporte a proxy em prod)
+    // ✅ Tenant vem do host (agora consistente com proxy.ts)
     const tenantSlugFromHost = await getTenantSlugFromRequestHeaders();
 
     // ✅ Company vem do tenantSlug
@@ -359,14 +348,12 @@ export async function createSessionToken(
         const membership = dbUser.companyMemberships?.[0] ?? null;
         const access0 = dbUser.adminAccesses?.[0] ?? null;
 
-        // Precisa ter vínculo com a company do tenant
         if (!membership && !access0) {
             throw new Error('missing_company');
         }
 
         const isOwner = String(membership?.role ?? '') === 'OWNER';
 
-        // OWNER: vê tudo
         if (isOwner) {
             const payload: PainelSessionPayload = {
                 sub: userId,
@@ -386,14 +373,12 @@ export async function createSessionToken(
                 .sign(getJwtSecretKey());
         }
 
-        // ADMIN configurável: precisa ter membership na company do tenant
         if (!membership) {
             throw new Error('missing_company');
         }
 
         let access = access0;
 
-        // ✅ auto-heal: cria adminAccess se não existir
         if (!access) {
             const created = await prisma.adminAccess.create({
                 data: {
@@ -546,12 +531,10 @@ export async function createPainelSessionCookie(user: AuthenticatedUser) {
 
     cookieStore.set(SESSION_COOKIE_NAME, token, {
         httpOnly: true,
-        // ✅ só marca Secure se a request realmente estiver em HTTPS
         secure,
         sameSite: 'lax',
         path: '/',
         maxAge: SESSION_MAX_AGE_SECONDS,
-        // ✅ só força domain quando for o domínio real
         domain,
     });
 }
@@ -564,7 +547,6 @@ export async function clearPainelSessionCookie() {
     const secure = isHttpsFromHeaders(h);
     const domain = getCookieDomainForHost(host);
 
-    // ✅ expira com o mesmo domain/path para garantir remoção
     cookieStore.set(SESSION_COOKIE_NAME, '', {
         httpOnly: true,
         secure,
@@ -574,6 +556,5 @@ export async function clearPainelSessionCookie() {
         domain,
     });
 
-    // fallback
     cookieStore.delete(SESSION_COOKIE_NAME);
 }
