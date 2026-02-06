@@ -1,3 +1,0 @@
-{
-  "/api/mobile/auth/[...nextauth]/route": "app/api/mobile/auth/[...nextauth]/route.js"
-}

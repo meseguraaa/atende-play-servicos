@@ -1,3 +1,0 @@
-{
-  "/api/admin/checkout/orders/[orderId]/assign-product-item-professional/route": "app/api/admin/checkout/orders/[orderId]/assign-product-item-professional/route.js"
-}
