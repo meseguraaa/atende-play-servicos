@@ -76,3 +76,10 @@ pgdata/
 
 # logs
 *.log
+
+# lockfiles que não usamos (pnpm only)
+**/package-lock.json
+**/npm-shrinkwrap.json
+
+# Expo local state
+.expo/
