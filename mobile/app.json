@@ -1,29 +1,32 @@
 {
     "expo": {
-        "name": "mobile",
-        "slug": "mobile",
+        "name": "AtendePlay",
+        "slug": "atendeplay",
         "version": "1.0.0",
         "orientation": "portrait",
         "icon": "./assets/icon.png",
         "userInterfaceStyle": "light",
-        "newArchEnabled": true,
-        "scheme": "agendaplay",
+        "newArchEnabled": false,
+        "scheme": "atendeplay",
         "splash": {
             "image": "./assets/splash-icon.png",
             "resizeMode": "contain",
             "backgroundColor": "#ffffff"
         },
         "ios": {
+            "bundleIdentifier": "com.atendeplay.app",
+            "buildNumber": "3",
             "supportsTablet": true,
             "infoPlist": {
-                "NSPhotoLibraryUsageDescription": "Precisamos acessar sua galeria para você escolher uma foto de perfil."
+                "NSPhotoLibraryUsageDescription": "Precisamos acessar sua galeria para você escolher uma foto de perfil.",
+                "ITSAppUsesNonExemptEncryption": false
             }
         },
         "android": {
+            "softwareKeyboardLayoutMode": "resize",
             "adaptiveIcon": {
                 "foregroundImage": "./assets/adaptive-icon.png",
-                "backgroundColor": "#ffffff",
-                "softwareKeyboardLayoutMode": "resize"
+                "backgroundColor": "#ffffff"
             },
             "edgeToEdgeEnabled": true,
             "predictiveBackGestureEnabled": false,
@@ -32,11 +35,16 @@
         "web": {
             "favicon": "./assets/favicon.png"
         },
-        "plugins": ["expo-secure-store", "expo-web-browser"],
+        "plugins": [
+            "expo-dev-client",
+            "expo-secure-store",
+            "expo-web-browser",
+            "expo-font"
+        ],
         "extra": {
             "router": {},
             "eas": {
-                "projectId": "9d60da16-de0d-4046-b8d4-734a8c2d40f8"
+                "projectId": "48ae9f11-8328-48ab-8f91-2ec87a3e209d"
             }
         },
         "owner": "brunoleal2005"

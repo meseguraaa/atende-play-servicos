@@ -2,12 +2,10 @@
 'use server';
 
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { prisma } from '@/lib/prisma';
 import { loginWithCredentialsWithPrisma, AuthError } from '@/lib/auth';
-import {
-    createPainelSessionCookie,
-    getCurrentPainelUser,
-} from '@/lib/painel-session';
+import { createPainelSessionCookie } from '@/lib/painel-session';
 import { ADMIN_MENU } from '@/lib/admin-menu';
 import { canAccess } from '@/lib/admin-access-map';
 
@@ -33,7 +31,6 @@ type AdminAccessRow = {
 function pickFirstAdminRouteWithFallback(access: AdminAccessRow | null) {
     if (!access) return null;
 
-    // ✅ Mesma ordem do menu + respeita "enabled" (módulo temporariamente desativado)
     for (const item of ADMIN_MENU) {
         if (!item.enabled) continue;
         if (!canAccess(access as any, item.menuKey)) continue;
@@ -46,6 +43,43 @@ function pickFirstAdminRouteWithFallback(access: AdminAccessRow | null) {
 function isPlatformRole(role: string) {
     const r = String(role || '').toUpperCase();
     return r === 'PLATFORM_OWNER' || r === 'PLATFORM_STAFF';
+}
+
+/**
+ * ✅ Resolve tenant pelo Host (serve pra DEV e PROD).
+ * - beautyacademy.localhost:3000 -> beautyacademy
+ * - clientea.atendeplay.com.br -> clientea
+ * - localhost:3000 -> null
+ */
+function resolveTenantSlugFromHost(hostRaw: string): string | null {
+    const host = String(hostRaw || '')
+        .trim()
+        .toLowerCase()
+        .split(':')[0];
+    if (!host) return null;
+
+    // DEV
+    if (host === 'localhost') return null;
+    if (host.endsWith('.localhost')) {
+        const sub = host.replace(/\.localhost$/, '');
+        const parts = sub.split('.').filter(Boolean);
+        const first = parts[0] === 'www' ? parts[1] : parts[0];
+        return first ? String(first) : null;
+    }
+
+    // PROD (ajuste se seu domínio base for outro)
+    const BASE_DOMAIN = 'atendeplay.com.br';
+
+    if (host === BASE_DOMAIN || host === `www.${BASE_DOMAIN}`) return null;
+
+    if (host.endsWith(`.${BASE_DOMAIN}`)) {
+        const sub = host.slice(0, -`.${BASE_DOMAIN}`.length);
+        const parts = sub.split('.').filter(Boolean);
+        const first = parts[0] === 'www' ? parts[1] : parts[0];
+        return first ? String(first) : null;
+    }
+
+    return null;
 }
 
 export async function loginPainel(formData: FormData) {
@@ -65,36 +99,78 @@ export async function loginPainel(formData: FormData) {
             password
         );
 
-        await createPainelSessionCookie(user);
-
-        // ✅ PLATAFORMA: não depende de tenant nem de AdminAccess
+        // ✅ PLATAFORMA: não depende de tenant
         if (isPlatformRole(user.role)) {
+            await createPainelSessionCookie({
+                ...user,
+                tenantSlug: null,
+                companyId: null,
+            } as any);
+
             redirect('/plataform/dashboard');
         }
 
-        // ✅ ADMIN (tenant)
+        // ✅ ADMIN (tenant obrigatório)
         if (user.role === 'ADMIN') {
-            const dbUser = await prisma.user.findUnique({
-                where: { id: user.id },
-                select: { isOwner: true },
-            });
+            const h = await headers();
+            const host = h.get('x-forwarded-host') || h.get('host') || '';
+            const tenantSlug = resolveTenantSlugFromHost(host);
 
-            // Owner: segue padrão atual (pode ver tudo)
-            if (dbUser?.isOwner) {
-                redirect('/admin/dashboard');
-            }
-
-            // ✅ pega o companyId do MESMO payload que o resto do painel vai usar
-            const session = await getCurrentPainelUser();
-            const companyId = session?.companyId;
-
-            if (!companyId) {
-                // se não tem companyId aqui, é porque o tenant não foi resolvido
+            if (!tenantSlug) {
                 redirectWithError('tenant_not_found');
             }
 
+            const company = await prisma.company.findFirst({
+                where: {
+                    slug: { equals: tenantSlug, mode: 'insensitive' },
+                    isActive: true,
+                },
+                select: { id: true },
+            });
+
+            if (!company?.id) {
+                redirectWithError('missing_company');
+            }
+
+            const dbUser = await prisma.user.findUnique({
+                where: { id: user.id },
+                select: { isOwner: true, isActive: true },
+            });
+
+            if (!dbUser?.isActive) {
+                redirectWithError('permissao');
+            }
+
+            // ✅ owner global pode entrar, MAS precisamos setar companyId no cookie
+            if (!dbUser.isOwner) {
+                const member = await prisma.companyMember.findFirst({
+                    where: {
+                        companyId: company.id,
+                        userId: user.id,
+                        isActive: true,
+                    },
+                    select: { id: true },
+                });
+
+                if (!member?.id) {
+                    redirectWithError('missing_company'); // “sem vínculo”
+                }
+            }
+
+            // ✅ Agora sim: cria cookie com tenant + companyId
+            await createPainelSessionCookie({
+                ...user,
+                tenantSlug,
+                companyId: company.id,
+            } as any);
+
+            // Owner: pode ir direto
+            if (dbUser.isOwner) {
+                redirect('/admin/dashboard');
+            }
+
             const access = await prisma.adminAccess.findFirst({
-                where: { companyId, userId: user.id },
+                where: { companyId: company.id, userId: user.id },
                 select: {
                     canAccessDashboard: true,
                     canAccessReports: true,
@@ -113,7 +189,6 @@ export async function loginPainel(formData: FormData) {
 
             const nextRoute = pickFirstAdminRouteWithFallback(access);
 
-            // Fail-closed: sem nenhum módulo permitido + habilitado => sem acesso
             if (!nextRoute) {
                 redirectWithError('permissao');
             }
@@ -123,10 +198,15 @@ export async function loginPainel(formData: FormData) {
 
         // ✅ PROFESSIONAL
         if (user.role === 'PROFESSIONAL') {
+            await createPainelSessionCookie({
+                ...user,
+                tenantSlug: null,
+                companyId: null,
+            } as any);
+
             redirect('/professional/dashboard');
         }
 
-        // ✅ Qualquer role inesperado (fail-closed)
         redirectWithError('permissao');
     } catch (err: any) {
         if (

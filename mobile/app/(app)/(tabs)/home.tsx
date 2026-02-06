@@ -369,528 +369,14 @@ function normalizeApiImageUrl(raw: unknown): string | null {
     return `${cleanBase}${path}`;
 }
 
-/**
- * ✅ Estilos por factory: evita crash no import em ciclos de módulo
- */
-function makeStyles(UI: any) {
-    return StyleSheet.create({
-        page: { flex: 1, backgroundColor: UI.colors.bg },
-        fixedTop: {
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: 0,
-            zIndex: 999,
-        },
-
-        safeTop: {
-            height: 0, // será sobrescrito inline pelo insets.top via Header spacer; aqui só mantém padrão
-            backgroundColor: UI.brand.primary,
-        },
-
-        stickyRow: {
-            height: STICKY_ROW_H,
-            backgroundColor: UI.colors.bg,
-            paddingHorizontal: UI.spacing.screenX,
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-        },
-
-        profileRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
-        avatar: {
-            width: 42,
-            height: 42,
-            borderRadius: 21,
-            borderWidth: 2,
-            borderColor: UI.brand.primary,
-        },
-        avatarFallback: {
-            width: 42,
-            height: 42,
-            borderRadius: 21,
-            backgroundColor: UI.brand.primary,
-            borderWidth: 2,
-            borderColor: UI.brand.primary,
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-
-        hello: { color: UI.colors.textMuted, fontSize: 12, fontWeight: '700' },
-        name: { color: UI.colors.text, fontSize: 16, fontWeight: '700' },
-
-        topRightRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
-
-        iconBtn: {
-            width: 42,
-            height: 42,
-            borderRadius: 21,
-            backgroundColor: UI.colors.overlay08,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderWidth: 1,
-            borderColor: UI.colors.cardBorder,
-        },
-
-        levelBtn: { paddingTop: 7 },
-        levelMiniText: {
-            marginTop: 2,
-            fontSize: 9.5,
-            fontWeight: '900',
-            color: UI.colors.white,
-            includeFontPadding: false,
-            textAlign: 'center',
-            maxWidth: 38,
-        },
-
-        badge: {
-            position: 'absolute',
-            top: -6,
-            right: -6,
-            minWidth: 20,
-            height: 20,
-            paddingHorizontal: 6,
-            borderRadius: UI.radius.pill,
-            backgroundColor: UI.brand.primary,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderWidth: 2,
-            borderColor: UI.colors.bg,
-        },
-
-        badgeText: {
-            color: UI.colors.white,
-            fontSize: 11,
-            fontWeight: '900',
-            includeFontPadding: false,
-            textAlignVertical: 'center',
-        },
-
-        birthdayDot: {
-            position: 'absolute',
-            top: -6,
-            right: -6,
-            minWidth: 18,
-            height: 18,
-            paddingHorizontal: 5,
-            borderRadius: UI.radius.pill,
-            backgroundColor: UI.home.birthdayDotBg,
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderWidth: 2,
-            borderColor: UI.colors.bg,
-        },
-        birthdayDotText: {
-            color: UI.colors.white,
-            fontSize: 11,
-            fontWeight: '900',
-            includeFontPadding: false,
-            textAlignVertical: 'center',
-        },
-
-        list: { flex: 1, backgroundColor: UI.home.surface },
-        listContent: { paddingBottom: 24 },
-
-        topBounceDark: {
-            position: 'absolute',
-            left: 0,
-            right: 0,
-            top: -1400,
-            backgroundColor: UI.colors.bg,
-        },
-
-        darkShell: {
-            backgroundColor: UI.colors.bg,
-            borderBottomLeftRadius: 28,
-            borderBottomRightRadius: 28,
-            overflow: 'hidden',
-        },
-        darkInner: {
-            paddingHorizontal: UI.spacing.screenX,
-            paddingBottom: UI.spacing.screenX,
-        },
-
-        heroCard: {
-            marginTop: 14,
-            backgroundColor: UI.home.heroBg,
-            borderRadius: UI.radius.card,
-            padding: UI.spacing.cardPad,
-            borderWidth: 1,
-            borderColor: UI.home.heroBorder,
-        },
-
-        heroSections: { gap: 25 },
-        heroSection: {},
-
-        heroTitleRow: {
-            flexDirection: 'row',
-            alignItems: 'baseline',
-            justifyContent: 'space-between',
-            gap: 10,
-        },
-
-        heroTitle: { color: UI.colors.text, fontSize: 16, fontWeight: '600' },
-
-        apptService: {
-            color: UI.colors.text,
-            fontSize: 16,
-            fontWeight: '700',
-            marginTop: 6,
-        },
-
-        apptMeta: { color: UI.colors.textDim, fontSize: 16, marginTop: 2 },
-
-        metaRow: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 12,
-        },
-
-        statusPill: {
-            flexDirection: 'row',
-            backgroundColor: UI.colors.success,
-            paddingHorizontal: 10,
-            paddingVertical: 6,
-            borderRadius: UI.radius.pill,
-            alignItems: 'center',
-        },
-
-        statusPillInService: { backgroundColor: UI.home.inServiceBg },
-        statusText: { color: UI.colors.black, fontSize: 12, fontWeight: '700' },
-
-        actionsRow: { flexDirection: 'row', gap: 10 },
-        actionBtn: {
-            flex: 1,
-            backgroundColor: UI.colors.success,
-            borderRadius: UI.radius.pill,
-            paddingVertical: 12,
-            alignItems: 'center',
-            borderWidth: 1,
-            borderColor: UI.colors.cardBorder,
-        },
-        actionText: { color: UI.colors.black, fontWeight: '700', fontSize: 17 },
-
-        emptyApptBox: { padding: 5, gap: 14 },
-
-        emptyApptText: {
-            color: UI.colors.text,
-            fontSize: 17,
-            fontWeight: '500',
-            lineHeight: 18,
-            textAlign: 'center',
-        },
-
-        whiteArea: { backgroundColor: UI.home.surface },
-        whiteContent: { paddingHorizontal: UI.spacing.screenX, paddingTop: 18 },
-
-        sectionTitle: {
-            fontSize: 18,
-            fontWeight: '600',
-            marginBottom: 12,
-            color: UI.brand.primaryText,
-        },
-
-        historyTitleInline: {
-            fontSize: 18,
-            fontWeight: '600',
-            color: UI.brand.primaryText,
-            marginBottom: 0,
-        },
-
-        sectionTitleSpacing: { marginTop: 28 },
-
-        historyHeaderRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
-        },
-
-        productCard: {
-            width: 220,
-            marginRight: 18,
-            paddingRight: 18,
-            position: 'relative',
-        },
-
-        productImage: {
-            height: 140,
-            borderRadius: UI.radius.input,
-            marginBottom: 12,
-            backgroundColor: UI.home.imagePlaceholder,
-        },
-
-        badgePill: {
-            position: 'absolute',
-            left: 10,
-            top: 10,
-            maxWidth: 175,
-            borderRadius: UI.radius.pill,
-            paddingHorizontal: 10,
-            paddingVertical: 6,
-            backgroundColor: UI.home.darkPillBg,
-            borderWidth: 1,
-            borderColor: UI.home.darkPillBorder,
-        },
-
-        badgePillText: {
-            color: UI.colors.white,
-            fontSize: 12,
-            fontWeight: '800',
-            letterSpacing: 0.2,
-        },
-
-        outOfStockPill: {
-            position: 'absolute',
-            right: 10,
-            top: 10,
-            backgroundColor: UI.brand.primary,
-            borderWidth: 1,
-            borderColor: 'rgba(255,255,255,0.35)',
-            borderRadius: UI.radius.pill,
-            paddingHorizontal: 10,
-            paddingVertical: 6,
-        },
-
-        outOfStockText: {
-            color: UI.colors.white,
-            fontSize: 11,
-            fontWeight: '800',
-            letterSpacing: 0.4,
-        },
-
-        productBody: { flex: 1, minHeight: 128 },
-
-        productName: {
-            fontSize: 16,
-            fontWeight: '600',
-            color: UI.brand.primaryText,
-        },
-
-        productUnit: {
-            marginTop: 6,
-            fontSize: 12,
-            fontWeight: '700',
-            color: UI.home.textMuted,
-        },
-
-        productPrice: {
-            fontSize: 20,
-            fontWeight: '700',
-            color: UI.brand.primaryText,
-            marginTop: 6,
-        },
-
-        priceStack: { marginTop: 6, gap: 2 },
-
-        basePriceStriked: {
-            fontSize: 13,
-            fontWeight: '800',
-            color: UI.home.textSubtle,
-            textDecorationLine: 'line-through',
-        },
-
-        finalPrice: {
-            fontSize: 16,
-            fontWeight: '900',
-            color: UI.brand.primaryText,
-        },
-
-        economyText: {
-            marginTop: 1,
-            fontSize: 12,
-            fontWeight: '900',
-            color: UI.home.textMuted,
-        },
-
-        productFooter: { marginTop: 10, flex: 1, justifyContent: 'flex-end' },
-
-        btnCenterRow: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-
-        detailsBtn: {
-            height: 40,
-            borderRadius: UI.radius.pill,
-            paddingHorizontal: 12,
-            backgroundColor: UI.home.surface,
-            borderWidth: 1,
-            borderColor: UI.home.detailBorder,
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-
-        detailsBtnText: {
-            color: UI.home.detailText,
-            fontSize: 13,
-            fontWeight: '600',
-        },
-
-        productDivider: {
-            position: 'absolute',
-            right: 0,
-            top: 0,
-            bottom: 0,
-            width: 1,
-            backgroundColor: UI.home.separator,
-        },
-
-        emptyProductsText: {
-            color: UI.home.textMuted,
-            fontSize: 13,
-            fontWeight: '600',
-            textAlign: 'center',
-            paddingVertical: 10,
-        },
-
-        allCtaBtn: {
-            marginTop: 18,
-            height: 44,
-            borderRadius: UI.radius.pill,
-            paddingHorizontal: 14,
-            backgroundColor: UI.home.ctaBg,
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-
-        allCtaBtnText: {
-            color: UI.home.ctaText,
-            fontSize: 14,
-            fontWeight: '700',
-        },
-
-        historyItem: {
-            paddingVertical: 16,
-            paddingHorizontal: UI.spacing.screenX,
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            backgroundColor: UI.home.surface,
-        },
-
-        historyLeft: {
-            flexDirection: 'row',
-            gap: 14,
-            flex: 1,
-            alignItems: 'center',
-        },
-
-        historyIcon: {
-            width: 36,
-            height: 36,
-            backgroundColor: UI.home.historyIconBg,
-            borderRadius: 10,
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-
-        historyTitle: { fontWeight: '700', color: UI.brand.primaryText },
-        historyDesc: { fontSize: 13, color: UI.home.textDim, marginTop: 2 },
-        historyDate: { fontSize: 12, color: UI.home.textFaint, marginTop: 2 },
-
-        historyDivider: {
-            position: 'absolute',
-            left: UI.spacing.screenX,
-            right: UI.spacing.screenX,
-            bottom: 0,
-            height: 1,
-            backgroundColor: UI.home.divider,
-        },
-
-        emptyHistoryBox: {
-            paddingHorizontal: UI.spacing.screenX,
-            paddingVertical: 18,
-            alignItems: 'center',
-            gap: 10,
-            backgroundColor: UI.home.surface,
-        },
-
-        emptyHistoryText: {
-            color: UI.home.textMuted,
-            fontSize: 13,
-            fontWeight: '600',
-            textAlign: 'center',
-        },
-
-        partnerCard: {
-            width: 220,
-            marginRight: 18,
-            paddingRight: 18,
-            position: 'relative',
-        },
-
-        partnerImage: {
-            height: 140,
-            borderRadius: UI.radius.input,
-            marginBottom: 12,
-            backgroundColor: UI.home.imagePlaceholder,
-        },
-
-        partnerPill: {
-            position: 'absolute',
-            left: 10,
-            top: 10,
-            maxWidth: 175,
-            borderRadius: UI.radius.pill,
-            paddingHorizontal: 10,
-            paddingVertical: 6,
-            backgroundColor: UI.home.darkPillBg,
-            borderWidth: 1,
-            borderColor: UI.home.darkPillBorder,
-        },
-
-        partnerPillText: {
-            color: UI.colors.white,
-            fontSize: 12,
-            fontWeight: '800',
-            letterSpacing: 0.2,
-        },
-
-        partnerBody: { flex: 1, minHeight: 128 },
-
-        partnerName: {
-            fontSize: 16,
-            fontWeight: '600',
-            color: UI.brand.primaryText,
-        },
-
-        partnerDesc: {
-            marginTop: 6,
-            fontSize: 12,
-            fontWeight: '700',
-            color: UI.home.textMuted,
-            lineHeight: 16,
-            minHeight: 32,
-        },
-
-        partnerFooter: { marginTop: 10, flex: 1, justifyContent: 'flex-end' },
-
-        partnerDivider: {
-            position: 'absolute',
-            right: 0,
-            top: 0,
-            bottom: 0,
-            width: 1,
-            backgroundColor: UI.home.separator,
-        },
-    });
-}
-
-type HomeStyles = ReturnType<typeof makeStyles>;
-
 const ProductCard = memo(function ProductCard({
     item,
     showDivider,
     onPressDetails,
-    S,
 }: {
     item: Product;
     showDivider: boolean;
     onPressDetails: (id: string) => void;
-    S: HomeStyles;
 }) {
     const goDetails = useCallback(() => {
         onPressDetails(item.id);
@@ -961,7 +447,7 @@ const ProductCard = memo(function ProductCard({
                 />
 
                 {item.badge?.label ? (
-                    <View style={S.badgePill}>
+                    <View style={[S.badgePill]}>
                         <Text style={S.badgePillText} numberOfLines={1}>
                             {item.badge.label}
                         </Text>
@@ -1017,7 +503,7 @@ const ProductCard = memo(function ProductCard({
                             <FontAwesome
                                 name="angle-right"
                                 size={18}
-                                color={UI.home.detailText}
+                                color="#141414"
                                 style={{ marginLeft: 8 }}
                             />
                         </View>
@@ -1033,11 +519,9 @@ const ProductCard = memo(function ProductCard({
 const PartnerCard = memo(function PartnerCard({
     item,
     onPressDetails,
-    S,
 }: {
     item: Partner;
     onPressDetails: (id: string) => void;
-    S: HomeStyles;
 }) {
     const pct = Number(item.discountPct ?? 0);
     const pctLabel =
@@ -1093,7 +577,7 @@ const PartnerCard = memo(function PartnerCard({
                             <FontAwesome
                                 name="angle-right"
                                 size={18}
-                                color={UI.home.detailText}
+                                color="#141414"
                                 style={{ marginLeft: 8 }}
                             />
                         </View>
@@ -1109,11 +593,9 @@ const PartnerCard = memo(function PartnerCard({
 const HistoryRow = memo(function HistoryRow({
     item,
     showDivider,
-    S,
 }: {
     item: HistoryItem;
     showDivider: boolean;
-    S: HomeStyles;
 }) {
     return (
         <View style={S.historyItem}>
@@ -1138,17 +620,6 @@ const HistoryRow = memo(function HistoryRow({
 });
 
 export default function Home() {
-    // ✅ Styles criados aqui: evita crash de import se UI estiver "meio carregado" por ciclo
-    const S = useMemo(() => {
-        if (!UI?.brand || !UI?.colors || !UI?.home) {
-            console.error('[theme] UI inválido:', UI);
-            throw new Error(
-                'Theme UI not loaded (UI.brand/UI.colors/UI.home missing). Check client-theme export/import or circular deps.'
-            );
-        }
-        return makeStyles(UI);
-    }, []);
-
     const router = useRouter();
     const insets = useSafeAreaInsets();
 
@@ -1256,6 +727,7 @@ export default function Home() {
             const normalizedNext = rawNext
                 ? {
                       ...rawNext,
+                      // ✅ compat: se vier rules.canReschedule e não vier canReschedule direto
                       canReschedule:
                           typeof rawNext?.canReschedule === 'boolean'
                               ? rawNext.canReschedule
@@ -1296,18 +768,14 @@ export default function Home() {
 
             if (__DEV__) {
                 console.log('[home] history preview', {
-                    ok: (res as any)?.ok,
-                    items: Array.isArray((res as any)?.items)
-                        ? (res as any).items.length
-                        : 0,
-                    _debug: (res as any)?._debug,
+                    ok: res?.ok,
+                    items: Array.isArray(res?.items) ? res.items.length : 0,
+                    _debug: res?._debug,
                 });
             }
 
             setHistoryPreview(
-                (res as any)?.ok && Array.isArray((res as any)?.items)
-                    ? (res as any).items
-                    : []
+                res?.ok && Array.isArray(res?.items) ? res.items : []
             );
         } catch {
             setHistoryPreview([]);
@@ -1332,12 +800,8 @@ export default function Home() {
             }>('/api/mobile/products?limit=4', withTenantHeaders());
 
             const rawList =
-                (Array.isArray((res as any)?.items)
-                    ? (res as any).items
-                    : null) ??
-                (Array.isArray((res as any)?.products)
-                    ? (res as any).products
-                    : null) ??
+                (Array.isArray(res?.items) ? res.items : null) ??
+                (Array.isArray(res?.products) ? res.products : null) ??
                 [];
 
             const birthdayFromApi = rawList.find(
@@ -1396,11 +860,12 @@ export default function Home() {
                         imageUrl: normalizeApiImageUrl(
                             typeof p?.imageUrl === 'string' ? p.imageUrl : null
                         ),
+
                         unitName: String(p?.unitName ?? '—'),
                         isOutOfStock: !!p?.isOutOfStock,
                     };
                 })
-                .filter((p: Product | null): p is Product => !!p?.id);
+                .filter((p) => !!p.id);
 
             setProducts(mapped);
         } catch {
@@ -1444,6 +909,7 @@ export default function Home() {
                     return {
                         id,
                         name: String(p?.name ?? 'Parceiro'),
+                        // ✅ mesmo padrão da tela de Parceiros: normaliza (inclui baseURL/localhost)
                         logoUrl: normalizeApiImageUrl(p?.logoUrl) || null,
                         discountPct: Number(p?.discountPct ?? 0),
                         description: p?.description
@@ -1459,17 +925,20 @@ export default function Home() {
 
                     if (ao !== bo) return ao - bo;
 
+                    // desempate estável: nome
                     const an = String(a.name ?? '').toLowerCase();
                     const bn = String(b.name ?? '').toLowerCase();
                     if (an < bn) return -1;
                     if (an > bn) return 1;
 
+                    // último desempate: id
                     return String(a.id).localeCompare(String(b.id));
                 })
                 .slice(0, 6) as Partner[];
 
             setPartners(mapped);
 
+            // analytics de carregamento (opcional mas útil)
             trackEvent(
                 'partners_loaded',
                 {
@@ -1477,6 +946,7 @@ export default function Home() {
                     count: Array.isArray(rawList)
                         ? rawList.length
                         : mapped.length,
+
                     placement: 'home_carousel',
                 },
                 undefined,
@@ -1536,14 +1006,11 @@ export default function Home() {
             );
 
             const listCount =
-                (res as any)?.ok && Array.isArray((res as any)?.pendings)
-                    ? (res as any).pendings.length
+                res?.ok && Array.isArray(res?.pendings)
+                    ? res.pendings.length
                     : 0;
 
-            const singleCount =
-                (res as any)?.ok && (res as any)?.pending?.appointmentId
-                    ? 1
-                    : 0;
+            const singleCount = res?.ok && res?.pending?.appointmentId ? 1 : 0;
 
             const count = listCount > 0 ? listCount : singleCount;
 
@@ -1620,7 +1087,6 @@ export default function Home() {
             fetchNext,
             fetchHistoryPreview,
             fetchProductsPreview,
-            fetchPartnersPreview,
             fetchPendingCart,
             fetchPendingReviewCount,
             resetGate,
@@ -1817,10 +1283,10 @@ export default function Home() {
                     withTenantHeaders()
                 );
 
-                if (!(res as any)?.ok) {
+                if (!res?.ok) {
                     Alert.alert(
                         'Não foi possível cancelar',
-                        (res as any)?.error || 'Tente novamente.'
+                        res?.error || 'Tente novamente.'
                     );
                     return;
                 }
@@ -1871,10 +1337,9 @@ export default function Home() {
                 item={item}
                 showDivider={index < products.length - 1}
                 onPressDetails={goToProductDetails}
-                S={S}
             />
         ),
-        [goToProductDetails, products.length, S]
+        [goToProductDetails, products.length]
     );
 
     const seenPartnerIdsRef = useRef<Set<string>>(new Set());
@@ -1883,13 +1348,9 @@ export default function Home() {
 
     const renderPartner = useCallback(
         ({ item }: ListRenderItemInfo<Partner>) => (
-            <PartnerCard
-                item={item}
-                onPressDetails={goToPartnerDetails}
-                S={S}
-            />
+            <PartnerCard item={item} onPressDetails={goToPartnerDetails} />
         ),
-        [goToPartnerDetails, S]
+        [goToPartnerDetails]
     );
 
     const onViewablePartnersChanged = useRef(
@@ -1934,10 +1395,9 @@ export default function Home() {
             <HistoryRow
                 item={item}
                 showDivider={index < historyPreview.length - 1}
-                S={S}
             />
         ),
-        [historyPreview.length, S]
+        [historyPreview.length]
     );
 
     const userLevelLabel = useMemo(() => {
@@ -1985,24 +1445,6 @@ export default function Home() {
         } as const;
     }, [userLevelKey]);
 
-    const onPressBirthday = useCallback(() => {
-        if (!birthdayBadgeLabel) return;
-
-        const cid = companyIdRef.current;
-
-        trackEvent(
-            'action_click',
-            { from: 'home', action: 'birthday_badge' },
-            undefined,
-            cid
-        );
-
-        Alert.alert(
-            'Parabéns pra você! 🎂',
-            'Aproveite os descontos especiais\npara aniversariantes!'
-        );
-    }, [birthdayBadgeLabel]);
-
     const Header = useMemo(() => {
         const hasNext = !!next;
 
@@ -2033,104 +1475,114 @@ export default function Home() {
                     <View style={S.darkInner}>
                         <View style={S.heroCard}>
                             {hasNext ? (
-                                <View style={S.heroSections}>
-                                    <View style={S.heroSection}>
-                                        <View style={S.heroTitleRow}>
+                                <>
+                                    <View style={S.heroSections}>
+                                        <View style={S.heroSection}>
+                                            <View style={S.heroTitleRow}>
+                                                <Text
+                                                    style={S.heroTitle}
+                                                    numberOfLines={1}
+                                                >
+                                                    Seu agendamento -{' '}
+                                                    {startsAtInline}
+                                                </Text>
+                                            </View>
+
                                             <Text
-                                                style={S.heroTitle}
+                                                style={S.apptService}
                                                 numberOfLines={1}
                                             >
-                                                Seu agendamento -{' '}
-                                                {startsAtInline}
+                                                {next!.serviceName} com{' '}
+                                                {next!.barberName}
                                             </Text>
                                         </View>
 
-                                        <Text
-                                            style={S.apptService}
-                                            numberOfLines={1}
-                                        >
-                                            {next!.serviceName} com{' '}
-                                            {next!.barberName}
-                                        </Text>
-                                    </View>
-
-                                    <View style={S.heroSection}>
-                                        <View style={S.metaRow}>
-                                            <View
-                                                style={{
-                                                    flex: 1,
-                                                    paddingRight: 10,
-                                                }}
-                                            >
-                                                <Text
-                                                    style={S.apptMeta}
-                                                    numberOfLines={1}
-                                                >
-                                                    {next!.unitName}
-                                                </Text>
-                                            </View>
-
-                                            <View
-                                                style={[
-                                                    S.statusPill,
-                                                    isInService
-                                                        ? S.statusPillInService
-                                                        : null,
-                                                ]}
-                                            >
-                                                <FontAwesome
-                                                    name={
-                                                        isInService
-                                                            ? 'play'
-                                                            : 'check'
-                                                    }
-                                                    size={12}
-                                                    color={UI.colors.black}
-                                                    style={{ marginRight: 6 }}
-                                                />
-                                                <Text style={S.statusText}>
-                                                    {isInService
-                                                        ? 'ATENDIMENTO'
-                                                        : next!.statusLabel}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                    </View>
-
-                                    {showActions ? (
                                         <View style={S.heroSection}>
-                                            <View style={S.actionsRow}>
-                                                {canReschedule ? (
-                                                    <Pressable
-                                                        style={S.actionBtn}
-                                                        onPress={
-                                                            onPressReschedule
-                                                        }
+                                            <View style={S.metaRow}>
+                                                <View
+                                                    style={{
+                                                        flex: 1,
+                                                        paddingRight: 10,
+                                                    }}
+                                                >
+                                                    <Text
+                                                        style={S.apptMeta}
+                                                        numberOfLines={1}
                                                     >
-                                                        <Text
-                                                            style={S.actionText}
-                                                        >
-                                                            Alterar
-                                                        </Text>
-                                                    </Pressable>
-                                                ) : null}
+                                                        {next!.unitName}
+                                                    </Text>
+                                                </View>
 
-                                                {canCancel ? (
-                                                    <Pressable
-                                                        style={S.actionBtn}
-                                                        onPress={onPressCancel}
-                                                    >
-                                                        <Text
-                                                            style={S.actionText}
-                                                        >
-                                                            Cancelar
-                                                        </Text>
-                                                    </Pressable>
-                                                ) : null}
+                                                <View
+                                                    style={[
+                                                        S.statusPill,
+                                                        isInService
+                                                            ? S.statusPillInService
+                                                            : null,
+                                                    ]}
+                                                >
+                                                    <FontAwesome
+                                                        name={
+                                                            isInService
+                                                                ? 'play'
+                                                                : 'check'
+                                                        }
+                                                        size={12}
+                                                        color={UI.colors.black}
+                                                        style={{
+                                                            marginRight: 6,
+                                                        }}
+                                                    />
+                                                    <Text style={S.statusText}>
+                                                        {isInService
+                                                            ? 'ATENDIMENTO'
+                                                            : next!.statusLabel}
+                                                    </Text>
+                                                </View>
                                             </View>
                                         </View>
-                                    ) : null}
-                                </View>
+
+                                        {showActions ? (
+                                            <View style={S.heroSection}>
+                                                <View style={S.actionsRow}>
+                                                    {canReschedule ? (
+                                                        <Pressable
+                                                            style={S.actionBtn}
+                                                            onPress={
+                                                                onPressReschedule
+                                                            }
+                                                        >
+                                                            <Text
+                                                                style={
+                                                                    S.actionText
+                                                                }
+                                                            >
+                                                                Alterar
+                                                            </Text>
+                                                        </Pressable>
+                                                    ) : null}
+
+                                                    {canCancel ? (
+                                                        <Pressable
+                                                            style={S.actionBtn}
+                                                            onPress={
+                                                                onPressCancel
+                                                            }
+                                                        >
+                                                            <Text
+                                                                style={
+                                                                    S.actionText
+                                                                }
+                                                            >
+                                                                Cancelar
+                                                            </Text>
+                                                        </Pressable>
+                                                    ) : null}
+                                                </View>
+                                            </View>
+                                        ) : null}
+                                    </View>
+                                </>
                             ) : (
                                 <View style={S.emptyApptBox}>
                                     <Text style={S.emptyApptText}>
@@ -2182,21 +1634,24 @@ export default function Home() {
                             />
                         )}
 
-                        <Pressable style={S.allCtaBtn} onPress={goToProducts}>
+                        <Pressable
+                            style={S.allProductsBtn}
+                            onPress={goToProducts}
+                        >
                             <View style={S.btnCenterRow}>
-                                <Text style={S.allCtaBtnText}>
+                                <Text style={S.allProductsBtnText}>
                                     Ver todos os produtos
                                 </Text>
                                 <FontAwesome
                                     name="angle-right"
                                     size={18}
-                                    color={UI.home.ctaText}
+                                    color="#FFFFFF"
                                     style={{ marginLeft: 8 }}
                                 />
                             </View>
                         </Pressable>
 
-                        <View style={S.sectionTitleSpacing}>
+                        <View style={[S.sectionTitleSpacing]}>
                             <Text style={S.sectionTitle}>Parceiros</Text>
 
                             {partners.length === 0 ? (
@@ -2225,18 +1680,19 @@ export default function Home() {
                                         }
                                     />
 
+                                    {/* ✅ Botão igual ao de Produtos */}
                                     <Pressable
-                                        style={S.allCtaBtn}
+                                        style={S.allProductsBtn}
                                         onPress={goToPartners}
                                     >
                                         <View style={S.btnCenterRow}>
-                                            <Text style={S.allCtaBtnText}>
+                                            <Text style={S.allProductsBtnText}>
                                                 Ver todos os parceiros
                                             </Text>
                                             <FontAwesome
                                                 name="angle-right"
                                                 size={18}
-                                                color={UI.home.ctaText}
+                                                color="#FFFFFF"
                                                 style={{ marginLeft: 8 }}
                                             />
                                         </View>
@@ -2251,17 +1707,17 @@ export default function Home() {
                             <Text style={S.historyTitleInline}>Histórico</Text>
 
                             <Pressable
-                                style={S.allCtaBtn}
+                                style={S.allProductsBtnSmall}
                                 onPress={goToHistory}
                             >
                                 <View style={S.btnCenterRow}>
-                                    <Text style={S.allCtaBtnText}>
+                                    <Text style={S.allProductsBtnText}>
                                         Ver mais
                                     </Text>
                                     <FontAwesome
                                         name="angle-right"
                                         size={18}
-                                        color={UI.home.ctaText}
+                                        color="#FFFFFF"
                                         style={{ marginLeft: 8 }}
                                     />
                                 </View>
@@ -2272,26 +1728,37 @@ export default function Home() {
             </View>
         );
     }, [
+        goToBooking,
+        goToHistory,
+        goToProducts,
+        headerSpacerStyle,
+        keyProduct,
         next,
         nextLoading,
-        topBounceHeight,
-        headerSpacerStyle,
-        products,
-        partners,
-        keyProduct,
-        renderProduct,
-        keyPartner,
-        renderPartner,
-        partnersViewabilityConfig,
-        onViewablePartnersChanged,
-        goToBooking,
-        goToProducts,
-        goToPartners,
-        goToHistory,
-        onPressReschedule,
         onPressCancel,
-        S,
+        onPressReschedule,
+        products.length,
+        renderProduct,
+        topBounceHeight,
     ]);
+
+    const onPressBirthday = useCallback(() => {
+        if (!birthdayBadgeLabel) return;
+
+        const cid = companyIdRef.current;
+
+        trackEvent(
+            'action_click',
+            { from: 'home', action: 'birthday_badge' },
+            undefined,
+            cid
+        );
+
+        Alert.alert(
+            'Parabéns pra você! 🎂',
+            'Aproveite os descontos especiais\npara aniversariantes!'
+        );
+    }, [birthdayBadgeLabel]);
 
     return (
         <ScreenGate dataReady={dataReady} skeleton={<HomeSkeleton />}>
@@ -2307,17 +1774,12 @@ export default function Home() {
                     userLevelIcon={userLevelIcon as any}
                     userLevelStyle={userLevelStyle}
                     onPressLevel={() => {
-                        const cid = companyIdRef.current;
-                        trackEvent(
-                            'action_click',
-                            {
-                                from: 'home',
-                                action: 'level_chip',
-                                level: userLevelLabel,
-                            },
-                            undefined,
-                            cid
-                        );
+                        trackEvent('action_click', {
+                            from: 'home',
+                            action: 'level_chip',
+                            level: userLevelLabel,
+                            companyId: companyId ?? null,
+                        });
                     }}
                     pendingCartCount={pendingCartCount}
                     pendingReviewCount={pendingReviewCount}
@@ -2350,3 +1812,504 @@ export default function Home() {
         </ScreenGate>
     );
 }
+
+const S = StyleSheet.create({
+    page: { flex: 1, backgroundColor: UI.colors.bg },
+    fixedTop: { position: 'absolute', left: 0, right: 0, top: 0, zIndex: 999 },
+
+    stickyRow: {
+        height: STICKY_ROW_H,
+        backgroundColor: UI.colors.bg,
+        paddingHorizontal: UI.spacing.screenX,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+
+    profileRow: { flexDirection: 'row', gap: 12, alignItems: 'center' },
+    avatar: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        borderWidth: 2,
+        borderColor: UI.brand.primary,
+    },
+    hello: { color: UI.colors.textMuted, fontSize: 12, fontWeight: '700' },
+    name: { color: UI.colors.text, fontSize: 16, fontWeight: '700' },
+
+    topRightRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+
+    iconBtn: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: UI.colors.cardBorder,
+    },
+
+    levelBtn: { paddingTop: 7 },
+    levelMiniText: {
+        marginTop: 2,
+        fontSize: 9.5,
+        fontWeight: '900',
+        color: UI.colors.white,
+        includeFontPadding: false,
+        textAlign: 'center',
+        maxWidth: 38,
+    },
+
+    badge: {
+        position: 'absolute',
+        top: -6,
+        right: -6,
+        minWidth: 20,
+        height: 20,
+        paddingHorizontal: 6,
+        borderRadius: 999,
+        backgroundColor: UI.brand.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: UI.colors.bg,
+    },
+
+    badgeText: {
+        color: UI.colors.white,
+        fontSize: 11,
+        fontWeight: '900',
+        includeFontPadding: false,
+        textAlignVertical: 'center',
+    },
+
+    birthdayDot: {
+        position: 'absolute',
+        top: -6,
+        right: -6,
+        minWidth: 18,
+        height: 18,
+        paddingHorizontal: 5,
+        borderRadius: 999,
+        backgroundColor: 'rgba(124,108,255,0.95)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: UI.colors.bg,
+    },
+    birthdayDotText: {
+        color: '#FFFFFF',
+        fontSize: 11,
+        fontWeight: '900',
+        includeFontPadding: false,
+        textAlignVertical: 'center',
+    },
+
+    list: { flex: 1, backgroundColor: UI.colors.white },
+    listContent: { paddingBottom: 24 },
+
+    topBounceDark: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: -1400,
+        backgroundColor: UI.colors.bg,
+    },
+
+    darkShell: {
+        backgroundColor: UI.colors.bg,
+        borderBottomLeftRadius: 28,
+        borderBottomRightRadius: 28,
+        overflow: 'hidden',
+    },
+    darkInner: {
+        paddingHorizontal: UI.spacing.screenX,
+        paddingBottom: UI.spacing.screenX,
+    },
+
+    heroCard: {
+        marginTop: 14,
+        backgroundColor: 'rgba(124,108,255,0.22)',
+        borderRadius: UI.radius.card,
+        padding: UI.spacing.cardPad,
+        borderWidth: 1,
+        borderColor: 'rgba(124,108,255,0.35)',
+    },
+
+    heroSections: { gap: 25 },
+    heroSection: {},
+
+    heroTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'baseline',
+        justifyContent: 'space-between',
+        gap: 10,
+    },
+
+    heroTitle: { color: UI.colors.text, fontSize: 16, fontWeight: '600' },
+
+    apptService: {
+        color: UI.colors.text,
+        fontSize: 16,
+        fontWeight: '700',
+        marginTop: 6,
+    },
+
+    apptMeta: { color: UI.colors.textDim, fontSize: 16, marginTop: 2 },
+
+    metaRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 12,
+    },
+
+    statusPill: {
+        flexDirection: 'row',
+        backgroundColor: UI.colors.success,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 999,
+        alignItems: 'center',
+    },
+
+    statusPillInService: { backgroundColor: 'rgba(255,193,7,0.95)' },
+    statusText: { color: UI.colors.black, fontSize: 12, fontWeight: '700' },
+
+    actionsRow: { flexDirection: 'row', gap: 10 },
+    actionBtn: {
+        flex: 1,
+        backgroundColor: '#00ff3c',
+        borderRadius: 999,
+        paddingVertical: 12,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: UI.colors.cardBorder,
+    },
+    actionText: { color: '#000', fontWeight: '700', fontSize: 17 },
+
+    emptyApptBox: { padding: 5, gap: 14 },
+
+    emptyApptText: {
+        color: UI.colors.text,
+        fontSize: 17,
+        fontWeight: '500',
+        lineHeight: 18,
+        textAlign: 'center',
+    },
+
+    whiteArea: { backgroundColor: UI.colors.white },
+    whiteContent: { paddingHorizontal: UI.spacing.screenX, paddingTop: 18 },
+
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: '600',
+        marginBottom: 12,
+        color: UI.brand.primaryText,
+    },
+
+    historyTitleInline: {
+        fontSize: 18,
+        fontWeight: '600',
+        color: UI.brand.primaryText,
+        marginBottom: 0,
+    },
+
+    sectionTitleSpacing: { marginTop: 28 },
+
+    historyHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+    },
+
+    productCard: {
+        width: 220,
+        marginRight: 18,
+        paddingRight: 18,
+        position: 'relative',
+    },
+
+    productImage: {
+        height: 140,
+        borderRadius: UI.radius.input,
+        marginBottom: 12,
+        backgroundColor: 'rgba(0,0,0,0.05)',
+    },
+
+    badgePill: {
+        position: 'absolute',
+        left: 10,
+        top: 10,
+        maxWidth: 175,
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        backgroundColor: 'rgba(20,20,20,0.92)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.22)',
+    },
+
+    badgePillText: {
+        color: '#FFFFFF',
+        fontSize: 12,
+        fontWeight: '800',
+        letterSpacing: 0.2,
+    },
+
+    outOfStockPill: {
+        position: 'absolute',
+        right: 10,
+        top: 10,
+        backgroundColor: UI.brand.primary,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.35)',
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+    },
+
+    outOfStockText: {
+        color: UI.colors.white,
+        fontSize: 11,
+        fontWeight: '800',
+        letterSpacing: 0.4,
+    },
+
+    productBody: { flex: 1, minHeight: 128 },
+
+    productName: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: UI.brand.primaryText,
+    },
+
+    productUnit: {
+        marginTop: 6,
+        fontSize: 12,
+        fontWeight: '700',
+        color: 'rgba(0,0,0,0.55)',
+    },
+
+    productPrice: {
+        fontSize: 20,
+        fontWeight: '700',
+        color: UI.brand.primaryText,
+        marginTop: 6,
+    },
+
+    priceStack: { marginTop: 6, gap: 2 },
+
+    basePriceStriked: {
+        fontSize: 13,
+        fontWeight: '800',
+        color: 'rgba(0,0,0,0.48)',
+        textDecorationLine: 'line-through',
+    },
+
+    finalPrice: {
+        fontSize: 16,
+        fontWeight: '900',
+        color: UI.brand.primaryText,
+    },
+
+    economyText: {
+        marginTop: 1,
+        fontSize: 12,
+        fontWeight: '900',
+        color: 'rgba(0,0,0,0.58)',
+    },
+
+    productFooter: { marginTop: 10, flex: 1, justifyContent: 'flex-end' },
+
+    btnCenterRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    detailsBtn: {
+        height: 40,
+        borderRadius: 999,
+        paddingHorizontal: 12,
+        backgroundColor: UI.colors.white,
+        borderWidth: 1,
+        borderColor: '#141414',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    detailsBtnText: { color: '#141414', fontSize: 13, fontWeight: '600' },
+
+    productDivider: {
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: 1,
+        backgroundColor: 'rgba(0,0,0,0.10)',
+    },
+
+    emptyProductsText: {
+        color: 'rgba(0,0,0,0.55)',
+        fontSize: 13,
+        fontWeight: '600',
+        textAlign: 'center',
+        paddingVertical: 10,
+    },
+
+    allProductsBtn: {
+        marginTop: 18,
+        height: 44,
+        borderRadius: 999,
+        paddingHorizontal: 14,
+        backgroundColor: '#141414',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    allProductsBtnSmall: {
+        height: 44,
+        borderRadius: 999,
+        paddingHorizontal: 14,
+        backgroundColor: '#141414',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    allProductsBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
+
+    historyItem: {
+        paddingVertical: 16,
+        paddingHorizontal: UI.spacing.screenX,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: UI.colors.white,
+    },
+
+    historyLeft: {
+        flexDirection: 'row',
+        gap: 14,
+        flex: 1,
+        alignItems: 'center',
+    },
+
+    historyIcon: {
+        width: 36,
+        height: 36,
+        backgroundColor: 'rgba(124,108,255,0.18)',
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    historyTitle: { fontWeight: '700', color: UI.brand.primaryText },
+    historyDesc: { fontSize: 13, color: 'rgba(0,0,0,0.65)', marginTop: 2 },
+    historyDate: { fontSize: 12, color: 'rgba(0,0,0,0.40)', marginTop: 2 },
+
+    historyDivider: {
+        position: 'absolute',
+        left: UI.spacing.screenX,
+        right: UI.spacing.screenX,
+        bottom: 0,
+        height: 1,
+        backgroundColor: 'rgba(0,0,0,0.08)',
+    },
+
+    emptyHistoryBox: {
+        paddingHorizontal: UI.spacing.screenX,
+        paddingVertical: 18,
+        alignItems: 'center',
+        gap: 10,
+    },
+
+    emptyHistoryText: {
+        color: 'rgba(0,0,0,0.55)',
+        fontSize: 13,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    avatarFallback: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        backgroundColor: UI.brand.primary,
+        borderWidth: 2,
+        borderColor: UI.brand.primary,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+
+    partnersHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+        marginBottom: 12,
+    },
+
+    partnerCard: {
+        width: 220,
+        marginRight: 18,
+        paddingRight: 18,
+        position: 'relative',
+    },
+
+    partnerImage: {
+        height: 140,
+        borderRadius: UI.radius.input,
+        marginBottom: 12,
+        backgroundColor: 'rgba(0,0,0,0.05)',
+    },
+
+    partnerPill: {
+        position: 'absolute',
+        left: 10,
+        top: 10,
+        maxWidth: 175,
+        borderRadius: 999,
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        backgroundColor: 'rgba(20,20,20,0.92)',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.22)',
+    },
+
+    partnerPillText: {
+        color: '#FFFFFF',
+        fontSize: 12,
+        fontWeight: '800',
+        letterSpacing: 0.2,
+    },
+
+    partnerBody: { flex: 1, minHeight: 128 },
+
+    partnerName: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: UI.brand.primaryText,
+    },
+
+    partnerDesc: {
+        marginTop: 6,
+        fontSize: 12,
+        fontWeight: '700',
+        color: 'rgba(0,0,0,0.55)',
+        lineHeight: 16,
+        minHeight: 32,
+    },
+
+    partnerFooter: { marginTop: 10, flex: 1, justifyContent: 'flex-end' },
+
+    partnerDivider: {
+        position: 'absolute',
+        right: 0,
+        top: 0,
+        bottom: 0,
+        width: 1,
+        backgroundColor: 'rgba(0,0,0,0.10)',
+    },
+});
