@@ -7,9 +7,24 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
-
-import type { CompanyForRow } from '@/app/platform/companies/page';
 import { CompanyEditDialog } from '@/components/plataform/companies/company-edit-dialog/company-edit-dialog';
+
+type CompanyCounts = {
+    members?: number | string | null;
+    units?: number | string | null;
+    professionals?: number | string | null;
+};
+
+export type CompanyForRow = {
+    id: string;
+    name: string;
+    slug?: string | null;
+    segment?: string | null;
+    isActive?: boolean | null;
+    counts?: CompanyCounts | null;
+    createdAt?: string | Date | null;
+    updatedAt?: string | Date | null;
+};
 
 function Pill({
     children,
@@ -179,8 +194,7 @@ export function CompanyRow({ company }: { company: CompanyForRow }) {
                             slug: company.slug ?? null,
                             segment: company.segment ?? 'BARBERSHOP',
                             isActive: Boolean(company.isActive),
-                            createdAt: company.createdAt,
-                            updatedAt: company.updatedAt,
+                            // ⚠️ createdAt/updatedAt removidos porque CompanyForEdit não aceita
                         }}
                     />
 
