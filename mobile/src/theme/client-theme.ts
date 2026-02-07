@@ -30,6 +30,24 @@ export const UI = {
         black10: 'rgba(0,0,0,0.10)',
         black45: 'rgba(0,0,0,0.45)',
     },
+    // ✅ overlays semânticos (usados em auth screens)
+    overlay: {
+        dim: 'rgba(0,0,0,0.55)',
+    },
+
+    // ✅ tema das telas de autenticação (login/signup/forgot/reset)
+    auth: {
+        inputBorder: 'rgba(255,255,255,0.18)',
+        inputBg: 'rgba(255,255,255,0.08)',
+        inputText: '#F8FAFC',
+        link: '#7C6CFF',
+    },
+
+    // ✅ tema da Home (evita undefined)
+    home: {
+        birthdayDotBg: 'rgba(255,255,255,0.12)',
+    },
+
     radius: {
         card: 18,
         input: 12,
