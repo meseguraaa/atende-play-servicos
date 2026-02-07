@@ -1,0 +1,521 @@
+module.exports = [
+    918622,
+    (e, t, r) => {
+        t.exports = e.x(
+            'next/dist/compiled/next-server/app-page-turbo.runtime.prod.js',
+            () =>
+                require('next/dist/compiled/next-server/app-page-turbo.runtime.prod.js')
+        );
+    },
+    556704,
+    (e, t, r) => {
+        t.exports = e.x(
+            'next/dist/server/app-render/work-async-storage.external.js',
+            () =>
+                require('next/dist/server/app-render/work-async-storage.external.js')
+        );
+    },
+    832319,
+    (e, t, r) => {
+        t.exports = e.x(
+            'next/dist/server/app-render/work-unit-async-storage.external.js',
+            () =>
+                require('next/dist/server/app-render/work-unit-async-storage.external.js')
+        );
+    },
+    324725,
+    (e, t, r) => {
+        t.exports = e.x(
+            'next/dist/server/app-render/after-task-async-storage.external.js',
+            () =>
+                require('next/dist/server/app-render/after-task-async-storage.external.js')
+        );
+    },
+    120635,
+    (e, t, r) => {
+        t.exports = e.x(
+            'next/dist/server/app-render/action-async-storage.external.js',
+            () =>
+                require('next/dist/server/app-render/action-async-storage.external.js')
+        );
+    },
+    656641,
+    (e) => {
+        'use strict';
+        var t = e.i(154154),
+            r = e.i(140407),
+            a = e.i(493068),
+            n = e.i(821498),
+            i = e.i(161599),
+            s = e.i(182716),
+            o = e.i(857635),
+            l = e.i(337047),
+            d = e.i(528171),
+            u = e.i(367300),
+            p = e.i(102610),
+            c = e.i(670893),
+            v = e.i(902769),
+            g = e.i(46094),
+            h = e.i(622730),
+            x = e.i(811178),
+            m = e.i(193695);
+        e.i(629399);
+        var R = e.i(377404),
+            f = e.i(738342),
+            w = e.i(698043),
+            E = e.i(212669);
+        function y(e, t = 400) {
+            return f.NextResponse.json({ ok: !1, error: e }, { status: t });
+        }
+        async function A(e, t) {
+            let r,
+                a = (await (0, E.requireAdminForModule)('REVIEWS')).companyId;
+            if (!a) return y('Empresa não encontrada na sessão.', 401);
+            let { tagId: n } = await t.params;
+            if (!n) return y('tagId ausente na rota.', 400);
+            try {
+                r = await e.json();
+            } catch {
+                return y('Body inválido (JSON).');
+            }
+            if (
+                void 0 === r?.label &&
+                void 0 === r?.isActive &&
+                void 0 === r?.isNegative
+            )
+                return y(
+                    'Nada para atualizar. Envie ao menos um campo: label, isActive, isNegative.'
+                );
+            let i = {};
+            if (void 0 !== r.label) {
+                let e = String(r.label ?? '')
+                    .trim()
+                    .replace(/\s+/g, ' ');
+                if (!e) return y('Informe o texto da tag.');
+                if (e.length < 2)
+                    return y('A tag precisa ter pelo menos 2 letras.');
+                if (e.length > 80)
+                    return y('A tag pode ter no máximo 80 caracteres.');
+                i.label = e;
+            }
+            if (
+                (void 0 !== r.isActive && (i.isActive = !!r.isActive),
+                void 0 !== r.isNegative && (i.isNegative = !!r.isNegative),
+                !(await w.prisma.reviewTag.findFirst({
+                    where: { id: n, companyId: a },
+                    select: { id: !0 },
+                })))
+            )
+                return y('Tag não encontrada.', 404);
+            try {
+                var s;
+                return (
+                    (s = await w.prisma.reviewTag.update({
+                        where: { id: n },
+                        data: i,
+                        select: {
+                            id: !0,
+                            companyId: !0,
+                            label: !0,
+                            isActive: !0,
+                            isNegative: !0,
+                            createdAt: !0,
+                            updatedAt: !0,
+                        },
+                    })),
+                    f.NextResponse.json({ ok: !0, data: s }, void 0)
+                );
+            } catch (e) {
+                if ('P2002' === e?.code)
+                    return y('Já existe uma tag com esse texto.', 409);
+                return y('Não foi possível atualizar a tag.', 500);
+            }
+        }
+        e.s(['PATCH', () => A, 'dynamic', 0, 'force-dynamic'], 624409);
+        var C = e.i(624409);
+        let N = new t.AppRouteRouteModule({
+                definition: {
+                    kind: r.RouteKind.APP_ROUTE,
+                    page: '/api/admin/review-tags/[tagId]/route',
+                    pathname: '/api/admin/review-tags/[tagId]',
+                    filename: 'route',
+                    bundlePath: '',
+                },
+                distDir: '.next',
+                relativeProjectDir: '',
+                resolvedPagePath:
+                    '[project]/src/app/api/admin/review-tags/[tagId]/route.ts',
+                nextConfigOutput: 'standalone',
+                userland: C,
+            }),
+            {
+                workAsyncStorage: b,
+                workUnitAsyncStorage: T,
+                serverHooks: P,
+            } = N;
+        function I() {
+            return (0, a.patchFetch)({
+                workAsyncStorage: b,
+                workUnitAsyncStorage: T,
+            });
+        }
+        async function S(e, t, a) {
+            N.isDev &&
+                (0, n.addRequestMeta)(
+                    e,
+                    'devRequestTimingInternalsEnd',
+                    process.hrtime.bigint()
+                );
+            let f = '/api/admin/review-tags/[tagId]/route';
+            f = f.replace(/\/index$/, '') || '/';
+            let w = await N.prepare(e, t, {
+                srcPage: f,
+                multiZoneDraftMode: !1,
+            });
+            if (!w)
+                return (
+                    (t.statusCode = 400),
+                    t.end('Bad Request'),
+                    null == a.waitUntil ||
+                        a.waitUntil.call(a, Promise.resolve()),
+                    null
+                );
+            let {
+                    buildId: E,
+                    params: y,
+                    nextConfig: A,
+                    parsedUrl: C,
+                    isDraftMode: b,
+                    prerenderManifest: T,
+                    routerServerContext: P,
+                    isOnDemandRevalidate: I,
+                    revalidateOnlyGenerated: S,
+                    resolvedPathname: O,
+                    clientReferenceManifest: k,
+                    serverActionsManifest: j,
+                } = w,
+                q = (0, l.normalizeAppPath)(f),
+                _ = !!(T.dynamicRoutes[q] || T.routes[O]),
+                H = async () => (
+                    (null == P ? void 0 : P.render404)
+                        ? await P.render404(e, t, C, !1)
+                        : t.end('This page could not be found'),
+                    null
+                );
+            if (_ && !b) {
+                let e = !!T.routes[O],
+                    t = T.dynamicRoutes[q];
+                if (t && !1 === t.fallback && !e) {
+                    if (A.experimental.adapterPath) return await H();
+                    throw new m.NoFallbackError();
+                }
+            }
+            let M = null;
+            !_ || N.isDev || b || (M = '/index' === (M = O) ? '/' : M);
+            let U = !0 === N.isDev || !_,
+                D = _ && !U;
+            j &&
+                k &&
+                (0, s.setReferenceManifestsSingleton)({
+                    page: f,
+                    clientReferenceManifest: k,
+                    serverActionsManifest: j,
+                    serverModuleMap: (0, o.createServerModuleMap)({
+                        serverActionsManifest: j,
+                    }),
+                });
+            let F = e.method || 'GET',
+                $ = (0, i.getTracer)(),
+                K = $.getActiveScopeSpan(),
+                B = {
+                    params: y,
+                    prerenderManifest: T,
+                    renderOpts: {
+                        experimental: {
+                            authInterrupts: !!A.experimental.authInterrupts,
+                        },
+                        cacheComponents: !!A.cacheComponents,
+                        supportsDynamicResponse: U,
+                        incrementalCache: (0, n.getRequestMeta)(
+                            e,
+                            'incrementalCache'
+                        ),
+                        cacheLifeProfiles: A.cacheLife,
+                        waitUntil: a.waitUntil,
+                        onClose: (e) => {
+                            t.on('close', e);
+                        },
+                        onAfterTaskError: void 0,
+                        onInstrumentationRequestError: (t, r, a) =>
+                            N.onRequestError(e, t, a, P),
+                    },
+                    sharedContext: { buildId: E },
+                },
+                L = new d.NodeNextRequest(e),
+                V = new d.NodeNextResponse(t),
+                z = u.NextRequestAdapter.fromNodeNextRequest(
+                    L,
+                    (0, u.signalFromNodeResponse)(t)
+                );
+            try {
+                let s = async (e) =>
+                        N.handle(z, B).finally(() => {
+                            if (!e) return;
+                            e.setAttributes({
+                                'http.status_code': t.statusCode,
+                                'next.rsc': !1,
+                            });
+                            let r = $.getRootSpanAttributes();
+                            if (!r) return;
+                            if (
+                                r.get('next.span_type') !==
+                                p.BaseServerSpan.handleRequest
+                            )
+                                return void console.warn(
+                                    `Unexpected root span type '${r.get('next.span_type')}'. Please report this Next.js issue https://github.com/vercel/next.js`
+                                );
+                            let a = r.get('next.route');
+                            if (a) {
+                                let t = `${F} ${a}`;
+                                (e.setAttributes({
+                                    'next.route': a,
+                                    'http.route': a,
+                                    'next.span_name': t,
+                                }),
+                                    e.updateName(t));
+                            } else e.updateName(`${F} ${f}`);
+                        }),
+                    o = !!(0, n.getRequestMeta)(e, 'minimalMode'),
+                    l = async (n) => {
+                        var i, l;
+                        let d = async ({ previousCacheEntry: r }) => {
+                                try {
+                                    if (!o && I && S && !r)
+                                        return (
+                                            (t.statusCode = 404),
+                                            t.setHeader(
+                                                'x-nextjs-cache',
+                                                'REVALIDATED'
+                                            ),
+                                            t.end(
+                                                'This page could not be found'
+                                            ),
+                                            null
+                                        );
+                                    let i = await s(n);
+                                    e.fetchMetrics = B.renderOpts.fetchMetrics;
+                                    let l = B.renderOpts.pendingWaitUntil;
+                                    l &&
+                                        a.waitUntil &&
+                                        (a.waitUntil(l), (l = void 0));
+                                    let d = B.renderOpts.collectedTags;
+                                    if (!_)
+                                        return (
+                                            await (0, v.sendResponse)(
+                                                L,
+                                                V,
+                                                i,
+                                                B.renderOpts.pendingWaitUntil
+                                            ),
+                                            null
+                                        );
+                                    {
+                                        let e = await i.blob(),
+                                            t = (0,
+                                            g.toNodeOutgoingHttpHeaders)(
+                                                i.headers
+                                            );
+                                        (d && (t[x.NEXT_CACHE_TAGS_HEADER] = d),
+                                            !t['content-type'] &&
+                                                e.type &&
+                                                (t['content-type'] = e.type));
+                                        let r =
+                                                void 0 !==
+                                                    B.renderOpts
+                                                        .collectedRevalidate &&
+                                                !(
+                                                    B.renderOpts
+                                                        .collectedRevalidate >=
+                                                    x.INFINITE_CACHE
+                                                ) &&
+                                                B.renderOpts
+                                                    .collectedRevalidate,
+                                            a =
+                                                void 0 ===
+                                                    B.renderOpts
+                                                        .collectedExpire ||
+                                                B.renderOpts.collectedExpire >=
+                                                    x.INFINITE_CACHE
+                                                    ? void 0
+                                                    : B.renderOpts
+                                                          .collectedExpire;
+                                        return {
+                                            value: {
+                                                kind: R.CachedRouteKind
+                                                    .APP_ROUTE,
+                                                status: i.status,
+                                                body: Buffer.from(
+                                                    await e.arrayBuffer()
+                                                ),
+                                                headers: t,
+                                            },
+                                            cacheControl: {
+                                                revalidate: r,
+                                                expire: a,
+                                            },
+                                        };
+                                    }
+                                } catch (t) {
+                                    throw (
+                                        (null == r ? void 0 : r.isStale) &&
+                                            (await N.onRequestError(
+                                                e,
+                                                t,
+                                                {
+                                                    routerKind: 'App Router',
+                                                    routePath: f,
+                                                    routeType: 'route',
+                                                    revalidateReason: (0,
+                                                    c.getRevalidateReason)({
+                                                        isStaticGeneration: D,
+                                                        isOnDemandRevalidate: I,
+                                                    }),
+                                                },
+                                                P
+                                            )),
+                                        t
+                                    );
+                                }
+                            },
+                            u = await N.handleResponse({
+                                req: e,
+                                nextConfig: A,
+                                cacheKey: M,
+                                routeKind: r.RouteKind.APP_ROUTE,
+                                isFallback: !1,
+                                prerenderManifest: T,
+                                isRoutePPREnabled: !1,
+                                isOnDemandRevalidate: I,
+                                revalidateOnlyGenerated: S,
+                                responseGenerator: d,
+                                waitUntil: a.waitUntil,
+                                isMinimalMode: o,
+                            });
+                        if (!_) return null;
+                        if (
+                            (null == u || null == (i = u.value)
+                                ? void 0
+                                : i.kind) !== R.CachedRouteKind.APP_ROUTE
+                        )
+                            throw Object.defineProperty(
+                                Error(
+                                    `Invariant: app-route received invalid cache entry ${null == u || null == (l = u.value) ? void 0 : l.kind}`
+                                ),
+                                '__NEXT_ERROR_CODE',
+                                {
+                                    value: 'E701',
+                                    enumerable: !1,
+                                    configurable: !0,
+                                }
+                            );
+                        (o ||
+                            t.setHeader(
+                                'x-nextjs-cache',
+                                I
+                                    ? 'REVALIDATED'
+                                    : u.isMiss
+                                      ? 'MISS'
+                                      : u.isStale
+                                        ? 'STALE'
+                                        : 'HIT'
+                            ),
+                            b &&
+                                t.setHeader(
+                                    'Cache-Control',
+                                    'private, no-cache, no-store, max-age=0, must-revalidate'
+                                ));
+                        let p = (0, g.fromNodeOutgoingHttpHeaders)(
+                            u.value.headers
+                        );
+                        return (
+                            (o && _) || p.delete(x.NEXT_CACHE_TAGS_HEADER),
+                            !u.cacheControl ||
+                                t.getHeader('Cache-Control') ||
+                                p.get('Cache-Control') ||
+                                p.set(
+                                    'Cache-Control',
+                                    (0, h.getCacheControlHeader)(u.cacheControl)
+                                ),
+                            await (0, v.sendResponse)(
+                                L,
+                                V,
+                                new Response(u.value.body, {
+                                    headers: p,
+                                    status: u.value.status || 200,
+                                })
+                            ),
+                            null
+                        );
+                    };
+                K
+                    ? await l(K)
+                    : await $.withPropagatedContext(e.headers, () =>
+                          $.trace(
+                              p.BaseServerSpan.handleRequest,
+                              {
+                                  spanName: `${F} ${f}`,
+                                  kind: i.SpanKind.SERVER,
+                                  attributes: {
+                                      'http.method': F,
+                                      'http.target': e.url,
+                                  },
+                              },
+                              l
+                          )
+                      );
+            } catch (t) {
+                if (
+                    (t instanceof m.NoFallbackError ||
+                        (await N.onRequestError(e, t, {
+                            routerKind: 'App Router',
+                            routePath: q,
+                            routeType: 'route',
+                            revalidateReason: (0, c.getRevalidateReason)({
+                                isStaticGeneration: D,
+                                isOnDemandRevalidate: I,
+                            }),
+                        })),
+                    _)
+                )
+                    throw t;
+                return (
+                    await (0, v.sendResponse)(
+                        L,
+                        V,
+                        new Response(null, { status: 500 })
+                    ),
+                    null
+                );
+            }
+        }
+        e.s(
+            [
+                'handler',
+                () => S,
+                'patchFetch',
+                () => I,
+                'routeModule',
+                () => N,
+                'serverHooks',
+                () => P,
+                'workAsyncStorage',
+                () => b,
+                'workUnitAsyncStorage',
+                () => T,
+            ],
+            656641
+        );
+    },
+];
+
+//# sourceMappingURL=%5Broot-of-the-server%5D__cce44b24._.js.map

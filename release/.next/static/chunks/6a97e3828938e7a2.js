@@ -1,0 +1,2264 @@
+(globalThis.TURBOPACK || (globalThis.TURBOPACK = [])).push([
+    'object' == typeof document ? document.currentScript : void 0,
+    926991,
+    859502,
+    495794,
+    432286,
+    (e) => {
+        'use strict';
+        var t = e.i(383206);
+        let r = (0, t.default)('chevron-left', [
+            ['path', { d: 'm15 18-6-6 6-6', key: '1wnfg3' }],
+        ]);
+        e.s(['default', () => r], 926991);
+        let a = (0, t.default)('chevron-right', [
+            ['path', { d: 'm9 18 6-6-6-6', key: 'mthhwq' }],
+        ]);
+        e.s(['default', () => a], 859502);
+        var n = e.i(487122),
+            o = e.i(516467);
+        function i(e, t, r) {
+            let a = (0, o.toDate)(e, r?.in);
+            if (isNaN(t)) return (0, n.constructFrom)(r?.in || e, NaN);
+            if (!t) return a;
+            let i = a.getDate(),
+                s = (0, n.constructFrom)(r?.in || e, a.getTime());
+            return (s.setMonth(a.getMonth() + t + 1, 0), i >= s.getDate())
+                ? s
+                : (a.setFullYear(s.getFullYear(), s.getMonth(), i), a);
+        }
+        function s(e, t) {
+            let r = (0, o.toDate)(e, t?.in);
+            return (r.setDate(1), r.setHours(0, 0, 0, 0), r);
+        }
+        (e.s(['addMonths', () => i], 495794),
+            e.s(['startOfMonth', () => s], 432286));
+    },
+    337822,
+    (e) => {
+        'use strict';
+        var t = e.i(565750),
+            r = e.i(990341),
+            a = e.i(291967),
+            n = e.i(672687),
+            o = e.i(784711),
+            i = e.i(846357),
+            s = e.i(774621),
+            l = e.i(60126),
+            d = e.i(910529),
+            c = e.i(75355),
+            u = e.i(546354),
+            p = e.i(861181),
+            m = e.i(403078),
+            f = e.i(655875),
+            g = e.i(695145),
+            h = e.i(73772),
+            x = e.i(595357),
+            v = 'Popover',
+            [b, y] = (0, o.createContextScope)(v, [c.createPopperScope]),
+            j = (0, c.createPopperScope)(),
+            [C, w] = b(v),
+            N = (e) => {
+                let {
+                        __scopePopover: a,
+                        children: n,
+                        open: o,
+                        defaultOpen: i,
+                        onOpenChange: s,
+                        modal: l = !1,
+                    } = e,
+                    u = j(a),
+                    p = r.useRef(null),
+                    [m, f] = r.useState(!1),
+                    [h, x] = (0, g.useControllableState)({
+                        prop: o,
+                        defaultProp: i ?? !1,
+                        onChange: s,
+                        caller: v,
+                    });
+                return (0, t.jsx)(c.Root, {
+                    ...u,
+                    children: (0, t.jsx)(C, {
+                        scope: a,
+                        contentId: (0, d.useId)(),
+                        triggerRef: p,
+                        open: h,
+                        onOpenChange: x,
+                        onOpenToggle: r.useCallback(() => x((e) => !e), [x]),
+                        hasCustomAnchor: m,
+                        onCustomAnchorAdd: r.useCallback(() => f(!0), []),
+                        onCustomAnchorRemove: r.useCallback(() => f(!1), []),
+                        modal: l,
+                        children: n,
+                    }),
+                });
+            };
+        N.displayName = v;
+        var D = 'PopoverAnchor';
+        r.forwardRef((e, a) => {
+            let { __scopePopover: n, ...o } = e,
+                i = w(D, n),
+                s = j(n),
+                { onCustomAnchorAdd: l, onCustomAnchorRemove: d } = i;
+            return (
+                r.useEffect(() => (l(), () => d()), [l, d]),
+                (0, t.jsx)(c.Anchor, { ...s, ...o, ref: a })
+            );
+        }).displayName = D;
+        var R = 'PopoverTrigger',
+            P = r.forwardRef((e, r) => {
+                let { __scopePopover: o, ...i } = e,
+                    s = w(R, o),
+                    l = j(o),
+                    d = (0, n.useComposedRefs)(r, s.triggerRef),
+                    u = (0, t.jsx)(m.Primitive.button, {
+                        type: 'button',
+                        'aria-haspopup': 'dialog',
+                        'aria-expanded': s.open,
+                        'aria-controls': s.contentId,
+                        'data-state': z(s.open),
+                        ...i,
+                        ref: d,
+                        onClick: (0, a.composeEventHandlers)(
+                            e.onClick,
+                            s.onOpenToggle
+                        ),
+                    });
+                return s.hasCustomAnchor
+                    ? u
+                    : (0, t.jsx)(c.Anchor, { asChild: !0, ...l, children: u });
+            });
+        P.displayName = R;
+        var k = 'PopoverPortal',
+            [I, A] = b(k, { forceMount: void 0 }),
+            S = (e) => {
+                let {
+                        __scopePopover: r,
+                        forceMount: a,
+                        children: n,
+                        container: o,
+                    } = e,
+                    i = w(k, r);
+                return (0, t.jsx)(I, {
+                    scope: r,
+                    forceMount: a,
+                    children: (0, t.jsx)(p.Presence, {
+                        present: a || i.open,
+                        children: (0, t.jsx)(u.Portal, {
+                            asChild: !0,
+                            container: o,
+                            children: n,
+                        }),
+                    }),
+                });
+            };
+        S.displayName = k;
+        var F = 'PopoverContent',
+            O = r.forwardRef((e, r) => {
+                let a = A(F, e.__scopePopover),
+                    { forceMount: n = a.forceMount, ...o } = e,
+                    i = w(F, e.__scopePopover);
+                return (0, t.jsx)(p.Presence, {
+                    present: n || i.open,
+                    children: i.modal
+                        ? (0, t.jsx)($, { ...o, ref: r })
+                        : (0, t.jsx)(T, { ...o, ref: r }),
+                });
+            });
+        O.displayName = F;
+        var E = (0, f.createSlot)('PopoverContent.RemoveScroll'),
+            $ = r.forwardRef((e, o) => {
+                let i = w(F, e.__scopePopover),
+                    s = r.useRef(null),
+                    l = (0, n.useComposedRefs)(o, s),
+                    d = r.useRef(!1);
+                return (
+                    r.useEffect(() => {
+                        let e = s.current;
+                        if (e) return (0, h.hideOthers)(e);
+                    }, []),
+                    (0, t.jsx)(x.RemoveScroll, {
+                        as: E,
+                        allowPinchZoom: !0,
+                        children: (0, t.jsx)(_, {
+                            ...e,
+                            ref: l,
+                            trapFocus: i.open,
+                            disableOutsidePointerEvents: !0,
+                            onCloseAutoFocus: (0, a.composeEventHandlers)(
+                                e.onCloseAutoFocus,
+                                (e) => {
+                                    (e.preventDefault(),
+                                        d.current ||
+                                            i.triggerRef.current?.focus());
+                                }
+                            ),
+                            onPointerDownOutside: (0, a.composeEventHandlers)(
+                                e.onPointerDownOutside,
+                                (e) => {
+                                    let t = e.detail.originalEvent,
+                                        r = 0 === t.button && !0 === t.ctrlKey;
+                                    d.current = 2 === t.button || r;
+                                },
+                                { checkForDefaultPrevented: !1 }
+                            ),
+                            onFocusOutside: (0, a.composeEventHandlers)(
+                                e.onFocusOutside,
+                                (e) => e.preventDefault(),
+                                { checkForDefaultPrevented: !1 }
+                            ),
+                        }),
+                    })
+                );
+            }),
+            T = r.forwardRef((e, a) => {
+                let n = w(F, e.__scopePopover),
+                    o = r.useRef(!1),
+                    i = r.useRef(!1);
+                return (0, t.jsx)(_, {
+                    ...e,
+                    ref: a,
+                    trapFocus: !1,
+                    disableOutsidePointerEvents: !1,
+                    onCloseAutoFocus: (t) => {
+                        (e.onCloseAutoFocus?.(t),
+                            t.defaultPrevented ||
+                                (o.current || n.triggerRef.current?.focus(),
+                                t.preventDefault()),
+                            (o.current = !1),
+                            (i.current = !1));
+                    },
+                    onInteractOutside: (t) => {
+                        (e.onInteractOutside?.(t),
+                            t.defaultPrevented ||
+                                ((o.current = !0),
+                                'pointerdown' === t.detail.originalEvent.type &&
+                                    (i.current = !0)));
+                        let r = t.target;
+                        (n.triggerRef.current?.contains(r) &&
+                            t.preventDefault(),
+                            'focusin' === t.detail.originalEvent.type &&
+                                i.current &&
+                                t.preventDefault());
+                    },
+                });
+            }),
+            _ = r.forwardRef((e, r) => {
+                let {
+                        __scopePopover: a,
+                        trapFocus: n,
+                        onOpenAutoFocus: o,
+                        onCloseAutoFocus: d,
+                        disableOutsidePointerEvents: u,
+                        onEscapeKeyDown: p,
+                        onPointerDownOutside: m,
+                        onFocusOutside: f,
+                        onInteractOutside: g,
+                        ...h
+                    } = e,
+                    x = w(F, a),
+                    v = j(a);
+                return (
+                    (0, s.useFocusGuards)(),
+                    (0, t.jsx)(l.FocusScope, {
+                        asChild: !0,
+                        loop: !0,
+                        trapped: n,
+                        onMountAutoFocus: o,
+                        onUnmountAutoFocus: d,
+                        children: (0, t.jsx)(i.DismissableLayer, {
+                            asChild: !0,
+                            disableOutsidePointerEvents: u,
+                            onInteractOutside: g,
+                            onEscapeKeyDown: p,
+                            onPointerDownOutside: m,
+                            onFocusOutside: f,
+                            onDismiss: () => x.onOpenChange(!1),
+                            children: (0, t.jsx)(c.Content, {
+                                'data-state': z(x.open),
+                                role: 'dialog',
+                                id: x.contentId,
+                                ...v,
+                                ...h,
+                                ref: r,
+                                style: {
+                                    ...h.style,
+                                    '--radix-popover-content-transform-origin':
+                                        'var(--radix-popper-transform-origin)',
+                                    '--radix-popover-content-available-width':
+                                        'var(--radix-popper-available-width)',
+                                    '--radix-popover-content-available-height':
+                                        'var(--radix-popper-available-height)',
+                                    '--radix-popover-trigger-width':
+                                        'var(--radix-popper-anchor-width)',
+                                    '--radix-popover-trigger-height':
+                                        'var(--radix-popper-anchor-height)',
+                                },
+                            }),
+                        }),
+                    })
+                );
+            }),
+            M = 'PopoverClose';
+        function z(e) {
+            return e ? 'open' : 'closed';
+        }
+        ((r.forwardRef((e, r) => {
+            let { __scopePopover: n, ...o } = e,
+                i = w(M, n);
+            return (0, t.jsx)(m.Primitive.button, {
+                type: 'button',
+                ...o,
+                ref: r,
+                onClick: (0, a.composeEventHandlers)(e.onClick, () =>
+                    i.onOpenChange(!1)
+                ),
+            });
+        }).displayName = M),
+            (r.forwardRef((e, r) => {
+                let { __scopePopover: a, ...n } = e,
+                    o = j(a);
+                return (0, t.jsx)(c.Arrow, { ...o, ...n, ref: r });
+            }).displayName = 'PopoverArrow'));
+        var H = e.i(975157);
+        function B({ ...e }) {
+            return (0, t.jsx)(N, { 'data-slot': 'popover', ...e });
+        }
+        function L({ ...e }) {
+            return (0, t.jsx)(P, { 'data-slot': 'popover-trigger', ...e });
+        }
+        function U({
+            className: e,
+            align: r = 'center',
+            sideOffset: a = 4,
+            ...n
+        }) {
+            return (0, t.jsx)(S, {
+                children: (0, t.jsx)(O, {
+                    'data-slot': 'popover-content',
+                    align: r,
+                    sideOffset: a,
+                    className: (0, H.cn)(
+                        'bg-popover text-popover-foreground border border-border-primary data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-md p-4 shadow-md outline-hidden',
+                        e
+                    ),
+                    ...n,
+                }),
+            });
+        }
+        e.s(
+            [
+                'Popover',
+                () => B,
+                'PopoverContent',
+                () => U,
+                'PopoverTrigger',
+                () => L,
+            ],
+            337822
+        );
+    },
+    98556,
+    (e) => {
+        'use strict';
+        let t = (0, e.i(383206).default)('calendar', [
+            ['path', { d: 'M8 2v4', key: '1cmpym' }],
+            ['path', { d: 'M16 2v4', key: '4m81vk' }],
+            [
+                'rect',
+                {
+                    width: '18',
+                    height: '18',
+                    x: '3',
+                    y: '4',
+                    rx: '2',
+                    key: '1hopcy',
+                },
+            ],
+            ['path', { d: 'M3 10h18', key: '8toen8' }],
+        ]);
+        e.s(['default', () => t]);
+    },
+    276389,
+    (e) => {
+        'use strict';
+        var t = e.i(98556);
+        e.s(['Calendar', () => t.default]);
+    },
+    512710,
+    (e) => {
+        'use strict';
+        var t = e.i(158166);
+        e.s(['ChevronDown', () => t.default]);
+    },
+    793479,
+    (e) => {
+        'use strict';
+        var t = e.i(565750),
+            r = e.i(975157);
+        function a({ className: e, type: a, ...n }) {
+            return (0, t.jsx)('input', {
+                type: a,
+                'data-slot': 'input',
+                className: (0, r.cn)(
+                    'flex h-12 w-full rounded-md border border-border-primary bg-background-tertiary px-3 py-2 text-sm text-content-primary ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-content-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-border-brand disabled:cursor-not-allowed disabled:opacity-50',
+                    'hover:border-border-secondary',
+                    'focus:border-border-brand focus-visible:border-border-brand',
+                    'aria-invalid:ring-destructive/20 aria-invalid:border-destructive',
+                    e
+                ),
+                ...n,
+            });
+        }
+        e.s(['Input', () => a]);
+    },
+    342413,
+    (e) => {
+        'use strict';
+        var t = e.i(990341),
+            r = e.i(291967),
+            a = e.i(672687),
+            n = e.i(784711),
+            o = e.i(910529),
+            i = e.i(695145),
+            s = e.i(846357),
+            l = e.i(60126),
+            d = e.i(546354),
+            c = e.i(861181),
+            u = e.i(403078),
+            p = e.i(774621),
+            m = e.i(595357),
+            f = e.i(73772),
+            g = e.i(655875),
+            h = e.i(565750),
+            x = 'Dialog',
+            [v, b] = (0, n.createContextScope)(x),
+            [y, j] = v(x),
+            C = (e) => {
+                let {
+                        __scopeDialog: r,
+                        children: a,
+                        open: n,
+                        defaultOpen: s,
+                        onOpenChange: l,
+                        modal: d = !0,
+                    } = e,
+                    c = t.useRef(null),
+                    u = t.useRef(null),
+                    [p, m] = (0, i.useControllableState)({
+                        prop: n,
+                        defaultProp: s ?? !1,
+                        onChange: l,
+                        caller: x,
+                    });
+                return (0, h.jsx)(y, {
+                    scope: r,
+                    triggerRef: c,
+                    contentRef: u,
+                    contentId: (0, o.useId)(),
+                    titleId: (0, o.useId)(),
+                    descriptionId: (0, o.useId)(),
+                    open: p,
+                    onOpenChange: m,
+                    onOpenToggle: t.useCallback(() => m((e) => !e), [m]),
+                    modal: d,
+                    children: a,
+                });
+            };
+        C.displayName = x;
+        var w = 'DialogTrigger',
+            N = t.forwardRef((e, t) => {
+                let { __scopeDialog: n, ...o } = e,
+                    i = j(w, n),
+                    s = (0, a.useComposedRefs)(t, i.triggerRef);
+                return (0, h.jsx)(u.Primitive.button, {
+                    type: 'button',
+                    'aria-haspopup': 'dialog',
+                    'aria-expanded': i.open,
+                    'aria-controls': i.contentId,
+                    'data-state': V(i.open),
+                    ...o,
+                    ref: s,
+                    onClick: (0, r.composeEventHandlers)(
+                        e.onClick,
+                        i.onOpenToggle
+                    ),
+                });
+            });
+        N.displayName = w;
+        var D = 'DialogPortal',
+            [R, P] = v(D, { forceMount: void 0 }),
+            k = (e) => {
+                let {
+                        __scopeDialog: r,
+                        forceMount: a,
+                        children: n,
+                        container: o,
+                    } = e,
+                    i = j(D, r);
+                return (0, h.jsx)(R, {
+                    scope: r,
+                    forceMount: a,
+                    children: t.Children.map(n, (e) =>
+                        (0, h.jsx)(c.Presence, {
+                            present: a || i.open,
+                            children: (0, h.jsx)(d.Portal, {
+                                asChild: !0,
+                                container: o,
+                                children: e,
+                            }),
+                        })
+                    ),
+                });
+            };
+        k.displayName = D;
+        var I = 'DialogOverlay',
+            A = t.forwardRef((e, t) => {
+                let r = P(I, e.__scopeDialog),
+                    { forceMount: a = r.forceMount, ...n } = e,
+                    o = j(I, e.__scopeDialog);
+                return o.modal
+                    ? (0, h.jsx)(c.Presence, {
+                          present: a || o.open,
+                          children: (0, h.jsx)(F, { ...n, ref: t }),
+                      })
+                    : null;
+            });
+        A.displayName = I;
+        var S = (0, g.createSlot)('DialogOverlay.RemoveScroll'),
+            F = t.forwardRef((e, t) => {
+                let { __scopeDialog: r, ...a } = e,
+                    n = j(I, r);
+                return (0, h.jsx)(m.RemoveScroll, {
+                    as: S,
+                    allowPinchZoom: !0,
+                    shards: [n.contentRef],
+                    children: (0, h.jsx)(u.Primitive.div, {
+                        'data-state': V(n.open),
+                        ...a,
+                        ref: t,
+                        style: { pointerEvents: 'auto', ...a.style },
+                    }),
+                });
+            }),
+            O = 'DialogContent',
+            E = t.forwardRef((e, t) => {
+                let r = P(O, e.__scopeDialog),
+                    { forceMount: a = r.forceMount, ...n } = e,
+                    o = j(O, e.__scopeDialog);
+                return (0, h.jsx)(c.Presence, {
+                    present: a || o.open,
+                    children: o.modal
+                        ? (0, h.jsx)($, { ...n, ref: t })
+                        : (0, h.jsx)(T, { ...n, ref: t }),
+                });
+            });
+        E.displayName = O;
+        var $ = t.forwardRef((e, n) => {
+                let o = j(O, e.__scopeDialog),
+                    i = t.useRef(null),
+                    s = (0, a.useComposedRefs)(n, o.contentRef, i);
+                return (
+                    t.useEffect(() => {
+                        let e = i.current;
+                        if (e) return (0, f.hideOthers)(e);
+                    }, []),
+                    (0, h.jsx)(_, {
+                        ...e,
+                        ref: s,
+                        trapFocus: o.open,
+                        disableOutsidePointerEvents: !0,
+                        onCloseAutoFocus: (0, r.composeEventHandlers)(
+                            e.onCloseAutoFocus,
+                            (e) => {
+                                (e.preventDefault(),
+                                    o.triggerRef.current?.focus());
+                            }
+                        ),
+                        onPointerDownOutside: (0, r.composeEventHandlers)(
+                            e.onPointerDownOutside,
+                            (e) => {
+                                let t = e.detail.originalEvent,
+                                    r = 0 === t.button && !0 === t.ctrlKey;
+                                (2 === t.button || r) && e.preventDefault();
+                            }
+                        ),
+                        onFocusOutside: (0, r.composeEventHandlers)(
+                            e.onFocusOutside,
+                            (e) => e.preventDefault()
+                        ),
+                    })
+                );
+            }),
+            T = t.forwardRef((e, r) => {
+                let a = j(O, e.__scopeDialog),
+                    n = t.useRef(!1),
+                    o = t.useRef(!1);
+                return (0, h.jsx)(_, {
+                    ...e,
+                    ref: r,
+                    trapFocus: !1,
+                    disableOutsidePointerEvents: !1,
+                    onCloseAutoFocus: (t) => {
+                        (e.onCloseAutoFocus?.(t),
+                            t.defaultPrevented ||
+                                (n.current || a.triggerRef.current?.focus(),
+                                t.preventDefault()),
+                            (n.current = !1),
+                            (o.current = !1));
+                    },
+                    onInteractOutside: (t) => {
+                        (e.onInteractOutside?.(t),
+                            t.defaultPrevented ||
+                                ((n.current = !0),
+                                'pointerdown' === t.detail.originalEvent.type &&
+                                    (o.current = !0)));
+                        let r = t.target;
+                        (a.triggerRef.current?.contains(r) &&
+                            t.preventDefault(),
+                            'focusin' === t.detail.originalEvent.type &&
+                                o.current &&
+                                t.preventDefault());
+                    },
+                });
+            }),
+            _ = t.forwardRef((e, r) => {
+                let {
+                        __scopeDialog: n,
+                        trapFocus: o,
+                        onOpenAutoFocus: i,
+                        onCloseAutoFocus: d,
+                        ...c
+                    } = e,
+                    u = j(O, n),
+                    m = t.useRef(null),
+                    f = (0, a.useComposedRefs)(r, m);
+                return (
+                    (0, p.useFocusGuards)(),
+                    (0, h.jsxs)(h.Fragment, {
+                        children: [
+                            (0, h.jsx)(l.FocusScope, {
+                                asChild: !0,
+                                loop: !0,
+                                trapped: o,
+                                onMountAutoFocus: i,
+                                onUnmountAutoFocus: d,
+                                children: (0, h.jsx)(s.DismissableLayer, {
+                                    role: 'dialog',
+                                    id: u.contentId,
+                                    'aria-describedby': u.descriptionId,
+                                    'aria-labelledby': u.titleId,
+                                    'data-state': V(u.open),
+                                    ...c,
+                                    ref: f,
+                                    onDismiss: () => u.onOpenChange(!1),
+                                }),
+                            }),
+                            (0, h.jsxs)(h.Fragment, {
+                                children: [
+                                    (0, h.jsx)(W, { titleId: u.titleId }),
+                                    (0, h.jsx)(J, {
+                                        contentRef: m,
+                                        descriptionId: u.descriptionId,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    })
+                );
+            }),
+            M = 'DialogTitle',
+            z = t.forwardRef((e, t) => {
+                let { __scopeDialog: r, ...a } = e,
+                    n = j(M, r);
+                return (0, h.jsx)(u.Primitive.h2, {
+                    id: n.titleId,
+                    ...a,
+                    ref: t,
+                });
+            });
+        z.displayName = M;
+        var H = 'DialogDescription',
+            B = t.forwardRef((e, t) => {
+                let { __scopeDialog: r, ...a } = e,
+                    n = j(H, r);
+                return (0, h.jsx)(u.Primitive.p, {
+                    id: n.descriptionId,
+                    ...a,
+                    ref: t,
+                });
+            });
+        B.displayName = H;
+        var L = 'DialogClose',
+            U = t.forwardRef((e, t) => {
+                let { __scopeDialog: a, ...n } = e,
+                    o = j(L, a);
+                return (0, h.jsx)(u.Primitive.button, {
+                    type: 'button',
+                    ...n,
+                    ref: t,
+                    onClick: (0, r.composeEventHandlers)(e.onClick, () =>
+                        o.onOpenChange(!1)
+                    ),
+                });
+            });
+        function V(e) {
+            return e ? 'open' : 'closed';
+        }
+        U.displayName = L;
+        var K = 'DialogTitleWarning',
+            [Y, q] = (0, n.createContext)(K, {
+                contentName: O,
+                titleName: M,
+                docsSlug: 'dialog',
+            }),
+            W = ({ titleId: e }) => {
+                let r = q(K),
+                    a = `\`${r.contentName}\` requires a \`${r.titleName}\` for the component to be accessible for screen reader users.
+
+If you want to hide the \`${r.titleName}\`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/${r.docsSlug}`;
+                return (
+                    t.useEffect(() => {
+                        e && (document.getElementById(e) || console.error(a));
+                    }, [a, e]),
+                    null
+                );
+            },
+            J = ({ contentRef: e, descriptionId: r }) => {
+                let a = q('DialogDescriptionWarning'),
+                    n = `Warning: Missing \`Description\` or \`aria-describedby={undefined}\` for {${a.contentName}}.`;
+                return (
+                    t.useEffect(() => {
+                        let t = e.current?.getAttribute('aria-describedby');
+                        r &&
+                            t &&
+                            (document.getElementById(r) || console.warn(n));
+                    }, [n, e, r]),
+                    null
+                );
+            };
+        e.s([
+            'Close',
+            () => U,
+            'Content',
+            () => E,
+            'Description',
+            () => B,
+            'Overlay',
+            () => A,
+            'Portal',
+            () => k,
+            'Root',
+            () => C,
+            'Title',
+            () => z,
+            'Trigger',
+            () => N,
+            'WarningProvider',
+            () => Y,
+            'createDialogScope',
+            () => b,
+        ]);
+    },
+    776639,
+    660214,
+    (e) => {
+        'use strict';
+        var t = e.i(565750),
+            r = e.i(342413);
+        let a = (0, e.i(383206).default)('x', [
+            ['path', { d: 'M18 6 6 18', key: '1bl5f8' }],
+            ['path', { d: 'm6 6 12 12', key: 'd8bk6v' }],
+        ]);
+        e.s(['default', () => a], 660214);
+        var n = e.i(294237),
+            o = e.i(975157);
+        function i({ ...e }) {
+            return (0, t.jsx)(r.Root, { 'data-slot': 'dialog', ...e });
+        }
+        function s({ ...e }) {
+            return (0, t.jsx)(r.Trigger, {
+                'data-slot': 'dialog-trigger',
+                ...e,
+            });
+        }
+        function l({ ...e }) {
+            return (0, t.jsx)(r.Portal, { 'data-slot': 'dialog-portal', ...e });
+        }
+        let d = (0, n.cva)(
+            'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50',
+            {
+                variants: {
+                    variant: {
+                        default: 'bg-black/50',
+                        blurred: 'bg-black/40 backdrop-blur-[2px]',
+                        dark: 'bg-black/60',
+                        light: 'bg-black/30',
+                    },
+                },
+                defaultVariants: { variant: 'default' },
+            }
+        );
+        function c({ className: e, variant: a, ...n }) {
+            return (0, t.jsx)(r.Overlay, {
+                'data-slot': 'dialog-overlay',
+                className: (0, o.cn)(d({ variant: a }), e),
+                ...n,
+            });
+        }
+        let u = (0, n.cva)(
+            'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%] gap-4 p-6 shadow-lg duration-200',
+            {
+                variants: {
+                    variant: {
+                        default:
+                            'bg-background border rounded-lg max-w-[calc(100%-2rem)] sm:max-w-lg',
+                        appointment:
+                            'bg-background-tertiary border-none rounded-lg max-w-[calc(100%-2rem)] sm:max-w-[477px] max-h-[90vh] overflow-y-auto',
+                        large: 'bg-background border rounded-lg max-w-[calc(100%-2rem)] sm:max-w-2xl',
+                        fullscreen:
+                            'bg-background border rounded-lg max-w-[calc(100%-1rem)] max-h-[calc(100%-1rem)] sm:max-w-4xl sm:max-h-[90vh] overflow-y-auto',
+                    },
+                },
+                defaultVariants: { variant: 'default' },
+            }
+        );
+        function p({
+            className: e,
+            children: n,
+            showCloseButton: i = !0,
+            variant: s,
+            overlayVariant: d,
+            ...p
+        }) {
+            return (0, t.jsxs)(l, {
+                'data-slot': 'dialog-portal',
+                children: [
+                    (0, t.jsx)(c, { variant: d }),
+                    (0, t.jsxs)(r.Content, {
+                        'data-slot': 'dialog-content',
+                        className: (0, o.cn)(u({ variant: s }), e),
+                        ...p,
+                        children: [
+                            n,
+                            i &&
+                                (0, t.jsxs)(r.Close, {
+                                    'data-slot': 'dialog-close',
+                                    className:
+                                        "ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+                                    children: [
+                                        (0, t.jsx)(a, {}),
+                                        (0, t.jsx)('span', {
+                                            className: 'sr-only',
+                                            children: 'Close',
+                                        }),
+                                    ],
+                                }),
+                        ],
+                    }),
+                ],
+            });
+        }
+        let m = (0, n.cva)('flex flex-col gap-2', {
+            variants: {
+                align: {
+                    left: 'text-left',
+                    center: 'text-center sm:text-left',
+                    right: 'text-right',
+                },
+            },
+            defaultVariants: { align: 'center' },
+        });
+        function f({ className: e, align: r, ...a }) {
+            return (0, t.jsx)('div', {
+                'data-slot': 'dialog-header',
+                className: (0, o.cn)(m({ align: r }), e),
+                ...a,
+            });
+        }
+        function g({ className: e, ...r }) {
+            return (0, t.jsx)('div', {
+                'data-slot': 'dialog-footer',
+                className: (0, o.cn)(
+                    'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end',
+                    e
+                ),
+                ...r,
+            });
+        }
+        let h = (0, n.cva)('leading-none font-semibold', {
+            variants: {
+                size: {
+                    sm: 'text-base',
+                    default: 'text-lg',
+                    lg: 'text-xl',
+                    xl: 'text-2xl',
+                    modal: 'text-title-modal text-content-primary',
+                },
+            },
+            defaultVariants: { size: 'default' },
+        });
+        function x({ className: e, size: a, ...n }) {
+            return (0, t.jsx)(r.Title, {
+                'data-slot': 'dialog-title',
+                className: (0, o.cn)(h({ size: a }), e),
+                ...n,
+            });
+        }
+        let v = (0, n.cva)('text-muted-foreground', {
+            variants: {
+                size: {
+                    sm: 'text-xs',
+                    default: 'text-sm',
+                    lg: 'text-base',
+                    modal: 'text-paragraph-medium text-content-secondary',
+                },
+            },
+            defaultVariants: { size: 'default' },
+        });
+        function b({ className: e, size: a, ...n }) {
+            return (0, t.jsx)(r.Description, {
+                'data-slot': 'dialog-description',
+                className: (0, o.cn)(v({ size: a }), e),
+                ...n,
+            });
+        }
+        e.s(
+            [
+                'Dialog',
+                () => i,
+                'DialogContent',
+                () => p,
+                'DialogDescription',
+                () => b,
+                'DialogFooter',
+                () => g,
+                'DialogHeader',
+                () => f,
+                'DialogTitle',
+                () => x,
+                'DialogTrigger',
+                () => s,
+            ],
+            776639
+        );
+    },
+    641304,
+    (e) => {
+        'use strict';
+        let t = (0, e.i(383206).default)('loader-circle', [
+            ['path', { d: 'M21 12a9 9 0 1 1-6.219-8.56', key: '13zald' }],
+        ]);
+        e.s(['Loader2', () => t], 641304);
+    },
+    14435,
+    (e) => {
+        'use strict';
+        let t = (0, e.i(383206).default)('user', [
+            [
+                'path',
+                {
+                    d: 'M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2',
+                    key: '975kel',
+                },
+            ],
+            ['circle', { cx: '12', cy: '7', r: '4', key: '17ys0d' }],
+        ]);
+        e.s(['User', () => t], 14435);
+    },
+    939397,
+    (e) => {
+        'use strict';
+        let t = (0, e.i(383206).default)('phone', [
+            [
+                'path',
+                {
+                    d: 'M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384',
+                    key: '9njp5v',
+                },
+            ],
+        ]);
+        e.s(['Phone', () => t], 939397);
+    },
+    273443,
+    (e) => {
+        'use strict';
+        var t = e.i(565750),
+            r = e.i(990341),
+            a = e.i(784711),
+            n = e.i(420252),
+            o = e.i(672687),
+            i = e.i(291967),
+            s = e.i(695145),
+            l = e.i(403078),
+            d = e.i(150076),
+            c = e.i(861181),
+            u = e.i(910529),
+            p = 'Collapsible',
+            [m, f] = (0, a.createContextScope)(p),
+            [g, h] = m(p),
+            x = r.forwardRef((e, a) => {
+                let {
+                        __scopeCollapsible: n,
+                        open: o,
+                        defaultOpen: i,
+                        disabled: d,
+                        onOpenChange: c,
+                        ...m
+                    } = e,
+                    [f, h] = (0, s.useControllableState)({
+                        prop: o,
+                        defaultProp: i ?? !1,
+                        onChange: c,
+                        caller: p,
+                    });
+                return (0, t.jsx)(g, {
+                    scope: n,
+                    disabled: d,
+                    contentId: (0, u.useId)(),
+                    open: f,
+                    onOpenToggle: r.useCallback(() => h((e) => !e), [h]),
+                    children: (0, t.jsx)(l.Primitive.div, {
+                        'data-state': w(f),
+                        'data-disabled': d ? '' : void 0,
+                        ...m,
+                        ref: a,
+                    }),
+                });
+            });
+        x.displayName = p;
+        var v = 'CollapsibleTrigger',
+            b = r.forwardRef((e, r) => {
+                let { __scopeCollapsible: a, ...n } = e,
+                    o = h(v, a);
+                return (0, t.jsx)(l.Primitive.button, {
+                    type: 'button',
+                    'aria-controls': o.contentId,
+                    'aria-expanded': o.open || !1,
+                    'data-state': w(o.open),
+                    'data-disabled': o.disabled ? '' : void 0,
+                    disabled: o.disabled,
+                    ...n,
+                    ref: r,
+                    onClick: (0, i.composeEventHandlers)(
+                        e.onClick,
+                        o.onOpenToggle
+                    ),
+                });
+            });
+        b.displayName = v;
+        var y = 'CollapsibleContent',
+            j = r.forwardRef((e, r) => {
+                let { forceMount: a, ...n } = e,
+                    o = h(y, e.__scopeCollapsible);
+                return (0, t.jsx)(c.Presence, {
+                    present: a || o.open,
+                    children: ({ present: e }) =>
+                        (0, t.jsx)(C, { ...n, ref: r, present: e }),
+                });
+            });
+        j.displayName = y;
+        var C = r.forwardRef((e, a) => {
+            let { __scopeCollapsible: n, present: i, children: s, ...c } = e,
+                u = h(y, n),
+                [p, m] = r.useState(i),
+                f = r.useRef(null),
+                g = (0, o.useComposedRefs)(a, f),
+                x = r.useRef(0),
+                v = x.current,
+                b = r.useRef(0),
+                j = b.current,
+                C = u.open || p,
+                N = r.useRef(C),
+                D = r.useRef(void 0);
+            return (
+                r.useEffect(() => {
+                    let e = requestAnimationFrame(() => (N.current = !1));
+                    return () => cancelAnimationFrame(e);
+                }, []),
+                (0, d.useLayoutEffect)(() => {
+                    let e = f.current;
+                    if (e) {
+                        ((D.current = D.current || {
+                            transitionDuration: e.style.transitionDuration,
+                            animationName: e.style.animationName,
+                        }),
+                            (e.style.transitionDuration = '0s'),
+                            (e.style.animationName = 'none'));
+                        let t = e.getBoundingClientRect();
+                        ((x.current = t.height),
+                            (b.current = t.width),
+                            N.current ||
+                                ((e.style.transitionDuration =
+                                    D.current.transitionDuration),
+                                (e.style.animationName =
+                                    D.current.animationName)),
+                            m(i));
+                    }
+                }, [u.open, i]),
+                (0, t.jsx)(l.Primitive.div, {
+                    'data-state': w(u.open),
+                    'data-disabled': u.disabled ? '' : void 0,
+                    id: u.contentId,
+                    hidden: !C,
+                    ...c,
+                    ref: g,
+                    style: {
+                        '--radix-collapsible-content-height': v
+                            ? `${v}px`
+                            : void 0,
+                        '--radix-collapsible-content-width': j
+                            ? `${j}px`
+                            : void 0,
+                        ...e.style,
+                    },
+                    children: C && s,
+                })
+            );
+        });
+        function w(e) {
+            return e ? 'open' : 'closed';
+        }
+        var N = e.i(28983),
+            D = 'Accordion',
+            R = [
+                'Home',
+                'End',
+                'ArrowDown',
+                'ArrowUp',
+                'ArrowLeft',
+                'ArrowRight',
+            ],
+            [P, k, I] = (0, n.createCollection)(D),
+            [A, S] = (0, a.createContextScope)(D, [I, f]),
+            F = f(),
+            O = r.default.forwardRef((e, r) => {
+                let { type: a, ...n } = e;
+                return (0, t.jsx)(P.Provider, {
+                    scope: e.__scopeAccordion,
+                    children:
+                        'multiple' === a
+                            ? (0, t.jsx)(z, { ...n, ref: r })
+                            : (0, t.jsx)(M, { ...n, ref: r }),
+                });
+            });
+        O.displayName = D;
+        var [E, $] = A(D),
+            [T, _] = A(D, { collapsible: !1 }),
+            M = r.default.forwardRef((e, a) => {
+                let {
+                        value: n,
+                        defaultValue: o,
+                        onValueChange: i = () => {},
+                        collapsible: l = !1,
+                        ...d
+                    } = e,
+                    [c, u] = (0, s.useControllableState)({
+                        prop: n,
+                        defaultProp: o ?? '',
+                        onChange: i,
+                        caller: D,
+                    });
+                return (0, t.jsx)(E, {
+                    scope: e.__scopeAccordion,
+                    value: r.default.useMemo(() => (c ? [c] : []), [c]),
+                    onItemOpen: u,
+                    onItemClose: r.default.useCallback(
+                        () => l && u(''),
+                        [l, u]
+                    ),
+                    children: (0, t.jsx)(T, {
+                        scope: e.__scopeAccordion,
+                        collapsible: l,
+                        children: (0, t.jsx)(L, { ...d, ref: a }),
+                    }),
+                });
+            }),
+            z = r.default.forwardRef((e, a) => {
+                let {
+                        value: n,
+                        defaultValue: o,
+                        onValueChange: i = () => {},
+                        ...l
+                    } = e,
+                    [d, c] = (0, s.useControllableState)({
+                        prop: n,
+                        defaultProp: o ?? [],
+                        onChange: i,
+                        caller: D,
+                    }),
+                    u = r.default.useCallback(
+                        (e) => c((t = []) => [...t, e]),
+                        [c]
+                    ),
+                    p = r.default.useCallback(
+                        (e) => c((t = []) => t.filter((t) => t !== e)),
+                        [c]
+                    );
+                return (0, t.jsx)(E, {
+                    scope: e.__scopeAccordion,
+                    value: d,
+                    onItemOpen: u,
+                    onItemClose: p,
+                    children: (0, t.jsx)(T, {
+                        scope: e.__scopeAccordion,
+                        collapsible: !0,
+                        children: (0, t.jsx)(L, { ...l, ref: a }),
+                    }),
+                });
+            }),
+            [H, B] = A(D),
+            L = r.default.forwardRef((e, a) => {
+                let {
+                        __scopeAccordion: n,
+                        disabled: s,
+                        dir: d,
+                        orientation: c = 'vertical',
+                        ...u
+                    } = e,
+                    p = r.default.useRef(null),
+                    m = (0, o.useComposedRefs)(p, a),
+                    f = k(n),
+                    g = 'ltr' === (0, N.useDirection)(d),
+                    h = (0, i.composeEventHandlers)(e.onKeyDown, (e) => {
+                        if (!R.includes(e.key)) return;
+                        let t = e.target,
+                            r = f().filter((e) => !e.ref.current?.disabled),
+                            a = r.findIndex((e) => e.ref.current === t),
+                            n = r.length;
+                        if (-1 === a) return;
+                        e.preventDefault();
+                        let o = a,
+                            i = n - 1,
+                            s = () => {
+                                (o = a + 1) > i && (o = 0);
+                            },
+                            l = () => {
+                                (o = a - 1) < 0 && (o = i);
+                            };
+                        switch (e.key) {
+                            case 'Home':
+                                o = 0;
+                                break;
+                            case 'End':
+                                o = i;
+                                break;
+                            case 'ArrowRight':
+                                'horizontal' === c && (g ? s() : l());
+                                break;
+                            case 'ArrowDown':
+                                'vertical' === c && s();
+                                break;
+                            case 'ArrowLeft':
+                                'horizontal' === c && (g ? l() : s());
+                                break;
+                            case 'ArrowUp':
+                                'vertical' === c && l();
+                        }
+                        let d = o % n;
+                        r[d].ref.current?.focus();
+                    });
+                return (0, t.jsx)(H, {
+                    scope: n,
+                    disabled: s,
+                    direction: d,
+                    orientation: c,
+                    children: (0, t.jsx)(P.Slot, {
+                        scope: n,
+                        children: (0, t.jsx)(l.Primitive.div, {
+                            ...u,
+                            'data-orientation': c,
+                            ref: m,
+                            onKeyDown: s ? void 0 : h,
+                        }),
+                    }),
+                });
+            }),
+            U = 'AccordionItem',
+            [V, K] = A(U),
+            Y = r.default.forwardRef((e, r) => {
+                let { __scopeAccordion: a, value: n, ...o } = e,
+                    i = B(U, a),
+                    s = $(U, a),
+                    l = F(a),
+                    d = (0, u.useId)(),
+                    c = (n && s.value.includes(n)) || !1,
+                    p = i.disabled || e.disabled;
+                return (0, t.jsx)(V, {
+                    scope: a,
+                    open: c,
+                    disabled: p,
+                    triggerId: d,
+                    children: (0, t.jsx)(x, {
+                        'data-orientation': i.orientation,
+                        'data-state': X(c),
+                        ...l,
+                        ...o,
+                        ref: r,
+                        disabled: p,
+                        open: c,
+                        onOpenChange: (e) => {
+                            e ? s.onItemOpen(n) : s.onItemClose(n);
+                        },
+                    }),
+                });
+            });
+        Y.displayName = U;
+        var q = 'AccordionHeader',
+            W = r.default.forwardRef((e, r) => {
+                let { __scopeAccordion: a, ...n } = e,
+                    o = B(D, a),
+                    i = K(q, a);
+                return (0, t.jsx)(l.Primitive.h3, {
+                    'data-orientation': o.orientation,
+                    'data-state': X(i.open),
+                    'data-disabled': i.disabled ? '' : void 0,
+                    ...n,
+                    ref: r,
+                });
+            });
+        W.displayName = q;
+        var J = 'AccordionTrigger',
+            G = r.default.forwardRef((e, r) => {
+                let { __scopeAccordion: a, ...n } = e,
+                    o = B(D, a),
+                    i = K(J, a),
+                    s = _(J, a),
+                    l = F(a);
+                return (0, t.jsx)(P.ItemSlot, {
+                    scope: a,
+                    children: (0, t.jsx)(b, {
+                        'aria-disabled': (i.open && !s.collapsible) || void 0,
+                        'data-orientation': o.orientation,
+                        id: i.triggerId,
+                        ...l,
+                        ...n,
+                        ref: r,
+                    }),
+                });
+            });
+        G.displayName = J;
+        var Z = 'AccordionContent',
+            Q = r.default.forwardRef((e, r) => {
+                let { __scopeAccordion: a, ...n } = e,
+                    o = B(D, a),
+                    i = K(Z, a),
+                    s = F(a);
+                return (0, t.jsx)(j, {
+                    role: 'region',
+                    'aria-labelledby': i.triggerId,
+                    'data-orientation': o.orientation,
+                    ...s,
+                    ...n,
+                    ref: r,
+                    style: {
+                        '--radix-accordion-content-height':
+                            'var(--radix-collapsible-content-height)',
+                        '--radix-accordion-content-width':
+                            'var(--radix-collapsible-content-width)',
+                        ...e.style,
+                    },
+                });
+            });
+        function X(e) {
+            return e ? 'open' : 'closed';
+        }
+        Q.displayName = Z;
+        var ee = e.i(599357),
+            et = e.i(975157);
+        function er({ ...e }) {
+            return (0, t.jsx)(O, { 'data-slot': 'accordion', ...e });
+        }
+        function ea({ className: e, ...r }) {
+            return (0, t.jsx)(Y, {
+                'data-slot': 'accordion-item',
+                className: (0, et.cn)('border-b last:border-b-0', e),
+                ...r,
+            });
+        }
+        function en({ className: e, children: r, ...a }) {
+            return (0, t.jsx)(W, {
+                className: 'flex',
+                children: (0, t.jsxs)(G, {
+                    'data-slot': 'accordion-trigger',
+                    className: (0, et.cn)(
+                        'focus-visible:border-ring focus-visible:ring-ring/50 flex flex-1 items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all outline-none hover:underline focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 [&[data-state=open]>svg]:rotate-180',
+                        e
+                    ),
+                    ...a,
+                    children: [
+                        r,
+                        (0, t.jsx)(ee.ChevronDownIcon, {
+                            className:
+                                'text-muted-foreground pointer-events-none size-4 shrink-0 translate-y-0.5 transition-transform duration-200',
+                        }),
+                    ],
+                }),
+            });
+        }
+        function eo({ className: e, children: r, ...a }) {
+            return (0, t.jsx)(Q, {
+                'data-slot': 'accordion-content',
+                className:
+                    'data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down overflow-hidden text-sm',
+                ...a,
+                children: (0, t.jsx)('div', {
+                    className: (0, et.cn)('pt-0 pb-4', e),
+                    children: r,
+                }),
+            });
+        }
+        e.s(
+            [
+                'Accordion',
+                () => er,
+                'AccordionContent',
+                () => eo,
+                'AccordionItem',
+                () => ea,
+                'AccordionTrigger',
+                () => en,
+            ],
+            273443
+        );
+    },
+    559586,
+    (e) => {
+        'use strict';
+        let t = (0, e.i(383206).default)('mail', [
+            [
+                'path',
+                { d: 'm22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7', key: '132q7q' },
+            ],
+            [
+                'rect',
+                {
+                    x: '2',
+                    y: '4',
+                    width: '20',
+                    height: '16',
+                    rx: '2',
+                    key: 'izxlao',
+                },
+            ],
+        ]);
+        e.s(['Mail', () => t], 559586);
+    },
+    828925,
+    (e) => {
+        'use strict';
+        var t = e.i(565750),
+            r = e.i(990341),
+            a = e.i(776639),
+            n = e.i(519455),
+            o = e.i(793479),
+            i = e.i(995403),
+            s = e.i(14435),
+            l = e.i(559586),
+            d = e.i(939397),
+            c = e.i(641304),
+            u = e.i(975157),
+            p = e.i(227766),
+            m = e.i(337822),
+            f = e.i(230902),
+            g = e.i(661977),
+            h = e.i(67356),
+            x = e.i(276389),
+            v = e.i(512710);
+        function b(e) {
+            return String(e ?? '').replace(/\D/g, '');
+        }
+        function y(e) {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(String(e || '').trim()))
+                return null;
+            let [t, r, a] = e.split('-').map(Number);
+            if (!t || !r || !a) return null;
+            let n = new Date(t, r - 1, a);
+            return (0, g.isValid)(n) ? n : null;
+        }
+        function j(e) {
+            let {
+                icon: r,
+                disabledIcon: a,
+                inputClassName: n,
+                wrapperClassName: i,
+                className: s,
+                ...l
+            } = e;
+            return (0, t.jsxs)('div', {
+                className: `relative ${i ?? ''}`,
+                children: [
+                    (0, t.jsx)('div', {
+                        className:
+                            'absolute left-3 top-1/2 -translate-y-1/2 -mt-px pointer-events-none',
+                        children: (0, t.jsx)(r, {
+                            width: 20,
+                            height: 20,
+                            className: a
+                                ? 'text-content-secondary/50'
+                                : 'text-content-brand',
+                        }),
+                    }),
+                    (0, t.jsx)(o.Input, {
+                        ...l,
+                        className: ['pl-10', n ?? '', s ?? ''].join(' '),
+                    }),
+                ],
+            });
+        }
+        function C() {
+            let [e, o] = r.useState(!1),
+                [g, C] = r.useState(!1),
+                [w, N] = r.useState(''),
+                [D, R] = r.useState(''),
+                [P, k] = r.useState(''),
+                [I, A] = r.useState(''),
+                [S, F] = r.useState(!1);
+            function O() {
+                (N(''), R(''), k(''), A(''), F(!1));
+            }
+            let E = r.useMemo(() => y(I), [I]);
+            async function $(e) {
+                if ((e.preventDefault(), g)) return;
+                let t = w.trim(),
+                    r = D.trim().toLowerCase(),
+                    a = P.trim(),
+                    n = I.trim();
+                if (!t) return i.toast.error('Informe o nome do cliente.');
+                if (!r) return i.toast.error('Informe o e-mail do cliente.');
+                if (!a) return i.toast.error('Informe o telefone do cliente.');
+                if (!n) return i.toast.error('Preencha a data de nascimento.');
+                if (b(a).length < 10)
+                    return i.toast.error(
+                        'Informe um telefone válido (com DDD).'
+                    );
+                if (!y(n))
+                    return i.toast.error(
+                        'Informe uma data de nascimento válida.'
+                    );
+                try {
+                    C(!0);
+                    let e = await fetch('/api/admin/clients', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                name: t,
+                                email: r,
+                                phone: a,
+                                birthday: n,
+                            }),
+                        }),
+                        s = await e.json().catch(() => null);
+                    if (!e.ok || !s?.ok) {
+                        let t =
+                            s?.error ||
+                            (409 === e.status
+                                ? 'Já existe um usuário com esse e-mail.'
+                                : 'Não foi possível criar o cliente.');
+                        i.toast.error(t);
+                        return;
+                    }
+                    (i.toast.success('Cliente criado com sucesso!'),
+                        o(!1),
+                        O(),
+                        window.location.reload());
+                } catch {
+                    i.toast.error('Falha de rede ao criar o cliente.');
+                } finally {
+                    C(!1);
+                }
+            }
+            let T =
+                    'bg-background-tertiary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0',
+                _ = new Date().getFullYear();
+            return (0, t.jsxs)(a.Dialog, {
+                open: e,
+                onOpenChange: (e) => {
+                    !g && (o(e), e || O());
+                },
+                children: [
+                    (0, t.jsx)(a.DialogTrigger, {
+                        asChild: !0,
+                        children: (0, t.jsx)(n.Button, {
+                            variant: 'brand',
+                            children: 'Novo cliente',
+                        }),
+                    }),
+                    (0, t.jsxs)(a.DialogContent, {
+                        className:
+                            'bg-background-secondary border border-border-primary sm:max-w-[560px]',
+                        children: [
+                            (0, t.jsxs)(a.DialogHeader, {
+                                children: [
+                                    (0, t.jsx)(a.DialogTitle, {
+                                        className:
+                                            'text-title text-content-primary',
+                                        children: 'Novo cliente',
+                                    }),
+                                    (0, t.jsx)(a.DialogDescription, {
+                                        className:
+                                            'text-paragraph-small text-content-secondary',
+                                        children:
+                                            'Cadastre um novo cliente para acompanhar histórico, planos e nível.',
+                                    }),
+                                ],
+                            }),
+                            (0, t.jsxs)('form', {
+                                onSubmit: $,
+                                className: 'space-y-4',
+                                children: [
+                                    (0, t.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, t.jsxs)('label', {
+                                                className:
+                                                    'text-label-medium-size text-content-primary',
+                                                htmlFor: 'new-client-name',
+                                                children: [
+                                                    'Nome ',
+                                                    (0, t.jsx)('span', {
+                                                        className:
+                                                            'text-red-500',
+                                                        children: '*',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, t.jsx)(j, {
+                                                id: 'new-client-name',
+                                                name: 'name',
+                                                icon: s.User,
+                                                value: w,
+                                                onChange: (e) =>
+                                                    N(e.target.value),
+                                                disabled: g,
+                                                disabledIcon: g,
+                                                placeholder: 'Nome do cliente',
+                                                className: T,
+                                            }),
+                                        ],
+                                    }),
+                                    (0, t.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, t.jsxs)('label', {
+                                                className:
+                                                    'text-label-medium-size text-content-primary',
+                                                htmlFor: 'new-client-email',
+                                                children: [
+                                                    'E-mail ',
+                                                    (0, t.jsx)('span', {
+                                                        className:
+                                                            'text-red-500',
+                                                        children: '*',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, t.jsx)(j, {
+                                                id: 'new-client-email',
+                                                type: 'email',
+                                                name: 'email',
+                                                icon: l.Mail,
+                                                value: D,
+                                                onChange: (e) =>
+                                                    R(e.target.value),
+                                                disabled: g,
+                                                disabledIcon: g,
+                                                placeholder:
+                                                    'email@exemplo.com',
+                                                className: T,
+                                            }),
+                                        ],
+                                    }),
+                                    (0, t.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, t.jsxs)('label', {
+                                                className:
+                                                    'text-label-medium-size text-content-primary',
+                                                htmlFor: 'new-client-phone',
+                                                children: [
+                                                    'Telefone ',
+                                                    (0, t.jsx)('span', {
+                                                        className:
+                                                            'text-red-500',
+                                                        children: '*',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, t.jsx)(j, {
+                                                id: 'new-client-phone',
+                                                name: 'phone',
+                                                type: 'tel',
+                                                icon: d.Phone,
+                                                placeholder: '(99) 99999-9999',
+                                                value: P,
+                                                onChange: (e) => {
+                                                    let t;
+                                                    return k(
+                                                        0 ===
+                                                            (t = b(
+                                                                e.target.value
+                                                            ).slice(0, 11))
+                                                                .length
+                                                            ? ''
+                                                            : t.length <= 2
+                                                              ? `(${t}`
+                                                              : t.length <= 7
+                                                                ? `(${t.slice(0, 2)}) ${t.slice(2)}`
+                                                                : `(${t.slice(0, 2)}) ${t.slice(2, 7)}-${t.slice(7)}`
+                                                    );
+                                                },
+                                                disabled: g,
+                                                disabledIcon: g,
+                                                className: T,
+                                            }),
+                                            (0, t.jsx)('p', {
+                                                className:
+                                                    'text-[11px] text-content-tertiary',
+                                                children:
+                                                    'Ex.: (11) 99999-9999',
+                                            }),
+                                        ],
+                                    }),
+                                    (0, t.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, t.jsxs)('label', {
+                                                className:
+                                                    'text-label-medium-size text-content-primary',
+                                                children: [
+                                                    'Data de nascimento',
+                                                    ' ',
+                                                    (0, t.jsx)('span', {
+                                                        className:
+                                                            'text-red-500',
+                                                        children: '*',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, t.jsxs)(m.Popover, {
+                                                open: S,
+                                                onOpenChange: F,
+                                                children: [
+                                                    (0, t.jsx)(
+                                                        m.PopoverTrigger,
+                                                        {
+                                                            asChild: !0,
+                                                            children: (0,
+                                                            t.jsxs)(n.Button, {
+                                                                type: 'button',
+                                                                variant:
+                                                                    'outline',
+                                                                className: (0,
+                                                                u.cn)(
+                                                                    'w-full justify-between text-left font-normal',
+                                                                    'bg-transparent border-border-primary text-content-primary',
+                                                                    'hover:bg-background-tertiary hover:border-border-secondary hover:text-content-primary',
+                                                                    'focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand',
+                                                                    'focus:border-border-brand focus-visible:border-border-brand'
+                                                                ),
+                                                                disabled: g,
+                                                                children: [
+                                                                    (0, t.jsxs)(
+                                                                        'div',
+                                                                        {
+                                                                            className:
+                                                                                'flex items-center gap-2',
+                                                                            children:
+                                                                                [
+                                                                                    (0,
+                                                                                    t.jsx)(
+                                                                                        x.Calendar,
+                                                                                        {
+                                                                                            className:
+                                                                                                'h-4 w-4 text-content-brand',
+                                                                                        }
+                                                                                    ),
+                                                                                    E
+                                                                                        ? (0,
+                                                                                          f.format)(
+                                                                                              E,
+                                                                                              'dd/MM/yyyy',
+                                                                                              {
+                                                                                                  locale: h.ptBR,
+                                                                                              }
+                                                                                          )
+                                                                                        : (0,
+                                                                                          t.jsx)(
+                                                                                              'span',
+                                                                                              {
+                                                                                                  className:
+                                                                                                      'text-content-secondary',
+                                                                                                  children:
+                                                                                                      'Selecione uma data',
+                                                                                              }
+                                                                                          ),
+                                                                                ],
+                                                                        }
+                                                                    ),
+                                                                    (0, t.jsx)(
+                                                                        v.ChevronDown,
+                                                                        {
+                                                                            className:
+                                                                                'h-4 w-4 opacity-50',
+                                                                        }
+                                                                    ),
+                                                                ],
+                                                            }),
+                                                        }
+                                                    ),
+                                                    (0, t.jsx)(
+                                                        m.PopoverContent,
+                                                        {
+                                                            className:
+                                                                'w-auto p-0',
+                                                            align: 'start',
+                                                            children: (0,
+                                                            t.jsx)(p.Calendar, {
+                                                                mode: 'single',
+                                                                selected:
+                                                                    E ?? void 0,
+                                                                onSelect: (
+                                                                    e
+                                                                ) => {
+                                                                    e &&
+                                                                        (A(
+                                                                            (0,
+                                                                            f.format)(
+                                                                                e,
+                                                                                'yyyy-MM-dd'
+                                                                            )
+                                                                        ),
+                                                                        F(!1));
+                                                                },
+                                                                autoFocus: !0,
+                                                                locale: h.ptBR,
+                                                                captionLayout:
+                                                                    'dropdown',
+                                                                fromYear: 1900,
+                                                                toYear: _,
+                                                                disabled: (e) =>
+                                                                    e >
+                                                                    new Date(),
+                                                            }),
+                                                        }
+                                                    ),
+                                                ],
+                                            }),
+                                            (0, t.jsx)('p', {
+                                                className:
+                                                    'text-[11px] text-content-tertiary',
+                                                children:
+                                                    'Usamos essa data para aniversários e relatórios.',
+                                            }),
+                                        ],
+                                    }),
+                                    (0, t.jsxs)(a.DialogFooter, {
+                                        className: 'gap-2 sm:gap-3 pt-2',
+                                        children: [
+                                            (0, t.jsxs)(n.Button, {
+                                                type: 'submit',
+                                                variant: 'edit2',
+                                                size: 'sm',
+                                                disabled: g,
+                                                children: [
+                                                    g &&
+                                                        (0, t.jsx)(c.Loader2, {
+                                                            className:
+                                                                'mr-2 h-4 w-4 animate-spin',
+                                                        }),
+                                                    g
+                                                        ? 'Salvando...'
+                                                        : 'Criar cliente',
+                                                ],
+                                            }),
+                                            (0, t.jsx)(n.Button, {
+                                                type: 'button',
+                                                variant: 'outline',
+                                                size: 'sm',
+                                                disabled: g,
+                                                onClick: () => {
+                                                    g || (o(!1), O());
+                                                },
+                                                children: 'Cancelar',
+                                            }),
+                                        ],
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            });
+        }
+        e.s(['AdminNewClientDialog', () => C]);
+    },
+    703590,
+    (e) => {
+        'use strict';
+        var t = e.i(565750),
+            r = e.i(990341),
+            a = e.i(245586),
+            n = e.i(776639),
+            o = e.i(519455),
+            i = e.i(793479),
+            s = e.i(995403),
+            l = e.i(276389);
+        function d(e) {
+            let t = String(e ?? '')
+                .replace(/\D/g, '')
+                .slice(0, 11);
+            return 0 === t.length
+                ? ''
+                : t.length <= 2
+                  ? `(${t}`
+                  : t.length <= 7
+                    ? `(${t.slice(0, 2)}) ${t.slice(2)}`
+                    : `(${t.slice(0, 2)}) ${t.slice(2, 7)}-${t.slice(7)}`;
+        }
+        function c(e) {
+            if (!e) return '';
+            let t = String(e.getDate()).padStart(2, '0'),
+                r = String(e.getMonth() + 1).padStart(2, '0'),
+                a = e.getFullYear();
+            return `${t}/${r}/${a}`;
+        }
+        function u({ client: e }) {
+            let u = (0, a.useRouter)(),
+                [p, m] = r.useState(!1),
+                [f, g] = r.useTransition(),
+                [h, x] = r.useState(e.name ?? ''),
+                [v, b] = r.useState(e.email ?? ''),
+                [y, j] = r.useState(d(e.phone ?? '')),
+                [C, w] = r.useState(c(e.birthday));
+            return (
+                r.useEffect(() => {
+                    p &&
+                        (x(e.name ?? ''),
+                        b(e.email ?? ''),
+                        j(d(e.phone ?? '')),
+                        w(c(e.birthday)));
+                }, [p, e.id, e.name, e.email, e.phone, e.birthday]),
+                (0, t.jsxs)(n.Dialog, {
+                    open: p,
+                    onOpenChange: (e) => {
+                        f || m(e);
+                    },
+                    children: [
+                        (0, t.jsx)(n.DialogTrigger, {
+                            asChild: !0,
+                            children: (0, t.jsx)(o.Button, {
+                                variant: 'brand',
+                                size: 'sm',
+                                className:
+                                    'border-border-primary text-paragraph-small',
+                                children: 'Editar',
+                            }),
+                        }),
+                        (0, t.jsxs)(n.DialogContent, {
+                            className:
+                                'bg-background-secondary border border-border-primary',
+                            children: [
+                                (0, t.jsx)(n.DialogHeader, {
+                                    children: (0, t.jsx)(n.DialogTitle, {
+                                        className:
+                                            'text-title text-content-primary',
+                                        children: 'Editar cliente',
+                                    }),
+                                }),
+                                (0, t.jsxs)('form', {
+                                    onSubmit: function (t) {
+                                        if ((t.preventDefault(), f)) return;
+                                        let r = h.trim(),
+                                            a = v.trim().toLowerCase(),
+                                            n = y.trim(),
+                                            o = C.trim();
+                                        return r
+                                            ? a
+                                                ? n
+                                                    ? o
+                                                        ? /^\d{2}\/\d{2}\/\d{4}$/.test(
+                                                              o
+                                                          )
+                                                            ? n.replace(
+                                                                  /\D/g,
+                                                                  ''
+                                                              ).length < 10
+                                                                ? s.toast.error(
+                                                                      'Informe um telefone válido (com DDD).'
+                                                                  )
+                                                                : void g(
+                                                                      async () => {
+                                                                          try {
+                                                                              let t =
+                                                                                      await fetch(
+                                                                                          '/api/admin/clients',
+                                                                                          {
+                                                                                              method: 'PATCH',
+                                                                                              headers:
+                                                                                                  {
+                                                                                                      'Content-Type':
+                                                                                                          'application/json',
+                                                                                                  },
+                                                                                              body: JSON.stringify(
+                                                                                                  {
+                                                                                                      id: e.id,
+                                                                                                      name: r,
+                                                                                                      email: a,
+                                                                                                      phone: n,
+                                                                                                      birthday:
+                                                                                                          o,
+                                                                                                  }
+                                                                                              ),
+                                                                                          }
+                                                                                      ),
+                                                                                  i =
+                                                                                      await t
+                                                                                          .json()
+                                                                                          .catch(
+                                                                                              () =>
+                                                                                                  null
+                                                                                          );
+                                                                              if (
+                                                                                  !t.ok ||
+                                                                                  !i ||
+                                                                                  !1 ===
+                                                                                      i.ok
+                                                                              ) {
+                                                                                  let e =
+                                                                                      i?.error ||
+                                                                                      `Erro ao atualizar cliente. (${t.status})`;
+                                                                                  s.toast.error(
+                                                                                      e
+                                                                                  );
+                                                                                  return;
+                                                                              }
+                                                                              (s.toast.success(
+                                                                                  'Cliente atualizado com sucesso!'
+                                                                              ),
+                                                                                  m(
+                                                                                      !1
+                                                                                  ),
+                                                                                  u.refresh());
+                                                                          } catch {
+                                                                              s.toast.error(
+                                                                                  'Falha de rede ao atualizar cliente.'
+                                                                              );
+                                                                          }
+                                                                      }
+                                                                  )
+                                                            : s.toast.error(
+                                                                  'Preencha a data de nascimento no formato DD/MM/AAAA.'
+                                                              )
+                                                        : s.toast.error(
+                                                              'Informe a data de nascimento.'
+                                                          )
+                                                    : s.toast.error(
+                                                          'Informe o telefone do cliente.'
+                                                      )
+                                                : s.toast.error(
+                                                      'Informe o e-mail do cliente.'
+                                                  )
+                                            : s.toast.error(
+                                                  'Informe o nome do cliente.'
+                                              );
+                                    },
+                                    className: 'space-y-4',
+                                    children: [
+                                        (0, t.jsxs)('div', {
+                                            className: 'space-y-1',
+                                            children: [
+                                                (0, t.jsxs)('label', {
+                                                    className:
+                                                        'text-label-small text-content-secondary',
+                                                    htmlFor: `client-name-${e.id}`,
+                                                    children: [
+                                                        'Nome ',
+                                                        (0, t.jsx)('span', {
+                                                            className:
+                                                                'text-red-500',
+                                                            children: '*',
+                                                        }),
+                                                    ],
+                                                }),
+                                                (0, t.jsx)(i.Input, {
+                                                    id: `client-name-${e.id}`,
+                                                    name: 'name',
+                                                    value: h,
+                                                    onChange: (e) =>
+                                                        x(e.target.value),
+                                                    disabled: f,
+                                                    className:
+                                                        'bg-background-tertiary border-border-primary text-content-primary',
+                                                }),
+                                            ],
+                                        }),
+                                        (0, t.jsxs)('div', {
+                                            className: 'space-y-1',
+                                            children: [
+                                                (0, t.jsxs)('label', {
+                                                    className:
+                                                        'text-label-small text-content-secondary',
+                                                    htmlFor: `client-email-${e.id}`,
+                                                    children: [
+                                                        'E-mail ',
+                                                        (0, t.jsx)('span', {
+                                                            className:
+                                                                'text-red-500',
+                                                            children: '*',
+                                                        }),
+                                                    ],
+                                                }),
+                                                (0, t.jsx)(i.Input, {
+                                                    id: `client-email-${e.id}`,
+                                                    type: 'email',
+                                                    name: 'email',
+                                                    value: v,
+                                                    onChange: (e) =>
+                                                        b(e.target.value),
+                                                    disabled: f,
+                                                    className:
+                                                        'bg-background-tertiary border-border-primary text-content-primary',
+                                                }),
+                                            ],
+                                        }),
+                                        (0, t.jsxs)('div', {
+                                            className: 'space-y-1',
+                                            children: [
+                                                (0, t.jsxs)('label', {
+                                                    className:
+                                                        'text-label-small text-content-secondary',
+                                                    htmlFor: `client-phone-${e.id}`,
+                                                    children: [
+                                                        'Telefone ',
+                                                        (0, t.jsx)('span', {
+                                                            className:
+                                                                'text-red-500',
+                                                            children: '*',
+                                                        }),
+                                                    ],
+                                                }),
+                                                (0, t.jsx)(i.Input, {
+                                                    id: `client-phone-${e.id}`,
+                                                    name: 'phone',
+                                                    type: 'tel',
+                                                    placeholder:
+                                                        '(99) 99999-9999',
+                                                    value: y,
+                                                    onChange: function (e) {
+                                                        j(d(e.target.value));
+                                                    },
+                                                    disabled: f,
+                                                    className:
+                                                        'bg-background-tertiary border-border-primary text-content-primary',
+                                                }),
+                                            ],
+                                        }),
+                                        (0, t.jsxs)('div', {
+                                            className: 'space-y-1',
+                                            children: [
+                                                (0, t.jsxs)('label', {
+                                                    className:
+                                                        'text-label-small text-content-secondary',
+                                                    htmlFor: `client-birthday-${e.id}`,
+                                                    children: [
+                                                        'Data de nascimento',
+                                                        ' ',
+                                                        (0, t.jsx)('span', {
+                                                            className:
+                                                                'text-red-500',
+                                                            children: '*',
+                                                        }),
+                                                    ],
+                                                }),
+                                                (0, t.jsxs)('div', {
+                                                    className:
+                                                        'flex items-center gap-2 rounded-lg border border-border-primary bg-background-tertiary px-3 py-2 focus-within:ring-2 focus-within:ring-brand-primary',
+                                                    children: [
+                                                        (0, t.jsx)(l.Calendar, {
+                                                            className:
+                                                                'w-4 h-4 text-brand-primary',
+                                                        }),
+                                                        (0, t.jsx)('input', {
+                                                            id: `client-birthday-${e.id}`,
+                                                            name: 'birthday',
+                                                            type: 'text',
+                                                            inputMode:
+                                                                'numeric',
+                                                            placeholder:
+                                                                'DD/MM/AAAA',
+                                                            value: C,
+                                                            onChange: function (
+                                                                e
+                                                            ) {
+                                                                let t =
+                                                                    e.target.value
+                                                                        .replace(
+                                                                            /\D/g,
+                                                                            ''
+                                                                        )
+                                                                        .slice(
+                                                                            0,
+                                                                            8
+                                                                        );
+                                                                (t.length >= 5
+                                                                    ? (t =
+                                                                          t.replace(
+                                                                              /(\d{2})(\d{2})(\d{0,4})/,
+                                                                              (
+                                                                                  e,
+                                                                                  t,
+                                                                                  r,
+                                                                                  a
+                                                                              ) =>
+                                                                                  `${t}/${r}/${a}`
+                                                                          ))
+                                                                    : t.length >=
+                                                                          3 &&
+                                                                      (t =
+                                                                          t.replace(
+                                                                              /(\d{2})(\d{0,2})/,
+                                                                              (
+                                                                                  e,
+                                                                                  t,
+                                                                                  r
+                                                                              ) =>
+                                                                                  r
+                                                                                      ? `${t}/${r}`
+                                                                                      : t
+                                                                          )),
+                                                                    w(t));
+                                                            },
+                                                            disabled: f,
+                                                            className:
+                                                                'flex-1 bg-transparent outline-none border-0 text-paragraph-small-size text-content-primary placeholder:text-content-tertiary',
+                                                        }),
+                                                    ],
+                                                }),
+                                            ],
+                                        }),
+                                        (0, t.jsx)('div', {
+                                            className:
+                                                'flex justify-end gap-2 pt-2',
+                                            children: (0, t.jsx)(o.Button, {
+                                                type: 'submit',
+                                                variant: 'brand',
+                                                disabled: f,
+                                                children: f
+                                                    ? 'Salvando...'
+                                                    : 'Salvar alterações',
+                                            }),
+                                        }),
+                                    ],
+                                }),
+                            ],
+                        }),
+                    ],
+                })
+            );
+        }
+        e.s(['AdminEditClientDialog', () => u]);
+    },
+]);

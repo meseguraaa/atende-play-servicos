@@ -1,0 +1,195 @@
+module.exports = [
+    234187,
+    (a) => {
+        'use strict';
+        var b = a.i(584944),
+            c = a.i(107439),
+            d = a.i(259849),
+            e = a.i(368114);
+        function f({
+            professionals: a,
+            value: f,
+            paramKey: g = 'professionalId',
+            label: h = 'Profissional',
+            className: i,
+        }) {
+            let j = (0, d.useRouter)(),
+                k = (0, d.usePathname)(),
+                l = (0, d.useSearchParams)(),
+                m = (0, c.useMemo)(
+                    () => (a ?? []).map((a) => ({ id: a.id, name: a.name })),
+                    [a]
+                );
+            return (0, b.jsxs)('div', {
+                className: (0, e.cn)('space-y-1', i),
+                children: [
+                    (0, b.jsx)('p', {
+                        className: 'text-label-small text-content-secondary',
+                        children: h,
+                    }),
+                    (0, b.jsxs)('select', {
+                        value: f ?? '',
+                        onChange: (a) => {
+                            var b;
+                            let c, d;
+                            return (
+                                (b = a.target.value),
+                                (c = new URLSearchParams(l?.toString() ?? '')),
+                                b ? c.set(g, b) : c.delete(g),
+                                (d = c.toString()),
+                                void (j.push(d ? `${k}?${d}` : k), j.refresh())
+                            );
+                        },
+                        className: (0, e.cn)(
+                            'w-full h-10 rounded-md px-3',
+                            'bg-background-tertiary border border-border-primary',
+                            'text-content-primary text-sm',
+                            'focus:outline-none focus:ring-2 focus:ring-border-brand'
+                        ),
+                        children: [
+                            (0, b.jsx)('option', {
+                                value: '',
+                                children: 'Todos',
+                            }),
+                            m.map((a) =>
+                                (0, b.jsx)(
+                                    'option',
+                                    { value: a.id, children: a.name },
+                                    a.id
+                                )
+                            ),
+                        ],
+                    }),
+                ],
+            });
+        }
+        a.s(['ProfessionalFilter', () => f]);
+    },
+    794212,
+    (a) => {
+        'use strict';
+        var b = a.i(584944),
+            c = a.i(107439),
+            d = a.i(259849),
+            e = a.i(580701);
+        function f({
+            units: a,
+            value: f,
+            label: g = 'Unidade',
+            cookieName: h = 'admin_unit_context',
+            allValue: i = 'all',
+        }) {
+            let j = (0, d.useRouter)(),
+                k = c.useMemo(() => [{ id: i, name: 'Todas' }, ...a], [a, i]),
+                l = c.useMemo(
+                    () => (f && k.some((a) => a.id === f) ? f : i),
+                    [f, k, i]
+                );
+            return (0, b.jsxs)('div', {
+                className: 'space-y-2',
+                children: [
+                    (0, b.jsx)('p', {
+                        className: 'text-label-small text-content-secondary',
+                        children: g,
+                    }),
+                    (0, b.jsxs)(e.Select, {
+                        value: l,
+                        onValueChange: (a) => {
+                            ((document.cookie = `${encodeURIComponent(h)}=${encodeURIComponent(a)}; Path=/; Max-Age=31536000; SameSite=Lax`),
+                                j.refresh());
+                        },
+                        children: [
+                            (0, b.jsx)(e.SelectTrigger, {
+                                className: 'w-full',
+                                children: (0, b.jsx)(e.SelectValue, {
+                                    placeholder: 'Selecione',
+                                }),
+                            }),
+                            (0, b.jsx)(e.SelectContent, {
+                                children: k.map((a) =>
+                                    (0, b.jsx)(
+                                        e.SelectItem,
+                                        { value: a.id, children: a.name },
+                                        a.id
+                                    )
+                                ),
+                            }),
+                        ],
+                    }),
+                ],
+            });
+        }
+        a.s(['UnitFilter', () => f]);
+    },
+    953480,
+    (a) => {
+        'use strict';
+        var b = a.i(584944),
+            c = a.i(107439),
+            d = a.i(259849),
+            e = a.i(580701);
+        let f = [
+            { value: 'prev_month', label: 'Mês anterior' },
+            { value: 'prev_year', label: 'Mesmo mês do ano anterior' },
+        ];
+        function g({
+            value: a,
+            paramKey: g = 'compare',
+            label: h = 'Comparar com',
+            options: i = f,
+        }) {
+            let j = (0, d.useRouter)(),
+                k = (0, d.usePathname)(),
+                l = (0, d.useSearchParams)(),
+                m = (0, c.useMemo)(
+                    () =>
+                        (i.some((b) => b.value === a) ? a : null) ??
+                        'prev_month',
+                    [i, a]
+                );
+            return (0, b.jsxs)('div', {
+                className: 'space-y-2',
+                children: [
+                    (0, b.jsx)('p', {
+                        className: 'text-label-small text-content-secondary',
+                        children: h,
+                    }),
+                    (0, b.jsxs)(e.Select, {
+                        value: m,
+                        onValueChange: (a) => {
+                            let b, c;
+                            return (
+                                (b = new URLSearchParams(l?.toString())).set(
+                                    g,
+                                    a
+                                ),
+                                (c = b.toString()),
+                                void j.push(c ? `${k}?${c}` : k)
+                            );
+                        },
+                        children: [
+                            (0, b.jsx)(e.SelectTrigger, {
+                                className: 'h-12 min-h-12 py-2',
+                                children: (0, b.jsx)(e.SelectValue, {
+                                    placeholder: 'Selecione',
+                                }),
+                            }),
+                            (0, b.jsx)(e.SelectContent, {
+                                children: i.map((a) =>
+                                    (0, b.jsx)(
+                                        e.SelectItem,
+                                        { value: a.value, children: a.label },
+                                        a.value
+                                    )
+                                ),
+                            }),
+                        ],
+                    }),
+                ],
+            });
+        }
+        a.s(['CompareWithFilter', () => g]);
+    },
+];
+
+//# sourceMappingURL=src_components_admin_reports_149f90dd._.js.map

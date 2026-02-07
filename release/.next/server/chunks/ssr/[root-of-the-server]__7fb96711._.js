@@ -1,0 +1,273 @@
+module.exports = [
+    193695,
+    (a, b, c) => {
+        b.exports = a.x(
+            'next/dist/shared/lib/no-fallback-error.external.js',
+            () => require('next/dist/shared/lib/no-fallback-error.external.js')
+        );
+    },
+    650645,
+    (a) => {
+        a.n(a.i(827572));
+    },
+    262530,
+    (a) => {
+        a.n(a.i(688848));
+    },
+    409171,
+    (a) => {
+        a.n(a.i(753004));
+    },
+    21802,
+    (a) => {
+        a.n(a.i(277152));
+    },
+    155517,
+    (a) => {
+        a.n(a.i(298906));
+    },
+    330400,
+    (a) => {
+        a.n(a.i(879629));
+    },
+    806210,
+    (a) => {
+        'use strict';
+        let b = (0, a.i(976286).registerClientReference)(
+            function () {
+                throw Error(
+                    "Attempted to call PartnerRow() from the server but PartnerRow is on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component."
+                );
+            },
+            '[project]/src/components/plataform/partners/partner-row/partner-row.tsx <module evaluation>',
+            'PartnerRow'
+        );
+        a.s(['PartnerRow', 0, b]);
+    },
+    175607,
+    (a) => {
+        'use strict';
+        let b = (0, a.i(976286).registerClientReference)(
+            function () {
+                throw Error(
+                    "Attempted to call PartnerRow() from the server but PartnerRow is on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component."
+                );
+            },
+            '[project]/src/components/plataform/partners/partner-row/partner-row.tsx',
+            'PartnerRow'
+        );
+        a.s(['PartnerRow', 0, b]);
+    },
+    293263,
+    (a) => {
+        'use strict';
+        a.i(806210);
+        var b = a.i(175607);
+        a.n(b);
+    },
+    248240,
+    (a) => {
+        'use strict';
+        let b = (0, a.i(976286).registerClientReference)(
+            function () {
+                throw Error(
+                    "Attempted to call PartnerNewDialog() from the server but PartnerNewDialog is on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component."
+                );
+            },
+            '[project]/src/components/plataform/partners/partner-new-dialog/partner-new-dialog.tsx <module evaluation>',
+            'PartnerNewDialog'
+        );
+        a.s(['PartnerNewDialog', 0, b]);
+    },
+    135784,
+    (a) => {
+        'use strict';
+        let b = (0, a.i(976286).registerClientReference)(
+            function () {
+                throw Error(
+                    "Attempted to call PartnerNewDialog() from the server but PartnerNewDialog is on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component."
+                );
+            },
+            '[project]/src/components/plataform/partners/partner-new-dialog/partner-new-dialog.tsx',
+            'PartnerNewDialog'
+        );
+        a.s(['PartnerNewDialog', 0, b]);
+    },
+    658109,
+    (a) => {
+        'use strict';
+        a.i(248240);
+        var b = a.i(135784);
+        a.n(b);
+    },
+    165853,
+    (a) => {
+        'use strict';
+        var b = a.i(623127),
+            c = a.i(169513),
+            d = a.i(110329),
+            e = a.i(293263),
+            f = a.i(658109);
+        async function g() {
+            var a;
+            let g, h;
+            await (0, d.requirePlatformForModule)('PARTNERS');
+            let i =
+                    ((g =
+                        (a = await (0, c.headers)()).get('x-forwarded-host') ??
+                        a.get('host')),
+                    (h = a.get('x-forwarded-proto') ?? 'http'),
+                    g ? `${h}://${g}` : null),
+                j = (await (0, c.cookies)())
+                    .getAll()
+                    .map((a) => `${a.name}=${a.value}`)
+                    .join('; '),
+                k = [];
+            try {
+                let a = i
+                        ? `${i}/api/plataform/partners`
+                        : '/api/plataform/partners',
+                    b = await fetch(a, {
+                        method: 'GET',
+                        cache: 'no-store',
+                        headers: { accept: 'application/json', cookie: j },
+                    }),
+                    c = await b.json().catch(() => null);
+                k = b.ok && c?.ok && c.data ? (c.data.partners ?? []) : [];
+            } catch {
+                k = [];
+            }
+            return (0, b.jsxs)('div', {
+                className: 'max-w-7xl space-y-6',
+                children: [
+                    (0, b.jsxs)('header', {
+                        className: 'flex items-center justify-between gap-4',
+                        children: [
+                            (0, b.jsxs)('div', {
+                                children: [
+                                    (0, b.jsx)('h1', {
+                                        className:
+                                            'text-title text-content-primary',
+                                        children: 'Parceiros',
+                                    }),
+                                    (0, b.jsx)('p', {
+                                        className:
+                                            'text-paragraph-medium-size text-content-secondary',
+                                        children:
+                                            'Cadastre parceiros, descontos e links para abrir no app.',
+                                    }),
+                                ],
+                            }),
+                            (0, b.jsx)(f.PartnerNewDialog, {}),
+                        ],
+                    }),
+                    (0, b.jsx)('section', {
+                        className:
+                            'overflow-x-auto rounded-xl border border-border-primary bg-background-tertiary',
+                        children: (0, b.jsxs)('table', {
+                            className:
+                                'w-full table-fixed border-collapse text-sm',
+                            children: [
+                                (0, b.jsxs)('colgroup', {
+                                    children: [
+                                        (0, b.jsx)('col', {
+                                            className: 'w-95',
+                                        }),
+                                        (0, b.jsx)('col', {
+                                            className: 'w-40',
+                                        }),
+                                        (0, b.jsx)('col', {
+                                            className: 'w-40',
+                                        }),
+                                        (0, b.jsx)('col', {
+                                            className: 'w-40',
+                                        }),
+                                        (0, b.jsx)('col', {
+                                            className: 'w-40',
+                                        }),
+                                        (0, b.jsx)('col', {
+                                            className: 'w-60',
+                                        }),
+                                    ],
+                                }),
+                                (0, b.jsx)('thead', {
+                                    children: (0, b.jsxs)('tr', {
+                                        className:
+                                            'border-b border-border-primary bg-background-secondary',
+                                        children: [
+                                            (0, b.jsx)('th', {
+                                                className:
+                                                    'px-4 py-3 text-left text-xs font-medium text-content-secondary',
+                                                children: 'Parceiro',
+                                            }),
+                                            (0, b.jsx)('th', {
+                                                className:
+                                                    'px-4 py-3 text-left text-xs font-medium text-content-secondary',
+                                                children: 'Desconto',
+                                            }),
+                                            (0, b.jsx)('th', {
+                                                className:
+                                                    'px-4 py-3 text-left text-xs font-medium text-content-secondary',
+                                                children: 'Visibilidade',
+                                            }),
+                                            (0, b.jsx)('th', {
+                                                className:
+                                                    'px-4 py-3 text-left text-xs font-medium text-content-secondary',
+                                                children: 'Ordem',
+                                            }),
+                                            (0, b.jsx)('th', {
+                                                className:
+                                                    'px-4 py-3 text-left text-xs font-medium text-content-secondary',
+                                                children: 'Status',
+                                            }),
+                                            (0, b.jsx)('th', {
+                                                className:
+                                                    'px-4 py-3 text-right text-xs font-medium text-content-secondary',
+                                                children: 'Ações',
+                                            }),
+                                        ],
+                                    }),
+                                }),
+                                (0, b.jsx)('tbody', {
+                                    className: '[&>tr>td]:align-middle',
+                                    children:
+                                        0 === k.length
+                                            ? (0, b.jsx)('tr', {
+                                                  className:
+                                                      'border-t border-border-primary',
+                                                  children: (0, b.jsx)('td', {
+                                                      colSpan: 6,
+                                                      className:
+                                                          'px-4 py-6 text-center text-paragraph-small text-content-secondary',
+                                                      children:
+                                                          'Nenhum parceiro cadastrado ainda.',
+                                                  }),
+                                              })
+                                            : k.map((a) =>
+                                                  (0, b.jsx)(
+                                                      e.PartnerRow,
+                                                      { partner: a },
+                                                      a.id
+                                                  )
+                                              ),
+                                }),
+                            ],
+                        }),
+                    }),
+                ],
+            });
+        }
+        a.s([
+            'default',
+            () => g,
+            'dynamic',
+            0,
+            'force-dynamic',
+            'metadata',
+            0,
+            { title: 'Plataforma | Parceiros' },
+        ]);
+    },
+];
+
+//# sourceMappingURL=%5Broot-of-the-server%5D__7fb96711._.js.map

@@ -1,0 +1,38 @@
+var R = require('../../../chunks/ssr/[turbopack]_runtime.js')(
+    'server/app/admin/dashboard/page.js'
+);
+R.c('server/chunks/ssr/[root-of-the-server]__aadd40ed._.js');
+R.c('server/chunks/ssr/_aa6aab13._.js');
+R.c('server/chunks/ssr/50d1e_date-fns_e1c36c18._.js');
+R.c('server/chunks/ssr/src_057787a6._.js');
+R.c('server/chunks/ssr/_3468bf43._.js');
+R.c('server/chunks/ssr/_076e4e5c._.js');
+R.c('server/chunks/ssr/50d1e_date-fns_format_4ec72ced.js');
+R.c('server/chunks/ssr/[root-of-the-server]__18fb0fd7._.js');
+R.c('server/chunks/ssr/c2dd8_next_dist_6397e24c._.js');
+R.c('server/chunks/ssr/[root-of-the-server]__7e7c48cf._.js');
+R.c('server/chunks/ssr/c2dd8_next_dist_0e0a2f29._.js');
+R.c(
+    'server/chunks/ssr/c2dd8_next_dist_compiled_@opentelemetry_api_index_1b38d135.js'
+);
+R.c('server/chunks/ssr/src_app_5b2047f8._.js');
+R.c(
+    'server/chunks/ssr/c2dd8_next_dist_client_components_builtin_global-error_140232ab.js'
+);
+R.c('server/chunks/ssr/[root-of-the-server]__c8e7c08e._.js');
+R.c('server/chunks/ssr/c2dd8_next_dist_client_components_af4763b2._.js');
+R.c(
+    'server/chunks/ssr/c2dd8_next_dist_client_components_builtin_forbidden_c887f684.js'
+);
+R.c(
+    'server/chunks/ssr/c2dd8_next_dist_client_components_builtin_unauthorized_d58036fb.js'
+);
+R.c('server/chunks/ssr/[root-of-the-server]__87b75cfc._.js');
+R.c('server/chunks/ssr/c2dd8_next_dist_56284b52._.js');
+R.c('server/chunks/ssr/c2dd8_next_a6332d95._.js');
+R.c('server/chunks/ssr/src_lib_painel-session_ts_6e4d8dbf._.js');
+R.c(
+    'server/chunks/ssr/_next-internal_server_app_admin_dashboard_page_actions_b058c280.js'
+);
+R.m(692020);
+module.exports = R.m(692020).exports;

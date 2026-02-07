@@ -1,0 +1,14 @@
+var R = require('../../../../chunks/[turbopack]_runtime.js')(
+    'server/app/api/plataform/partners/route.js'
+);
+R.c('server/chunks/[root-of-the-server]__b5e35f3e._.js');
+R.c('server/chunks/_2f57e247._.js');
+R.c('server/chunks/[root-of-the-server]__bfa661e3._.js');
+R.c('server/chunks/[root-of-the-server]__e4df5112._.js');
+R.c('server/chunks/407f6_jose_dist_webapi_3ed3eca6._.js');
+R.c('server/chunks/c2dd8_next_8c062a70._.js');
+R.c(
+    'server/chunks/_next-internal_server_app_api_plataform_partners_route_actions_b95c59ff.js'
+);
+R.m(483355);
+module.exports = R.m(483355).exports;

@@ -1,0 +1,54 @@
+module.exports = [
+    896407,
+    (i) => {
+        'use strict';
+        var e = i.i(698043),
+            r = i.i(52359);
+        async function n() {
+            let i = await (0, r.getCurrentPainelUser)();
+            if (!i || 'PROFESSIONAL' !== i.role)
+                return {
+                    companyId: '',
+                    professionalId: '',
+                    userId: '',
+                    unitId: '',
+                };
+            let n = String(i.sub || '').trim(),
+                s = String(i.companyId || '').trim();
+            if (!n || !s)
+                return {
+                    companyId: '',
+                    professionalId: '',
+                    userId: '',
+                    unitId: '',
+                };
+            let t = await e.prisma.professional.findFirst({
+                where: { userId: n, companyId: s, isActive: !0 },
+                select: { id: !0, name: !0, email: !0 },
+            });
+            if (!t?.id)
+                return {
+                    companyId: '',
+                    professionalId: '',
+                    userId: n,
+                    unitId: '',
+                };
+            let a = await e.prisma.professionalUnit.findFirst({
+                where: { companyId: s, professionalId: t.id, isActive: !0 },
+                select: { unitId: !0 },
+                orderBy: { updatedAt: 'desc' },
+            });
+            return {
+                companyId: s,
+                professionalId: t.id,
+                userId: n,
+                unitId: a?.unitId ?? '',
+                name: t.name ?? null,
+                email: t.email,
+            };
+        }
+        i.s(['requireProfessionalSession', () => n]);
+    },
+];
+
+//# sourceMappingURL=src_lib_professional-permissions_ts_4b2515ed._.js.map

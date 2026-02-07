@@ -1,0 +1,693 @@
+module.exports = [
+    315057,
+    (a) => {
+        'use strict';
+        var b = a.i(107439),
+            c = a.i(594723),
+            d = a.i(584944),
+            e = Symbol.for('react.lazy'),
+            f = b[' use '.trim().toString()];
+        function g(a) {
+            var b;
+            return (
+                null != a &&
+                'object' == typeof a &&
+                '$$typeof' in a &&
+                a.$$typeof === e &&
+                '_payload' in a &&
+                'object' == typeof (b = a._payload) &&
+                null !== b &&
+                'then' in b
+            );
+        }
+        function h(a) {
+            var e;
+            let h,
+                i =
+                    ((e = a),
+                    ((h = b.forwardRef((a, d) => {
+                        let { children: e, ...h } = a;
+                        if (
+                            (g(e) &&
+                                'function' == typeof f &&
+                                (e = f(e._payload)),
+                            b.isValidElement(e))
+                        ) {
+                            var i;
+                            let a,
+                                f,
+                                g =
+                                    ((i = e),
+                                    (f =
+                                        (a = Object.getOwnPropertyDescriptor(
+                                            i.props,
+                                            'ref'
+                                        )?.get) &&
+                                        'isReactWarning' in a &&
+                                        a.isReactWarning)
+                                        ? i.ref
+                                        : (f =
+                                                (a =
+                                                    Object.getOwnPropertyDescriptor(
+                                                        i,
+                                                        'ref'
+                                                    )?.get) &&
+                                                'isReactWarning' in a &&
+                                                a.isReactWarning)
+                                          ? i.props.ref
+                                          : i.props.ref || i.ref),
+                                j = (function (a, b) {
+                                    let c = { ...b };
+                                    for (let d in b) {
+                                        let e = a[d],
+                                            f = b[d];
+                                        /^on[A-Z]/.test(d)
+                                            ? e && f
+                                                ? (c[d] = (...a) => {
+                                                      let b = f(...a);
+                                                      return (e(...a), b);
+                                                  })
+                                                : e && (c[d] = e)
+                                            : 'style' === d
+                                              ? (c[d] = { ...e, ...f })
+                                              : 'className' === d &&
+                                                (c[d] = [e, f]
+                                                    .filter(Boolean)
+                                                    .join(' '));
+                                    }
+                                    return { ...a, ...c };
+                                })(h, e.props);
+                            return (
+                                e.type !== b.Fragment &&
+                                    (j.ref = d ? (0, c.composeRefs)(d, g) : g),
+                                b.cloneElement(e, j)
+                            );
+                        }
+                        return b.Children.count(e) > 1
+                            ? b.Children.only(null)
+                            : null;
+                    })).displayName = `${e}.SlotClone`),
+                    h),
+                j = b.forwardRef((a, c) => {
+                    let { children: e, ...h } = a;
+                    g(e) && 'function' == typeof f && (e = f(e._payload));
+                    let j = b.Children.toArray(e),
+                        l = j.find(k);
+                    if (l) {
+                        let a = l.props.children,
+                            e = j.map((c) =>
+                                c !== l
+                                    ? c
+                                    : b.Children.count(a) > 1
+                                      ? b.Children.only(null)
+                                      : b.isValidElement(a)
+                                        ? a.props.children
+                                        : null
+                            );
+                        return (0, d.jsx)(i, {
+                            ...h,
+                            ref: c,
+                            children: b.isValidElement(a)
+                                ? b.cloneElement(a, void 0, e)
+                                : null,
+                        });
+                    }
+                    return (0, d.jsx)(i, { ...h, ref: c, children: e });
+                });
+            return ((j.displayName = `${a}.Slot`), j);
+        }
+        var i = h('Slot'),
+            j = Symbol('radix.slottable');
+        function k(a) {
+            return (
+                b.isValidElement(a) &&
+                'function' == typeof a.type &&
+                '__radixId' in a.type &&
+                a.type.__radixId === j
+            );
+        }
+        a.s(['Slot', () => i, 'createSlot', () => h]);
+    },
+    699570,
+    142261,
+    (a) => {
+        'use strict';
+        var b = a.i(584944),
+            c = a.i(315057),
+            d = a.i(239337);
+        let e = (a) => ('boolean' == typeof a ? `${a}` : 0 === a ? '0' : a),
+            f = d.clsx,
+            g = (a, b) => (c) => {
+                var d;
+                if ((null == b ? void 0 : b.variants) == null)
+                    return f(
+                        a,
+                        null == c ? void 0 : c.class,
+                        null == c ? void 0 : c.className
+                    );
+                let { variants: g, defaultVariants: h } = b,
+                    i = Object.keys(g).map((a) => {
+                        let b = null == c ? void 0 : c[a],
+                            d = null == h ? void 0 : h[a];
+                        if (null === b) return null;
+                        let f = e(b) || e(d);
+                        return g[a][f];
+                    }),
+                    j =
+                        c &&
+                        Object.entries(c).reduce((a, b) => {
+                            let [c, d] = b;
+                            return (void 0 === d || (a[c] = d), a);
+                        }, {});
+                return f(
+                    a,
+                    i,
+                    null == b || null == (d = b.compoundVariants)
+                        ? void 0
+                        : d.reduce((a, b) => {
+                              let { class: c, className: d, ...e } = b;
+                              return Object.entries(e).every((a) => {
+                                  let [b, c] = a;
+                                  return Array.isArray(c)
+                                      ? c.includes({ ...h, ...j }[b])
+                                      : { ...h, ...j }[b] === c;
+                              })
+                                  ? [...a, c, d]
+                                  : a;
+                          }, []),
+                    null == c ? void 0 : c.class,
+                    null == c ? void 0 : c.className
+                );
+            };
+        a.s(['cva', 0, g], 142261);
+        var h = a.i(368114);
+        let i = g(
+            "cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-1 focus-visible:ring-ring no-underline hover:no-underline",
+            {
+                variants: {
+                    variant: {
+                        default:
+                            'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90',
+                        brand: 'bg-background-brand font-bold text-label-large text-[#050505] hover:bg-background-highlights rounded-lg',
+                        outline:
+                            'border border-border-primary bg-background-tertiary text-content-primary hover:bg-background-secondary hover:border-border-secondary transition-colors font-medium',
+                        destructive:
+                            '!bg-red-600 !text-white hover:!bg-red-700 !border-transparent border transition-colors font-medium rounded-lg',
+                        active: 'bg-green-600 text-white hover:bg-green-700 transition-colors font-medium',
+                        ghost: 'hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
+                        link: 'text-primary underline-offset-4 hover:underline',
+                        remove: 'inline-flex items-center gap-2 rounded-md border border-red-500/50 px-3 py-1 text-sm text-red-500 transition-all hover:bg-red-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                        edit: 'inline-flex items-center gap-2 rounded-md border border-blue-500/50 px-3 py-1 text-sm text-blue-500 transition-all hover:bg-blue-500 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+                        edit2: 'bg-background-brand text-label-large text-[#ffffff] hover:bg-background-highlights rounded-lg',
+                    },
+                    size: {
+                        default: 'h-12 px-4 py-3 has-[>svg]:px-3',
+                        sm: 'h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5',
+                        lg: 'h-12 rounded-md px-6 has-[>svg]:px-4',
+                        icon: 'size-9',
+                    },
+                },
+                defaultVariants: { variant: 'default', size: 'default' },
+            }
+        );
+        function j({
+            className: a,
+            variant: d,
+            size: e,
+            asChild: f = !1,
+            ...g
+        }) {
+            let j = f ? c.Slot : 'button';
+            return (0, b.jsx)(j, {
+                'data-slot': 'button',
+                className: (0, h.cn)(i({ variant: d, size: e, className: a })),
+                ...g,
+            });
+        }
+        a.s(['Button', () => j, 'buttonVariants', () => i], 699570);
+    },
+    866718,
+    (a) => {
+        'use strict';
+        var b = a.i(584944),
+            c = a.i(368114);
+        function d({ className: a, type: d, ...e }) {
+            return (0, b.jsx)('input', {
+                type: d,
+                'data-slot': 'input',
+                className: (0, c.cn)(
+                    'flex h-12 w-full rounded-md border border-border-primary bg-background-tertiary px-3 py-2 text-sm text-content-primary ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-content-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-border-brand disabled:cursor-not-allowed disabled:opacity-50',
+                    'hover:border-border-secondary',
+                    'focus:border-border-brand focus-visible:border-border-brand',
+                    'aria-invalid:ring-destructive/20 aria-invalid:border-destructive',
+                    a
+                ),
+                ...e,
+            });
+        }
+        a.s(['Input', () => d]);
+    },
+    786304,
+    (a) => {
+        'use strict';
+        var b = a.i(584944),
+            c = a.i(315057),
+            d = a.i(142261),
+            e = a.i(368114);
+        let f = (0, d.cva)(
+            'inline-flex items-center justify-center rounded-full border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0 [&>svg]:size-3 gap-1 [&>svg]:pointer-events-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive transition-[color,box-shadow] overflow-hidden',
+            {
+                variants: {
+                    variant: {
+                        default:
+                            'border-transparent bg-primary text-primary-foreground [a&]:hover:bg-primary/90',
+                        secondary:
+                            'border-transparent bg-secondary text-secondary-foreground [a&]:hover:bg-secondary/90',
+                        destructive:
+                            'border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
+                        outline:
+                            'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
+                    },
+                },
+                defaultVariants: { variant: 'default' },
+            }
+        );
+        function g({ className: a, variant: d, asChild: g = !1, ...h }) {
+            let i = g ? c.Slot : 'span';
+            return (0, b.jsx)(i, {
+                'data-slot': 'badge',
+                className: (0, e.cn)(f({ variant: d }), a),
+                ...h,
+            });
+        }
+        a.s(['Badge', () => g]);
+    },
+    123453,
+    (a) => {
+        'use strict';
+        var b = a.i(584944),
+            c = a.i(107439),
+            d = a.i(169093),
+            e = a.i(259849),
+            f = a.i(156916),
+            g = a.i(699570),
+            h = a.i(786304),
+            i = a.i(866718);
+        function j({ initialData: a, error: j }) {
+            let k = (0, e.useRouter)(),
+                l = (0, e.usePathname)(),
+                m = a?.units ?? [],
+                n = a?.activeUnitId ?? '',
+                o = a?.levels ?? ['BRONZE', 'PRATA', 'OURO', 'DIAMANTE'],
+                p = a?.configByLevel ?? {},
+                q = c.useMemo(() => m.find((a) => a.id === n) ?? null, [m, n]),
+                [r, s] = c.useState(n),
+                [t, u] = c.useState(!1);
+            async function v(a) {
+                if ((a.preventDefault(), n))
+                    try {
+                        u(!0);
+                        let b = new FormData(a.currentTarget),
+                            c = await fetch('/api/admin/client-levels/config', {
+                                method: 'POST',
+                                body: b,
+                            }),
+                            d = await c.json();
+                        if (!c.ok || !d.ok) {
+                            let a = d.ok ? 'Falha ao salvar.' : d.error;
+                            f.toast.error(a);
+                            return;
+                        }
+                        (f.toast.success('Configurações salvas.'), k.refresh());
+                    } catch (a) {
+                        f.toast.error(
+                            'string' == typeof a?.message
+                                ? a.message
+                                : 'Falha ao salvar.'
+                        );
+                    } finally {
+                        u(!1);
+                    }
+            }
+            return (
+                c.useEffect(() => {
+                    s(n);
+                }, [n]),
+                (0, b.jsxs)('div', {
+                    className: 'space-y-5 max-w-7xl mx-auto',
+                    children: [
+                        (0, b.jsxs)('header', {
+                            className: 'flex flex-col gap-3',
+                            children: [
+                                (0, b.jsxs)('div', {
+                                    className:
+                                        'flex items-start justify-between gap-4',
+                                    children: [
+                                        (0, b.jsxs)('div', {
+                                            children: [
+                                                (0, b.jsx)('h1', {
+                                                    className:
+                                                        'text-title text-content-primary',
+                                                    children:
+                                                        'Configurações por nível',
+                                                }),
+                                                (0, b.jsxs)('p', {
+                                                    className:
+                                                        'text-paragraph-medium text-content-secondary',
+                                                    children: [
+                                                        'Defina os mínimos mensais para cada nível: atendimentos',
+                                                        ' ',
+                                                        (0, b.jsx)('span', {
+                                                            className:
+                                                                'font-semibold',
+                                                            children:
+                                                                'concluídos',
+                                                        }),
+                                                        ' e pedidos',
+                                                        ' ',
+                                                        (0, b.jsx)('span', {
+                                                            className:
+                                                                'font-semibold',
+                                                            children:
+                                                                'entregues',
+                                                        }),
+                                                        '.',
+                                                    ],
+                                                }),
+                                            ],
+                                        }),
+                                        (0, b.jsx)('div', {
+                                            className:
+                                                'flex items-center gap-2',
+                                            children: (0, b.jsx)(g.Button, {
+                                                asChild: !0,
+                                                variant: 'outline',
+                                                children: (0, b.jsx)(
+                                                    d.default,
+                                                    {
+                                                        href: '/admin/client-level',
+                                                        children: 'Voltar',
+                                                    }
+                                                ),
+                                            }),
+                                        }),
+                                    ],
+                                }),
+                                j
+                                    ? (0, b.jsxs)('section', {
+                                          className:
+                                              'rounded-xl border border-border-primary bg-background-tertiary p-4',
+                                          children: [
+                                              (0, b.jsx)('p', {
+                                                  className:
+                                                      'text-paragraph-small text-content-secondary',
+                                                  children:
+                                                      'Não foi possível carregar os dados.',
+                                              }),
+                                              (0, b.jsx)('p', {
+                                                  className:
+                                                      'mt-1 text-[11px] text-content-tertiary',
+                                                  children: j,
+                                              }),
+                                          ],
+                                      })
+                                    : null,
+                                (0, b.jsx)('section', {
+                                    className:
+                                        'rounded-xl border border-border-primary bg-background-tertiary p-4',
+                                    children: (0, b.jsxs)('div', {
+                                        className:
+                                            'flex flex-col md:flex-row gap-3 md:items-end',
+                                        children: [
+                                            (0, b.jsxs)('div', {
+                                                className: 'w-full md:w-90',
+                                                children: [
+                                                    (0, b.jsx)('label', {
+                                                        className:
+                                                            'text-[11px] text-content-secondary',
+                                                        children: 'Unidade',
+                                                    }),
+                                                    (0, b.jsx)('select', {
+                                                        name: 'unitId',
+                                                        value: r || '',
+                                                        onChange: (a) => {
+                                                            s(a.target.value);
+                                                        },
+                                                        className:
+                                                            'h-10 w-full rounded-md border border-border-primary bg-background-secondary px-3 text-sm text-content-primary',
+                                                        disabled:
+                                                            0 === m.length,
+                                                        children: m.map((a) =>
+                                                            (0, b.jsx)(
+                                                                'option',
+                                                                {
+                                                                    value: a.id,
+                                                                    children:
+                                                                        a.name,
+                                                                },
+                                                                a.id
+                                                            )
+                                                        ),
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, b.jsxs)('div', {
+                                                className:
+                                                    'flex items-center gap-2',
+                                                children: [
+                                                    (0, b.jsx)(g.Button, {
+                                                        type: 'button',
+                                                        size: 'sm',
+                                                        variant: 'edit2',
+                                                        onClick: function () {
+                                                            r &&
+                                                                k.push(
+                                                                    `${l}?unitId=${encodeURIComponent(r)}`
+                                                                );
+                                                        },
+                                                        disabled: !r,
+                                                        children: 'Carregar',
+                                                    }),
+                                                    q
+                                                        ? (0, b.jsx)(h.Badge, {
+                                                              className:
+                                                                  'bg-emerald-500/10 text-emerald-600 border-emerald-500/40',
+                                                              children: q.name,
+                                                          })
+                                                        : null,
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                }),
+                            ],
+                        }),
+                        (0, b.jsx)('section', {
+                            className:
+                                'rounded-xl border border-border-primary bg-background-tertiary p-4 space-y-4',
+                            children: (0, b.jsxs)('form', {
+                                className: 'space-y-4',
+                                method: 'POST',
+                                action: '/api/admin/client-levels/config',
+                                onSubmit: v,
+                                children: [
+                                    (0, b.jsx)('input', {
+                                        type: 'hidden',
+                                        name: 'unitId',
+                                        value: n,
+                                    }),
+                                    (0, b.jsx)('div', {
+                                        className: 'grid gap-3 md:grid-cols-2',
+                                        children: o.map((a) => {
+                                            let c = p[a],
+                                                d = c?.minAppointmentsDone ?? 0,
+                                                e = c?.minOrdersCompleted ?? 0;
+                                            return (0, b.jsxs)(
+                                                'div',
+                                                {
+                                                    className:
+                                                        'rounded-xl border border-border-primary bg-background-secondary p-4 space-y-3',
+                                                    children: [
+                                                        (0, b.jsxs)('div', {
+                                                            className:
+                                                                'flex items-center justify-between gap-2',
+                                                            children: [
+                                                                (0, b.jsx)(
+                                                                    'p',
+                                                                    {
+                                                                        className:
+                                                                            'text-paragraph-medium-size font-semibold text-content-primary',
+                                                                        children:
+                                                                            (function (
+                                                                                a
+                                                                            ) {
+                                                                                switch (
+                                                                                    a
+                                                                                ) {
+                                                                                    case 'BRONZE':
+                                                                                        return 'Bronze';
+                                                                                    case 'PRATA':
+                                                                                        return 'Prata';
+                                                                                    case 'OURO':
+                                                                                        return 'Ouro';
+                                                                                    case 'DIAMANTE':
+                                                                                        return 'Diamante';
+                                                                                }
+                                                                            })(
+                                                                                a
+                                                                            ),
+                                                                    }
+                                                                ),
+                                                                c
+                                                                    ? (0,
+                                                                      b.jsx)(
+                                                                          h.Badge,
+                                                                          {
+                                                                              className:
+                                                                                  'bg-emerald-500/10 text-emerald-600 border-emerald-500/40',
+                                                                              children:
+                                                                                  'Configurado',
+                                                                          }
+                                                                      )
+                                                                    : (0,
+                                                                      b.jsx)(
+                                                                          h.Badge,
+                                                                          {
+                                                                              variant:
+                                                                                  'outline',
+                                                                              className:
+                                                                                  'border-border-primary text-content-secondary',
+                                                                              children:
+                                                                                  'Novo',
+                                                                          }
+                                                                      ),
+                                                            ],
+                                                        }),
+                                                        (0, b.jsxs)('div', {
+                                                            className:
+                                                                'grid grid-cols-2 gap-3',
+                                                            children: [
+                                                                (0, b.jsxs)(
+                                                                    'div',
+                                                                    {
+                                                                        className:
+                                                                            'space-y-1',
+                                                                        children:
+                                                                            [
+                                                                                (0,
+                                                                                b.jsx)(
+                                                                                    'label',
+                                                                                    {
+                                                                                        className:
+                                                                                            'text-[11px] text-content-secondary',
+                                                                                        children:
+                                                                                            'Mínimo de agendamentos concluídos',
+                                                                                    }
+                                                                                ),
+                                                                                (0,
+                                                                                b.jsx)(
+                                                                                    i.Input,
+                                                                                    {
+                                                                                        name: `minAppointmentsDone_${a}`,
+                                                                                        defaultValue:
+                                                                                            String(
+                                                                                                d
+                                                                                            ),
+                                                                                        inputMode:
+                                                                                            'numeric',
+                                                                                        className:
+                                                                                            'h-10 bg-background-tertiary border-border-primary',
+                                                                                    }
+                                                                                ),
+                                                                            ],
+                                                                    }
+                                                                ),
+                                                                (0, b.jsxs)(
+                                                                    'div',
+                                                                    {
+                                                                        className:
+                                                                            'space-y-1',
+                                                                        children:
+                                                                            [
+                                                                                (0,
+                                                                                b.jsx)(
+                                                                                    'label',
+                                                                                    {
+                                                                                        className:
+                                                                                            'text-[11px] text-content-secondary',
+                                                                                        children:
+                                                                                            'Mínimo de pedidos entregues',
+                                                                                    }
+                                                                                ),
+                                                                                (0,
+                                                                                b.jsx)(
+                                                                                    i.Input,
+                                                                                    {
+                                                                                        name: `minOrdersCompleted_${a}`,
+                                                                                        defaultValue:
+                                                                                            String(
+                                                                                                e
+                                                                                            ),
+                                                                                        inputMode:
+                                                                                            'numeric',
+                                                                                        className:
+                                                                                            'h-10 bg-background-tertiary border-border-primary',
+                                                                                    }
+                                                                                ),
+                                                                            ],
+                                                                    }
+                                                                ),
+                                                            ],
+                                                        }),
+                                                        (0, b.jsx)('p', {
+                                                            className:
+                                                                'text-[11px] text-content-secondary',
+                                                            children:
+                                                                'Dica: coloque 0 para “sem exigência” naquele critério.',
+                                                        }),
+                                                    ],
+                                                },
+                                                a
+                                            );
+                                        }),
+                                    }),
+                                    (0, b.jsxs)('div', {
+                                        className:
+                                            'flex items-center justify-end gap-2',
+                                        children: [
+                                            (0, b.jsx)(g.Button, {
+                                                type: 'submit',
+                                                size: 'sm',
+                                                variant: 'edit2',
+                                                disabled: !n || t,
+                                                children: t
+                                                    ? 'Salvando...'
+                                                    : 'Salvar configurações',
+                                            }),
+                                            (0, b.jsx)(g.Button, {
+                                                asChild: !0,
+                                                type: 'button',
+                                                size: 'sm',
+                                                variant: 'destructive',
+                                                children: (0, b.jsx)(
+                                                    d.default,
+                                                    {
+                                                        href: '/admin/client-level',
+                                                        children: 'Cancelar',
+                                                    }
+                                                ),
+                                            }),
+                                        ],
+                                    }),
+                                ],
+                            }),
+                        }),
+                    ],
+                })
+            );
+        }
+        a.s(['default', () => j]);
+    },
+];
+
+//# sourceMappingURL=_e2cf4188._.js.map

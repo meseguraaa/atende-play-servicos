@@ -1,0 +1,811 @@
+module.exports = [
+    29173,
+    (a, b, c) => {
+        b.exports = a.x('@prisma/client', () => require('@prisma/client'));
+    },
+    766518,
+    (a) => {
+        'use strict';
+        var b = a.i(29173);
+        let c = globalThis.prisma ?? new b.PrismaClient({ log: ['error'] });
+        a.s(['prisma', 0, c]);
+    },
+    113588,
+    (a, b, c) => {
+        'use strict';
+        (Object.defineProperty(c, '__esModule', { value: !0 }),
+            Object.defineProperty(c, 'ReadonlyURLSearchParams', {
+                enumerable: !0,
+                get: function () {
+                    return e;
+                },
+            }));
+        class d extends Error {
+            constructor() {
+                super(
+                    'Method unavailable on `ReadonlyURLSearchParams`. Read more: https://nextjs.org/docs/app/api-reference/functions/use-search-params#updating-searchparams'
+                );
+            }
+        }
+        class e extends URLSearchParams {
+            append() {
+                throw new d();
+            }
+            delete() {
+                throw new d();
+            }
+            set() {
+                throw new d();
+            }
+            sort() {
+                throw new d();
+            }
+        }
+        ('function' == typeof c.default ||
+            ('object' == typeof c.default && null !== c.default)) &&
+            void 0 === c.default.__esModule &&
+            (Object.defineProperty(c.default, '__esModule', { value: !0 }),
+            Object.assign(c.default, c),
+            (b.exports = c.default));
+    },
+    753672,
+    (a, b, c) => {
+        'use strict';
+        (Object.defineProperty(c, '__esModule', { value: !0 }),
+            Object.defineProperty(c, 'RedirectStatusCode', {
+                enumerable: !0,
+                get: function () {
+                    return e;
+                },
+            }));
+        var d,
+            e =
+                (((d = {})[(d.SeeOther = 303)] = 'SeeOther'),
+                (d[(d.TemporaryRedirect = 307)] = 'TemporaryRedirect'),
+                (d[(d.PermanentRedirect = 308)] = 'PermanentRedirect'),
+                d);
+        ('function' == typeof c.default ||
+            ('object' == typeof c.default && null !== c.default)) &&
+            void 0 === c.default.__esModule &&
+            (Object.defineProperty(c.default, '__esModule', { value: !0 }),
+            Object.assign(c.default, c),
+            (b.exports = c.default));
+    },
+    793798,
+    (a, b, c) => {
+        'use strict';
+        Object.defineProperty(c, '__esModule', { value: !0 });
+        var d,
+            e = {
+                REDIRECT_ERROR_CODE: function () {
+                    return h;
+                },
+                RedirectType: function () {
+                    return i;
+                },
+                isRedirectError: function () {
+                    return j;
+                },
+            };
+        for (var f in e)
+            Object.defineProperty(c, f, { enumerable: !0, get: e[f] });
+        let g = a.r(753672),
+            h = 'NEXT_REDIRECT';
+        var i = (((d = {}).push = 'push'), (d.replace = 'replace'), d);
+        function j(a) {
+            if (
+                'object' != typeof a ||
+                null === a ||
+                !('digest' in a) ||
+                'string' != typeof a.digest
+            )
+                return !1;
+            let b = a.digest.split(';'),
+                [c, d] = b,
+                e = b.slice(2, -2).join(';'),
+                f = Number(b.at(-2));
+            return (
+                c === h &&
+                ('replace' === d || 'push' === d) &&
+                'string' == typeof e &&
+                !isNaN(f) &&
+                f in g.RedirectStatusCode
+            );
+        }
+        ('function' == typeof c.default ||
+            ('object' == typeof c.default && null !== c.default)) &&
+            void 0 === c.default.__esModule &&
+            (Object.defineProperty(c.default, '__esModule', { value: !0 }),
+            Object.assign(c.default, c),
+            (b.exports = c.default));
+    },
+    171631,
+    (a, b, c) => {
+        'use strict';
+        Object.defineProperty(c, '__esModule', { value: !0 });
+        var d = {
+            getRedirectError: function () {
+                return i;
+            },
+            getRedirectStatusCodeFromError: function () {
+                return n;
+            },
+            getRedirectTypeFromError: function () {
+                return m;
+            },
+            getURLFromRedirectError: function () {
+                return l;
+            },
+            permanentRedirect: function () {
+                return k;
+            },
+            redirect: function () {
+                return j;
+            },
+        };
+        for (var e in d)
+            Object.defineProperty(c, e, { enumerable: !0, get: d[e] });
+        let f = a.r(753672),
+            g = a.r(793798),
+            h = a.r(120635).actionAsyncStorage;
+        function i(a, b, c = f.RedirectStatusCode.TemporaryRedirect) {
+            let d = Object.defineProperty(
+                Error(g.REDIRECT_ERROR_CODE),
+                '__NEXT_ERROR_CODE',
+                { value: 'E394', enumerable: !1, configurable: !0 }
+            );
+            return ((d.digest = `${g.REDIRECT_ERROR_CODE};${b};${a};${c};`), d);
+        }
+        function j(a, b) {
+            throw i(
+                a,
+                (b ??= h?.getStore()?.isAction
+                    ? g.RedirectType.push
+                    : g.RedirectType.replace),
+                f.RedirectStatusCode.TemporaryRedirect
+            );
+        }
+        function k(a, b = g.RedirectType.replace) {
+            throw i(a, b, f.RedirectStatusCode.PermanentRedirect);
+        }
+        function l(a) {
+            return (0, g.isRedirectError)(a)
+                ? a.digest.split(';').slice(2, -2).join(';')
+                : null;
+        }
+        function m(a) {
+            if (!(0, g.isRedirectError)(a))
+                throw Object.defineProperty(
+                    Error('Not a redirect error'),
+                    '__NEXT_ERROR_CODE',
+                    { value: 'E260', enumerable: !1, configurable: !0 }
+                );
+            return a.digest.split(';', 2)[1];
+        }
+        function n(a) {
+            if (!(0, g.isRedirectError)(a))
+                throw Object.defineProperty(
+                    Error('Not a redirect error'),
+                    '__NEXT_ERROR_CODE',
+                    { value: 'E260', enumerable: !1, configurable: !0 }
+                );
+            return Number(a.digest.split(';').at(-2));
+        }
+        ('function' == typeof c.default ||
+            ('object' == typeof c.default && null !== c.default)) &&
+            void 0 === c.default.__esModule &&
+            (Object.defineProperty(c.default, '__esModule', { value: !0 }),
+            Object.assign(c.default, c),
+            (b.exports = c.default));
+    },
+    501455,
+    (a, b, c) => {
+        'use strict';
+        Object.defineProperty(c, '__esModule', { value: !0 });
+        var d = {
+            HTTPAccessErrorStatus: function () {
+                return f;
+            },
+            HTTP_ERROR_FALLBACK_ERROR_CODE: function () {
+                return h;
+            },
+            getAccessFallbackErrorTypeByStatus: function () {
+                return k;
+            },
+            getAccessFallbackHTTPStatus: function () {
+                return j;
+            },
+            isHTTPAccessFallbackError: function () {
+                return i;
+            },
+        };
+        for (var e in d)
+            Object.defineProperty(c, e, { enumerable: !0, get: d[e] });
+        let f = { NOT_FOUND: 404, FORBIDDEN: 403, UNAUTHORIZED: 401 },
+            g = new Set(Object.values(f)),
+            h = 'NEXT_HTTP_ERROR_FALLBACK';
+        function i(a) {
+            if (
+                'object' != typeof a ||
+                null === a ||
+                !('digest' in a) ||
+                'string' != typeof a.digest
+            )
+                return !1;
+            let [b, c] = a.digest.split(';');
+            return b === h && g.has(Number(c));
+        }
+        function j(a) {
+            return Number(a.digest.split(';')[1]);
+        }
+        function k(a) {
+            switch (a) {
+                case 401:
+                    return 'unauthorized';
+                case 403:
+                    return 'forbidden';
+                case 404:
+                    return 'not-found';
+                default:
+                    return;
+            }
+        }
+        ('function' == typeof c.default ||
+            ('object' == typeof c.default && null !== c.default)) &&
+            void 0 === c.default.__esModule &&
+            (Object.defineProperty(c.default, '__esModule', { value: !0 }),
+            Object.assign(c.default, c),
+            (b.exports = c.default));
+    },
+    823135,
+    (a, b, c) => {
+        'use strict';
+        (Object.defineProperty(c, '__esModule', { value: !0 }),
+            Object.defineProperty(c, 'notFound', {
+                enumerable: !0,
+                get: function () {
+                    return f;
+                },
+            }));
+        let d = a.r(501455),
+            e = `${d.HTTP_ERROR_FALLBACK_ERROR_CODE};404`;
+        function f() {
+            let a = Object.defineProperty(Error(e), '__NEXT_ERROR_CODE', {
+                value: 'E394',
+                enumerable: !1,
+                configurable: !0,
+            });
+            throw ((a.digest = e), a);
+        }
+        ('function' == typeof c.default ||
+            ('object' == typeof c.default && null !== c.default)) &&
+            void 0 === c.default.__esModule &&
+            (Object.defineProperty(c.default, '__esModule', { value: !0 }),
+            Object.assign(c.default, c),
+            (b.exports = c.default));
+    },
+    899903,
+    (a, b, c) => {
+        'use strict';
+        function d() {
+            throw Object.defineProperty(
+                Error(
+                    '`forbidden()` is experimental and only allowed to be enabled when `experimental.authInterrupts` is enabled.'
+                ),
+                '__NEXT_ERROR_CODE',
+                { value: 'E488', enumerable: !1, configurable: !0 }
+            );
+        }
+        (Object.defineProperty(c, '__esModule', { value: !0 }),
+            Object.defineProperty(c, 'forbidden', {
+                enumerable: !0,
+                get: function () {
+                    return d;
+                },
+            }),
+            a.r(501455).HTTP_ERROR_FALLBACK_ERROR_CODE,
+            ('function' == typeof c.default ||
+                ('object' == typeof c.default && null !== c.default)) &&
+                void 0 === c.default.__esModule &&
+                (Object.defineProperty(c.default, '__esModule', { value: !0 }),
+                Object.assign(c.default, c),
+                (b.exports = c.default)));
+    },
+    392931,
+    (a, b, c) => {
+        'use strict';
+        function d() {
+            throw Object.defineProperty(
+                Error(
+                    '`unauthorized()` is experimental and only allowed to be used when `experimental.authInterrupts` is enabled.'
+                ),
+                '__NEXT_ERROR_CODE',
+                { value: 'E411', enumerable: !1, configurable: !0 }
+            );
+        }
+        (Object.defineProperty(c, '__esModule', { value: !0 }),
+            Object.defineProperty(c, 'unauthorized', {
+                enumerable: !0,
+                get: function () {
+                    return d;
+                },
+            }),
+            a.r(501455).HTTP_ERROR_FALLBACK_ERROR_CODE,
+            ('function' == typeof c.default ||
+                ('object' == typeof c.default && null !== c.default)) &&
+                void 0 === c.default.__esModule &&
+                (Object.defineProperty(c.default, '__esModule', { value: !0 }),
+                Object.assign(c.default, c),
+                (b.exports = c.default)));
+    },
+    359718,
+    (a, b, c) => {
+        'use strict';
+        (Object.defineProperty(c, '__esModule', { value: !0 }),
+            Object.defineProperty(c, 'isPostpone', {
+                enumerable: !0,
+                get: function () {
+                    return e;
+                },
+            }));
+        let d = Symbol.for('react.postpone');
+        function e(a) {
+            return 'object' == typeof a && null !== a && a.$$typeof === d;
+        }
+    },
+    214983,
+    (a, b, c) => {
+        'use strict';
+        (Object.defineProperty(c, '__esModule', { value: !0 }),
+            Object.defineProperty(c, 'isNextRouterError', {
+                enumerable: !0,
+                get: function () {
+                    return f;
+                },
+            }));
+        let d = a.r(501455),
+            e = a.r(793798);
+        function f(a) {
+            return (
+                (0, e.isRedirectError)(a) || (0, d.isHTTPAccessFallbackError)(a)
+            );
+        }
+        ('function' == typeof c.default ||
+            ('object' == typeof c.default && null !== c.default)) &&
+            void 0 === c.default.__esModule &&
+            (Object.defineProperty(c.default, '__esModule', { value: !0 }),
+            Object.assign(c.default, c),
+            (b.exports = c.default));
+    },
+    700471,
+    (a, b, c) => {
+        'use strict';
+        (Object.defineProperty(c, '__esModule', { value: !0 }),
+            Object.defineProperty(c, 'unstable_rethrow', {
+                enumerable: !0,
+                get: function () {
+                    return function a(b) {
+                        if (
+                            (0, g.isNextRouterError)(b) ||
+                            (0, f.isBailoutToCSRError)(b) ||
+                            (0, i.isDynamicServerError)(b) ||
+                            (0, h.isDynamicPostpone)(b) ||
+                            (0, e.isPostpone)(b) ||
+                            (0, d.isHangingPromiseRejectionError)(b) ||
+                            (0, h.isPrerenderInterruptedError)(b)
+                        )
+                            throw b;
+                        b instanceof Error && 'cause' in b && a(b.cause);
+                    };
+                },
+            }));
+        let d = a.r(128336),
+            e = a.r(359718),
+            f = a.r(980800),
+            g = a.r(214983),
+            h = a.r(943956),
+            i = a.r(15843);
+        ('function' == typeof c.default ||
+            ('object' == typeof c.default && null !== c.default)) &&
+            void 0 === c.default.__esModule &&
+            (Object.defineProperty(c.default, '__esModule', { value: !0 }),
+            Object.assign(c.default, c),
+            (b.exports = c.default));
+    },
+    523753,
+    (a, b, c) => {
+        'use strict';
+        (Object.defineProperty(c, '__esModule', { value: !0 }),
+            Object.defineProperty(c, 'unstable_rethrow', {
+                enumerable: !0,
+                get: function () {
+                    return d;
+                },
+            }));
+        let d = a.r(700471).unstable_rethrow;
+        ('function' == typeof c.default ||
+            ('object' == typeof c.default && null !== c.default)) &&
+            void 0 === c.default.__esModule &&
+            (Object.defineProperty(c.default, '__esModule', { value: !0 }),
+            Object.assign(c.default, c),
+            (b.exports = c.default));
+    },
+    154840,
+    (a, b, c) => {
+        'use strict';
+        Object.defineProperty(c, '__esModule', { value: !0 });
+        var d = {
+            ReadonlyURLSearchParams: function () {
+                return f.ReadonlyURLSearchParams;
+            },
+            RedirectType: function () {
+                return h.RedirectType;
+            },
+            forbidden: function () {
+                return j.forbidden;
+            },
+            notFound: function () {
+                return i.notFound;
+            },
+            permanentRedirect: function () {
+                return g.permanentRedirect;
+            },
+            redirect: function () {
+                return g.redirect;
+            },
+            unauthorized: function () {
+                return k.unauthorized;
+            },
+            unstable_isUnrecognizedActionError: function () {
+                return m;
+            },
+            unstable_rethrow: function () {
+                return l.unstable_rethrow;
+            },
+        };
+        for (var e in d)
+            Object.defineProperty(c, e, { enumerable: !0, get: d[e] });
+        let f = a.r(113588),
+            g = a.r(171631),
+            h = a.r(793798),
+            i = a.r(823135),
+            j = a.r(899903),
+            k = a.r(392931),
+            l = a.r(523753);
+        function m() {
+            throw Object.defineProperty(
+                Error(
+                    '`unstable_isUnrecognizedActionError` can only be used on the client.'
+                ),
+                '__NEXT_ERROR_CODE',
+                { value: 'E776', enumerable: !1, configurable: !0 }
+            );
+        }
+        ('function' == typeof c.default ||
+            ('object' == typeof c.default && null !== c.default)) &&
+            void 0 === c.default.__esModule &&
+            (Object.defineProperty(c.default, '__esModule', { value: !0 }),
+            Object.assign(c.default, c),
+            (b.exports = c.default));
+    },
+    106878,
+    (a) => {
+        'use strict';
+        (a.i(154840), a.s([]));
+    },
+    250181,
+    972677,
+    (a) => {
+        'use strict';
+        let b = new Set(
+            (
+                process.env.ADMIN_DISABLED_MODULES ??
+                process.env.NEXT_PUBLIC_ADMIN_DISABLED_MODULES ??
+                ''
+            )
+                .split(',')
+                .map((a) => a.trim())
+                .filter(Boolean)
+        );
+        function c(a) {
+            return 'partners' !== a && !b.has(String(a));
+        }
+        let d = [
+            {
+                href: '/admin/dashboard',
+                label: 'Dashboard',
+                menuKey: 'dashboard',
+                enabled: c('dashboard'),
+            },
+            {
+                href: '/admin/appointments',
+                label: 'Agendamentos',
+                menuKey: 'appointments',
+                enabled: c('appointments'),
+            },
+            {
+                href: '/admin/checkout',
+                label: 'Checkout',
+                menuKey: 'checkout',
+                enabled: c('checkout'),
+            },
+            {
+                href: '/admin/professionals',
+                label: 'Profissionais',
+                menuKey: 'professionals',
+                enabled: c('professionals'),
+            },
+            {
+                href: '/admin/services',
+                label: 'Serviços',
+                menuKey: 'services',
+                enabled: c('services'),
+            },
+            {
+                href: '/admin/products',
+                label: 'Produtos',
+                menuKey: 'products',
+                enabled: c('products'),
+            },
+            {
+                href: '/admin/partners',
+                label: 'Parceiros',
+                menuKey: 'partners',
+                enabled: c('partners'),
+            },
+            {
+                href: '/admin/clients',
+                label: 'Clientes',
+                menuKey: 'clients',
+                enabled: c('clients'),
+            },
+            {
+                href: '/admin/client-levels',
+                label: 'Nível de Cliente',
+                menuKey: 'clientLevels',
+                enabled: c('clientLevels'),
+            },
+            {
+                href: '/admin/review-tags',
+                label: 'Avaliação',
+                menuKey: 'reviews',
+                enabled: c('reviews'),
+            },
+            {
+                href: '/admin/reports',
+                label: 'Relatórios',
+                menuKey: 'reports',
+                enabled: c('reports'),
+            },
+            {
+                href: '/admin/finance',
+                label: 'Financeiro',
+                menuKey: 'finance',
+                enabled: c('finance'),
+            },
+            {
+                href: '/admin/setting',
+                label: 'Configurações',
+                menuKey: 'settings',
+                enabled: c('settings'),
+            },
+        ];
+        a.s(['ADMIN_MENU', 0, d], 250181);
+        let e = {
+            dashboard: 'canAccessDashboard',
+            reports: 'canAccessReports',
+            checkout: 'canAccessCheckout',
+            appointments: 'canAccessAppointments',
+            professionals: 'canAccessProfessionals',
+            services: 'canAccessServices',
+            reviews: 'canAccessReviews',
+            products: 'canAccessProducts',
+            partners: 'canAccessPartners',
+            clients: 'canAccessClients',
+            clientLevels: 'canAccessClientLevels',
+            finance: 'canAccessFinance',
+            settings: 'canAccessSettings',
+        };
+        function f(a, b) {
+            return !!a && !!a[e[b]];
+        }
+        a.s(['canAccess', () => f], 972677);
+    },
+    31466,
+    (a) => {
+        'use strict';
+        let b = (0, a.i(976286).registerClientReference)(
+            function () {
+                throw Error(
+                    "Attempted to call AdminNav() from the server but AdminNav is on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component."
+                );
+            },
+            '[project]/src/components/admin/admin-nav/admin-nav.tsx <module evaluation>',
+            'AdminNav'
+        );
+        a.s(['AdminNav', 0, b]);
+    },
+    856511,
+    (a) => {
+        'use strict';
+        let b = (0, a.i(976286).registerClientReference)(
+            function () {
+                throw Error(
+                    "Attempted to call AdminNav() from the server but AdminNav is on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component."
+                );
+            },
+            '[project]/src/components/admin/admin-nav/admin-nav.tsx',
+            'AdminNav'
+        );
+        a.s(['AdminNav', 0, b]);
+    },
+    750937,
+    (a) => {
+        'use strict';
+        a.i(31466);
+        var b = a.i(856511);
+        a.n(b);
+    },
+    958289,
+    (a) => {
+        'use strict';
+        let b = (0, a.i(976286).registerClientReference)(
+            function () {
+                throw Error(
+                    "Attempted to call the default export of [project]/src/app/admin/admin-permission-toast.tsx <module evaluation> from the server, but it's on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component."
+                );
+            },
+            '[project]/src/app/admin/admin-permission-toast.tsx <module evaluation>',
+            'default'
+        );
+        a.s(['default', 0, b]);
+    },
+    885266,
+    (a) => {
+        'use strict';
+        let b = (0, a.i(976286).registerClientReference)(
+            function () {
+                throw Error(
+                    "Attempted to call the default export of [project]/src/app/admin/admin-permission-toast.tsx from the server, but it's on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component."
+                );
+            },
+            '[project]/src/app/admin/admin-permission-toast.tsx',
+            'default'
+        );
+        a.s(['default', 0, b]);
+    },
+    529929,
+    (a) => {
+        'use strict';
+        a.i(958289);
+        var b = a.i(885266);
+        a.n(b);
+    },
+    436102,
+    (a) => {
+        'use strict';
+        var b = a.i(623127);
+        a.i(106878);
+        var c = a.i(154840),
+            d = a.i(750937),
+            e = a.i(766518),
+            f = a.i(126918),
+            g = a.i(529929),
+            h = a.i(250181),
+            i = a.i(972677);
+        let j = new Set(['partners']);
+        async function k({ children: a }) {
+            let k = await (0, f.getCurrentPainelUser)();
+            (k || (0, c.redirect)('/painel/login?error=credenciais'),
+                'ADMIN' !== k.role &&
+                    (0, c.redirect)('/painel/login?error=permissao'));
+            let l = String(k.sub || '').trim(),
+                m = String(k.companyId || '').trim();
+            (l && m) || (0, c.redirect)('/painel/login?error=permissao');
+            let n = await e.prisma.user.findUnique({
+                where: { id: l },
+                select: { id: !0, name: !0, email: !0, isActive: !0 },
+            });
+            (n?.id && n.isActive) ||
+                (0, c.redirect)('/painel/login?error=permissao');
+            let o = await e.prisma.companyMember.findFirst({
+                where: {
+                    userId: l,
+                    companyId: m,
+                    isActive: !0,
+                    role: { in: ['OWNER', 'ADMIN'] },
+                },
+                select: { role: !0 },
+            });
+            o?.role || (0, c.redirect)('/painel/login?error=permissao');
+            let p = 'OWNER' === o.role,
+                q = p
+                    ? {
+                          canAccessDashboard: !0,
+                          canAccessReports: !0,
+                          canAccessCheckout: !0,
+                          canAccessAppointments: !0,
+                          canAccessProfessionals: !0,
+                          canAccessServices: !0,
+                          canAccessReviews: !0,
+                          canAccessProducts: !0,
+                          canAccessPartners: !1,
+                          canAccessClients: !0,
+                          canAccessClientLevels: !0,
+                          canAccessFinance: !0,
+                          canAccessSettings: !0,
+                      }
+                    : await e.prisma.adminAccess.findFirst({
+                          where: { companyId: m, userId: l },
+                          select: {
+                              canAccessDashboard: !0,
+                              canAccessReports: !0,
+                              canAccessCheckout: !0,
+                              canAccessAppointments: !0,
+                              canAccessProfessionals: !0,
+                              canAccessServices: !0,
+                              canAccessReviews: !0,
+                              canAccessProducts: !0,
+                              canAccessPartners: !0,
+                              canAccessClients: !0,
+                              canAccessClientLevels: !0,
+                              canAccessFinance: !0,
+                              canAccessSettings: !0,
+                          },
+                      });
+            (p || q || (0, c.redirect)('/painel/login?error=permissao'),
+                p ||
+                    (!(function (a) {
+                        if (!a) return null;
+                        for (let b of h.ADMIN_MENU)
+                            if (
+                                !(!b.enabled || j.has(String(b.menuKey))) &&
+                                (0, i.canAccess)(a, b.menuKey)
+                            )
+                                return b.href;
+                        return null;
+                    })(q) &&
+                        (0, c.redirect)('/painel/login?error=permissao')));
+            let r = await e.prisma.unit.findMany({
+                    where: { companyId: m, isActive: !0 },
+                    select: { id: !0, name: !0 },
+                    orderBy: { name: 'asc' },
+                }),
+                s = [];
+            if (p) s = r.map((a) => ({ id: a.id, name: a.name }));
+            else {
+                let a = new Set(
+                    (
+                        await e.prisma.adminUnitAccess.findMany({
+                            where: { companyId: m, userId: l },
+                            select: { unitId: !0 },
+                        })
+                    ).map((a) => a.unitId)
+                );
+                s = r
+                    .filter((b) => a.has(b.id))
+                    .map((a) => ({ id: a.id, name: a.name }));
+            }
+            return (0, b.jsxs)('div', {
+                className: 'min-h-screen bg-background-primary',
+                children: [
+                    (0, b.jsx)(g.default, {}),
+                    (0, b.jsx)(d.AdminNav, {
+                        adminAccess: q ?? void 0,
+                        unitOptions: s,
+                    }),
+                    (0, b.jsx)('main', {
+                        className: 'pl-14',
+                        children: (0, b.jsx)('div', {
+                            className: 'w-full max-w-7xl mx-auto px-4 py-6',
+                            children: a,
+                        }),
+                    }),
+                ],
+            });
+        }
+        a.s(['default', () => k, 'dynamic', 0, 'force-dynamic'], 436102);
+    },
+];
+
+//# sourceMappingURL=%5Broot-of-the-server%5D__87b75cfc._.js.map

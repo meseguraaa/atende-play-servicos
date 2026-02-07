@@ -1,0 +1,3 @@
+{
+    "/api/admin/review-tags/[tagId]/route": "app/api/admin/review-tags/[tagId]/route.js"
+}

@@ -1,0 +1,2010 @@
+module.exports = [
+    547996,
+    (a) => {
+        'use strict';
+        var b = a.i(584944),
+            c = a.i(107439),
+            d = a.i(556557),
+            e = a.i(699570),
+            f = a.i(259849),
+            g = a.i(156916),
+            h = a.i(814574),
+            i = a.i(866718),
+            j = a.i(599209),
+            k = a.i(580701),
+            l = a.i(320146),
+            m = a.i(368114),
+            n = a.i(587969),
+            o = a.i(638446),
+            p = a.i(766153),
+            q = a.i(624126),
+            r = a.i(198803),
+            s = a.i(898062),
+            t = a.i(50900),
+            u = a.i(566314),
+            v = a.i(320091),
+            w = a.i(371709),
+            x = a.i(853754),
+            y = a.i(300298),
+            z = a.i(773608),
+            A = a.i(550516);
+        a.i(567899);
+        var B = a.i(25948);
+        function C({
+            children: a,
+            forcedUnitId: d = null,
+            units: C = [],
+            clients: D = [],
+            professionals: E = [],
+            services: F = [],
+            appointments: G = [],
+        }) {
+            let H = (0, f.useRouter)(),
+                [I, J] = (0, c.useState)(!1),
+                [K, L] = (0, c.useState)(!1),
+                [M, N] = (0, c.useState)(!1),
+                [O, P] = (0, c.useState)(''),
+                [Q, R] = (0, c.useState)(''),
+                [S, T] = (0, c.useState)([]),
+                [U, V] = (0, c.useState)(!1),
+                [W, X] = (0, c.useState)(''),
+                [Y, Z] = (0, c.useState)(''),
+                [$, _] = (0, c.useState)(d ?? ''),
+                [aa, ab] = (0, c.useState)(''),
+                [ac, ad] = (0, c.useState)(''),
+                [ae, af] = (0, c.useState)(void 0),
+                [ag, ah] = (0, c.useState)(''),
+                [ai, aj] = (0, c.useState)([]),
+                [ak, al] = (0, c.useState)(!1),
+                [am, an] = (0, c.useState)(null),
+                ao = (0, c.useRef)(null),
+                [ap, aq] = (0, c.useState)(!1),
+                ar = (0, c.useMemo)(() => C, [C]),
+                as = (0, c.useMemo)(
+                    () =>
+                        d ? (ar.find((a) => a.id === d)?.name ?? null) : null,
+                    [d, ar]
+                ),
+                at = (0, c.useMemo)(
+                    () => (Q ? (D.find((a) => a.id === Q) ?? null) : null),
+                    [Q, D]
+                ),
+                au = (0, c.useMemo)(
+                    () =>
+                        $
+                            ? F.filter((a) => !1 !== a.isActive).filter(
+                                  (a) => !a.unitId || a.unitId === $
+                              )
+                            : F.filter((a) => !1 !== a.isActive),
+                    [F, $]
+                ),
+                av = !!Q,
+                aw = (0, c.useRef)(null),
+                ax = (a) => {
+                    (ab(''),
+                        ad(''),
+                        af(void 0),
+                        ah(''),
+                        aj([]),
+                        an(null),
+                        al(!1),
+                        a || _(d ?? ''));
+                },
+                ay = () => {
+                    (R(''), P(''), T([]), N(!1), X(''), Z(''), ax(!1));
+                };
+            (c.useEffect(() => {
+                if (!I) return;
+                let a = O.trim();
+                if (!a) return void T([]);
+                if (
+                    Q &&
+                    at &&
+                    a === `${at.name}${at.phone ? ` • ${at.phone}` : ''}`
+                )
+                    return;
+                if (a.length < 2)
+                    return void T(
+                        D.filter((b) => {
+                            let c = (b.name ?? '').toLowerCase(),
+                                d = (b.phone ?? '').toLowerCase(),
+                                e = a.toLowerCase();
+                            return c.includes(e) || d.includes(e);
+                        }).slice(0, 20)
+                    );
+                let b = setTimeout(async () => {
+                    if (D.length > 0 && D.length <= 250)
+                        return void T(
+                            D.filter((b) => {
+                                let c = (b.name ?? '').toLowerCase(),
+                                    d = (b.phone ?? '').toLowerCase(),
+                                    e = a.toLowerCase();
+                                return c.includes(e) || d.includes(e);
+                            }).slice(0, 20)
+                        );
+                    try {
+                        (V(!0), aw.current && aw.current.abort());
+                        let b = new AbortController();
+                        aw.current = b;
+                        let c = new URLSearchParams();
+                        (c.set('q', a), c.set('take', '20'));
+                        let d = await fetch(
+                            `/api/admin/clients/search?${c.toString()}`,
+                            {
+                                method: 'GET',
+                                signal: b.signal,
+                                headers: { 'Content-Type': 'application/json' },
+                            }
+                        );
+                        if (!d.ok) return void T([]);
+                        let e = await d.json();
+                        T(Array.isArray(e?.clients) ? e.clients : []);
+                    } catch (a) {
+                        if (a?.name === 'AbortError') return;
+                        T([]);
+                    } finally {
+                        V(!1);
+                    }
+                }, 280);
+                return () => clearTimeout(b);
+            }, [O, I]),
+                c.useEffect(() => {
+                    I && d && _(d);
+                }, [I, d]),
+                c.useEffect(() => {
+                    let a, b, c;
+                    if (!I) return;
+                    if (!av || !$ || !aa || !ac || !ae) {
+                        (aj([]), an(null), al(!1));
+                        return;
+                    }
+                    let d =
+                        ((a = ae.getFullYear()),
+                        (b = String(ae.getMonth() + 1).padStart(2, '0')),
+                        (c = String(ae.getDate()).padStart(2, '0')),
+                        `${a}-${b}-${c}`);
+                    (async () => {
+                        try {
+                            (al(!0),
+                                an(null),
+                                ao.current && ao.current.abort());
+                            let a = new AbortController();
+                            ao.current = a;
+                            let b = new URLSearchParams();
+                            (b.set('unitId', $),
+                                b.set('professionalId', aa),
+                                b.set('serviceId', ac),
+                                b.set('date', d));
+                            let c = await fetch(
+                                    `/api/admin/availability/times?${b.toString()}`,
+                                    {
+                                        method: 'GET',
+                                        signal: a.signal,
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                        },
+                                    }
+                                ),
+                                e = await c.json().catch(() => null);
+                            if (!c.ok || !e?.ok) {
+                                let a =
+                                    e?.error ??
+                                    'Não foi possível carregar os horários do profissional.';
+                                (aj([]), an(a));
+                                return;
+                            }
+                            let f = Array.isArray(e?.data?.times)
+                                ? e.data.times
+                                : [];
+                            (aj(f), ag && !f.includes(ag) && ah(''));
+                        } catch (a) {
+                            if (a?.name === 'AbortError') return;
+                            (aj([]),
+                                an(
+                                    'Erro ao carregar os horários do profissional.'
+                                ));
+                        } finally {
+                            al(!1);
+                        }
+                    })();
+                }, [I, av, $, aa, ac, ae]));
+            let az = async () => {
+                    if (!Q)
+                        return void g.toast.error(
+                            'Selecione um cliente para continuar.'
+                        );
+                    if (!W.trim())
+                        return void g.toast.error('Informe o nome do cliente.');
+                    if (!Y.trim())
+                        return void g.toast.error('Informe o telefone.');
+                    if (!$) return void g.toast.error('Selecione a unidade.');
+                    if (!aa)
+                        return void g.toast.error('Selecione o profissional.');
+                    if (!ac) return void g.toast.error('Selecione o serviço.');
+                    if (!ae) return void g.toast.error('Selecione o dia.');
+                    if (!ag) return void g.toast.error('Selecione o horário.');
+                    if (ai.length > 0 && !ai.includes(ag)) {
+                        (g.toast.error(
+                            'Este horário não está mais disponível. Selecione outro.'
+                        ),
+                            ah(''));
+                        return;
+                    }
+                    let [a, b] = ag.split(':').map(Number),
+                        c = new Date(ae);
+                    c.setHours(a, b, 0, 0);
+                    let e = F.find((a) => a.id === ac),
+                        f = e?.name ?? 'Atendimento';
+                    try {
+                        aq(!0);
+                        let a = await fetch('/api/admin/appointments', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    clientId: Q,
+                                    clientName: W.trim(),
+                                    phone: Y.trim(),
+                                    unitId: $,
+                                    professionalId: aa,
+                                    serviceId: ac,
+                                    description: f,
+                                    scheduleAt: c.toISOString(),
+                                }),
+                            }),
+                            b = await a.json().catch(() => ({}));
+                        if (!a.ok)
+                            return void g.toast.error(
+                                b?.error ??
+                                    'Não foi possível criar o agendamento.'
+                            );
+                        (g.toast.success('Agendamento criado com sucesso!'),
+                            J(!1),
+                            ay(),
+                            _(d ?? ''),
+                            ab(''),
+                            ad(''),
+                            af(void 0),
+                            ah(''),
+                            aj([]),
+                            an(null),
+                            al(!1),
+                            H.refresh());
+                    } catch (a) {
+                        g.toast.error('Erro ao criar agendamento.');
+                    } finally {
+                        aq(!1);
+                    }
+                },
+                aA = !av || !$ || !aa || !ac || !ae || ak;
+            return (0, b.jsxs)(h.Dialog, {
+                open: I,
+                onOpenChange: J,
+                children: [
+                    (0, b.jsx)(h.DialogTrigger, {
+                        asChild: !0,
+                        children: (0, b.jsx)('span', {
+                            className: 'inline-flex',
+                            children: a,
+                        }),
+                    }),
+                    (0, b.jsxs)(h.DialogContent, {
+                        variant: 'appointment',
+                        overlayVariant: 'blurred',
+                        showCloseButton: !0,
+                        children: [
+                            (0, b.jsxs)(h.DialogHeader, {
+                                children: [
+                                    (0, b.jsx)(h.DialogTitle, {
+                                        size: 'modal',
+                                        children: 'Novo agendamento',
+                                    }),
+                                    (0, b.jsx)(h.DialogDescription, {
+                                        size: 'modal',
+                                        children:
+                                            'Selecione um cliente e preencha os dados para realizar o agendamento:',
+                                    }),
+                                ],
+                            }),
+                            (0, b.jsxs)('div', {
+                                className: 'space-y-4',
+                                children: [
+                                    (0, b.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, b.jsx)('p', {
+                                                className:
+                                                    'text-label-medium-size text-content-primary',
+                                                children: 'Cliente',
+                                            }),
+                                            (0, b.jsxs)(j.Popover, {
+                                                open: M,
+                                                onOpenChange: N,
+                                                children: [
+                                                    (0, b.jsx)(
+                                                        j.PopoverTrigger,
+                                                        {
+                                                            asChild: !0,
+                                                            children: (0,
+                                                            b.jsxs)('div', {
+                                                                className:
+                                                                    'relative',
+                                                                children: [
+                                                                    (0, b.jsx)(
+                                                                        t.Search,
+                                                                        {
+                                                                            className:
+                                                                                'absolute left-3 top-1/2 -translate-y-1/2 transform text-content-brand',
+                                                                            size: 18,
+                                                                        }
+                                                                    ),
+                                                                    (0, b.jsx)(
+                                                                        i.Input,
+                                                                        {
+                                                                            value: O,
+                                                                            onFocus:
+                                                                                () =>
+                                                                                    N(
+                                                                                        !0
+                                                                                    ),
+                                                                            onChange:
+                                                                                (
+                                                                                    a
+                                                                                ) => {
+                                                                                    (P(
+                                                                                        a
+                                                                                            .target
+                                                                                            .value
+                                                                                    ),
+                                                                                        Q &&
+                                                                                            R(
+                                                                                                ''
+                                                                                            ));
+                                                                                },
+                                                                            placeholder:
+                                                                                'Digite para buscar um cliente',
+                                                                            className:
+                                                                                'pl-10 pr-10',
+                                                                        }
+                                                                    ),
+                                                                    Q || O
+                                                                        ? (0,
+                                                                          b.jsx)(
+                                                                              'button',
+                                                                              {
+                                                                                  type: 'button',
+                                                                                  className:
+                                                                                      'absolute right-2 top-1/2 -translate-y-1/2 transform rounded-md p-1 text-content-secondary hover:text-content-primary',
+                                                                                  onClick:
+                                                                                      ay,
+                                                                                  'aria-label':
+                                                                                      'Limpar cliente',
+                                                                                  children:
+                                                                                      (0,
+                                                                                      b.jsx)(
+                                                                                          y.X,
+                                                                                          {
+                                                                                              className:
+                                                                                                  'h-4 w-4',
+                                                                                          }
+                                                                                      ),
+                                                                              }
+                                                                          )
+                                                                        : null,
+                                                                ],
+                                                            }),
+                                                        }
+                                                    ),
+                                                    (0, b.jsx)(
+                                                        j.PopoverContent,
+                                                        {
+                                                            className:
+                                                                'w-[--radix-popover-trigger-width] p-2',
+                                                            align: 'start',
+                                                            onOpenAutoFocus: (
+                                                                a
+                                                            ) =>
+                                                                a.preventDefault(),
+                                                            onCloseAutoFocus: (
+                                                                a
+                                                            ) =>
+                                                                a.preventDefault(),
+                                                            children: (0,
+                                                            b.jsx)('div', {
+                                                                className:
+                                                                    'max-h-64 overflow-auto rounded-md border border-border-primary bg-background-secondary',
+                                                                children:
+                                                                    O.trim()
+                                                                        ? U
+                                                                            ? (0,
+                                                                              b.jsxs)(
+                                                                                  'div',
+                                                                                  {
+                                                                                      className:
+                                                                                          'flex items-center gap-2 px-3 py-3 text-sm text-content-secondary',
+                                                                                      children:
+                                                                                          [
+                                                                                              (0,
+                                                                                              b.jsx)(
+                                                                                                  r.Loader2,
+                                                                                                  {
+                                                                                                      className:
+                                                                                                          'h-4 w-4 animate-spin',
+                                                                                                  }
+                                                                                              ),
+                                                                                              'Buscando clientes...',
+                                                                                          ],
+                                                                                  }
+                                                                              )
+                                                                            : O.trim()
+                                                                                    .length <
+                                                                                2
+                                                                              ? (0,
+                                                                                b.jsxs)(
+                                                                                    'div',
+                                                                                    {
+                                                                                        className:
+                                                                                            'px-3 py-3 text-sm text-content-secondary',
+                                                                                        children:
+                                                                                            [
+                                                                                                'Dica: digite pelo menos',
+                                                                                                ' ',
+                                                                                                (0,
+                                                                                                b.jsx)(
+                                                                                                    'b',
+                                                                                                    {
+                                                                                                        children:
+                                                                                                            '2 letras',
+                                                                                                    }
+                                                                                                ),
+                                                                                                ' para buscar melhor.',
+                                                                                            ],
+                                                                                    }
+                                                                                )
+                                                                              : 0 ===
+                                                                                  S.length
+                                                                                ? (0,
+                                                                                  b.jsx)(
+                                                                                      'div',
+                                                                                      {
+                                                                                          className:
+                                                                                              'px-3 py-3 text-sm text-content-secondary',
+                                                                                          children:
+                                                                                              'Nenhum cliente encontrado',
+                                                                                      }
+                                                                                  )
+                                                                                : (0,
+                                                                                  b.jsx)(
+                                                                                      'div',
+                                                                                      {
+                                                                                          className:
+                                                                                              'divide-y divide-border-primary',
+                                                                                          children:
+                                                                                              S.map(
+                                                                                                  (
+                                                                                                      a
+                                                                                                  ) => {
+                                                                                                      let c =
+                                                                                                          Q ===
+                                                                                                          a.id;
+                                                                                                      return (0,
+                                                                                                      b.jsxs)(
+                                                                                                          'button',
+                                                                                                          {
+                                                                                                              type: 'button',
+                                                                                                              className:
+                                                                                                                  (0,
+                                                                                                                  m.cn)(
+                                                                                                                      'w-full px-3 py-2 text-left text-sm hover:bg-background-tertiary',
+                                                                                                                      'flex items-center justify-between gap-3',
+                                                                                                                      c &&
+                                                                                                                          'bg-background-tertiary'
+                                                                                                                  ),
+                                                                                                              onClick:
+                                                                                                                  () => {
+                                                                                                                      (R(
+                                                                                                                          a.id
+                                                                                                                      ),
+                                                                                                                          X(
+                                                                                                                              a.name ??
+                                                                                                                                  ''
+                                                                                                                          ),
+                                                                                                                          Z(
+                                                                                                                              a.phone ??
+                                                                                                                                  ''
+                                                                                                                          ),
+                                                                                                                          P(
+                                                                                                                              `${a.name}${a.phone ? ` • ${a.phone}` : ''}`
+                                                                                                                          ),
+                                                                                                                          N(
+                                                                                                                              !1
+                                                                                                                          ),
+                                                                                                                          ax(
+                                                                                                                              !0
+                                                                                                                          ));
+                                                                                                                  },
+                                                                                                              children:
+                                                                                                                  [
+                                                                                                                      (0,
+                                                                                                                      b.jsxs)(
+                                                                                                                          'div',
+                                                                                                                          {
+                                                                                                                              className:
+                                                                                                                                  'min-w-0',
+                                                                                                                              children:
+                                                                                                                                  [
+                                                                                                                                      (0,
+                                                                                                                                      b.jsx)(
+                                                                                                                                          'p',
+                                                                                                                                          {
+                                                                                                                                              className:
+                                                                                                                                                  'truncate font-medium text-content-primary',
+                                                                                                                                              children:
+                                                                                                                                                  a.name,
+                                                                                                                                          }
+                                                                                                                                      ),
+                                                                                                                                      a.phone
+                                                                                                                                          ? (0,
+                                                                                                                                            b.jsx)(
+                                                                                                                                                'p',
+                                                                                                                                                {
+                                                                                                                                                    className:
+                                                                                                                                                        'truncate text-xs text-content-secondary',
+                                                                                                                                                    children:
+                                                                                                                                                        a.phone,
+                                                                                                                                                }
+                                                                                                                                            )
+                                                                                                                                          : null,
+                                                                                                                                  ],
+                                                                                                                          }
+                                                                                                                      ),
+                                                                                                                      c
+                                                                                                                          ? (0,
+                                                                                                                            b.jsx)(
+                                                                                                                                o.Check,
+                                                                                                                                {
+                                                                                                                                    className:
+                                                                                                                                        'h-4 w-4 text-content-brand shrink-0',
+                                                                                                                                }
+                                                                                                                            )
+                                                                                                                          : null,
+                                                                                                                  ],
+                                                                                                          },
+                                                                                                          a.id
+                                                                                                      );
+                                                                                                  }
+                                                                                              ),
+                                                                                      }
+                                                                                  )
+                                                                        : null,
+                                                            }),
+                                                        }
+                                                    ),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    (0, b.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, b.jsx)('p', {
+                                                className:
+                                                    'text-label-medium-size text-content-primary',
+                                                children: 'Nome do cliente',
+                                            }),
+                                            (0, b.jsxs)('div', {
+                                                className: 'relative',
+                                                children: [
+                                                    (0, b.jsx)(v.User, {
+                                                        className:
+                                                            'absolute left-3 top-1/2 -translate-y-1/2 transform text-content-brand',
+                                                        size: 20,
+                                                    }),
+                                                    (0, b.jsx)(i.Input, {
+                                                        value: W,
+                                                        onChange: (a) =>
+                                                            X(a.target.value),
+                                                        placeholder:
+                                                            'Nome do cliente',
+                                                        className: 'pl-10',
+                                                        disabled: !av,
+                                                    }),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    (0, b.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, b.jsx)('p', {
+                                                className:
+                                                    'text-label-medium-size text-content-primary',
+                                                children: 'Telefone',
+                                            }),
+                                            (0, b.jsxs)('div', {
+                                                className: 'relative',
+                                                children: [
+                                                    (0, b.jsx)(s.Phone, {
+                                                        className:
+                                                            'absolute left-3 top-1/2 -translate-y-1/2 transform text-content-brand',
+                                                        size: 20,
+                                                    }),
+                                                    (0, b.jsx)(B.IMaskInput, {
+                                                        value: Y ?? '',
+                                                        onAccept: (a) =>
+                                                            Z(String(a)),
+                                                        placeholder:
+                                                            '(99) 99999-9999',
+                                                        mask: '(00) 00000-0000',
+                                                        className:
+                                                            'pl-10 flex h-12 w-full rounded-md border border-border-primary bg-background-tertiary px-3 py-2 text-sm text-content-primary ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-content-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-border-brand disabled:cursor-not-allowed disabled:opacity-50 hover:border-border-secondary focus:border-border-brand focus-visible:border-border-brand aria-invalid:ring-destructive/20 aria-invalid:border-destructive',
+                                                        disabled: !av,
+                                                    }),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    (0, b.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, b.jsx)('p', {
+                                                className:
+                                                    'text-label-medium-size text-content-primary',
+                                                children: 'Unidade',
+                                            }),
+                                            d
+                                                ? (0, b.jsxs)('div', {
+                                                      className: 'relative',
+                                                      children: [
+                                                          (0, b.jsx)(u.Store, {
+                                                              className:
+                                                                  'absolute left-3 top-1/2 -translate-y-1/2 transform text-content-brand',
+                                                              size: 18,
+                                                          }),
+                                                          (0, b.jsx)(i.Input, {
+                                                              value:
+                                                                  as ??
+                                                                  'Unidade selecionada',
+                                                              readOnly: !0,
+                                                              className:
+                                                                  'pl-10',
+                                                              disabled: !0,
+                                                          }),
+                                                      ],
+                                                  })
+                                                : (0, b.jsxs)(k.Select, {
+                                                      value: $,
+                                                      onValueChange: (a) => {
+                                                          (_(a), ax(!0));
+                                                      },
+                                                      disabled: !av,
+                                                      children: [
+                                                          (0, b.jsx)(
+                                                              k.SelectTrigger,
+                                                              {
+                                                                  children: (0,
+                                                                  b.jsxs)(
+                                                                      'div',
+                                                                      {
+                                                                          className:
+                                                                              'flex items-center gap-2',
+                                                                          children:
+                                                                              [
+                                                                                  (0,
+                                                                                  b.jsx)(
+                                                                                      u.Store,
+                                                                                      {
+                                                                                          className:
+                                                                                              'h-4 w-4 text-content-brand',
+                                                                                      }
+                                                                                  ),
+                                                                                  (0,
+                                                                                  b.jsx)(
+                                                                                      k.SelectValue,
+                                                                                      {
+                                                                                          placeholder:
+                                                                                              0 ===
+                                                                                              ar.length
+                                                                                                  ? 'Nenhuma unidade disponível'
+                                                                                                  : 'Selecione a unidade',
+                                                                                      }
+                                                                                  ),
+                                                                              ],
+                                                                      }
+                                                                  ),
+                                                              }
+                                                          ),
+                                                          (0, b.jsx)(
+                                                              k.SelectContent,
+                                                              {
+                                                                  children:
+                                                                      0 ===
+                                                                      ar.length
+                                                                          ? (0,
+                                                                            b.jsx)(
+                                                                                k.SelectItem,
+                                                                                {
+                                                                                    disabled:
+                                                                                        !0,
+                                                                                    value: 'no-units',
+                                                                                    children:
+                                                                                        'Nenhuma unidade cadastrada/ativa',
+                                                                                }
+                                                                            )
+                                                                          : ar.map(
+                                                                                (
+                                                                                    a
+                                                                                ) =>
+                                                                                    (0,
+                                                                                    b.jsx)(
+                                                                                        k.SelectItem,
+                                                                                        {
+                                                                                            value: a.id,
+                                                                                            children:
+                                                                                                a.name,
+                                                                                        },
+                                                                                        a.id
+                                                                                    )
+                                                                            ),
+                                                              }
+                                                          ),
+                                                      ],
+                                                  }),
+                                        ],
+                                    }),
+                                    (0, b.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, b.jsx)('p', {
+                                                className:
+                                                    'text-label-medium-size text-content-primary',
+                                                children: 'Profissional',
+                                            }),
+                                            (0, b.jsxs)(k.Select, {
+                                                value: aa,
+                                                onValueChange: (a) => {
+                                                    (ab(a),
+                                                        af(void 0),
+                                                        ah(''),
+                                                        aj([]),
+                                                        an(null));
+                                                },
+                                                disabled: !av || !$,
+                                                children: [
+                                                    (0, b.jsx)(
+                                                        k.SelectTrigger,
+                                                        {
+                                                            className:
+                                                                ' w-full justify-between text-left font-normal bg-background-tertiary border-border-primary text-content-primary focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand focus:border-border-brand focus-visible:border-border-brand disabled:opacity-60 disabled:cursor-not-allowed ',
+                                                            children: (0,
+                                                            b.jsxs)('div', {
+                                                                className:
+                                                                    'flex items-center gap-2',
+                                                                children: [
+                                                                    (0, b.jsx)(
+                                                                        w.UserCircle,
+                                                                        {
+                                                                            className:
+                                                                                'h-4 w-4 text-content-brand',
+                                                                        }
+                                                                    ),
+                                                                    (0, b.jsx)(
+                                                                        k.SelectValue,
+                                                                        {
+                                                                            placeholder:
+                                                                                av
+                                                                                    ? $
+                                                                                        ? 'Selecione o profissional'
+                                                                                        : 'Selecione a unidade'
+                                                                                    : 'Selecione um cliente',
+                                                                        }
+                                                                    ),
+                                                                ],
+                                                            }),
+                                                        }
+                                                    ),
+                                                    (0, b.jsx)(
+                                                        k.SelectContent,
+                                                        {
+                                                            children:
+                                                                0 === E.length
+                                                                    ? (0,
+                                                                      b.jsx)(
+                                                                          k.SelectItem,
+                                                                          {
+                                                                              disabled:
+                                                                                  !0,
+                                                                              value: 'no-professionals',
+                                                                              children:
+                                                                                  'Nenhum profissional disponível',
+                                                                          }
+                                                                      )
+                                                                    : E.filter(
+                                                                          (a) =>
+                                                                              !1 !==
+                                                                              a.isActive
+                                                                      ).map(
+                                                                          (a) =>
+                                                                              (0,
+                                                                              b.jsx)(
+                                                                                  k.SelectItem,
+                                                                                  {
+                                                                                      value: a.id,
+                                                                                      children:
+                                                                                          a.name,
+                                                                                  },
+                                                                                  a.id
+                                                                              )
+                                                                      ),
+                                                        }
+                                                    ),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    (0, b.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, b.jsx)('p', {
+                                                className:
+                                                    'text-label-medium-size text-content-primary',
+                                                children: 'Serviço',
+                                            }),
+                                            (0, b.jsxs)(k.Select, {
+                                                value: ac,
+                                                onValueChange: (a) => {
+                                                    (ad(a),
+                                                        af(void 0),
+                                                        ah(''),
+                                                        aj([]),
+                                                        an(null));
+                                                },
+                                                disabled: !av || !$ || !aa,
+                                                children: [
+                                                    (0, b.jsx)(
+                                                        k.SelectTrigger,
+                                                        {
+                                                            children: (0,
+                                                            b.jsxs)('div', {
+                                                                className:
+                                                                    'flex items-center gap-2',
+                                                                children: [
+                                                                    (0, b.jsx)(
+                                                                        x.Scissors,
+                                                                        {
+                                                                            className:
+                                                                                'h-4 w-4 text-content-brand',
+                                                                        }
+                                                                    ),
+                                                                    (0, b.jsx)(
+                                                                        k.SelectValue,
+                                                                        {
+                                                                            placeholder:
+                                                                                av
+                                                                                    ? $
+                                                                                        ? aa
+                                                                                            ? 'Selecione o serviço'
+                                                                                            : 'Selecione o profissional'
+                                                                                        : 'Selecione a unidade'
+                                                                                    : 'Selecione um cliente',
+                                                                        }
+                                                                    ),
+                                                                ],
+                                                            }),
+                                                        }
+                                                    ),
+                                                    (0, b.jsx)(
+                                                        k.SelectContent,
+                                                        {
+                                                            children:
+                                                                0 === au.length
+                                                                    ? (0,
+                                                                      b.jsx)(
+                                                                          k.SelectItem,
+                                                                          {
+                                                                              disabled:
+                                                                                  !0,
+                                                                              value: 'no-services',
+                                                                              children:
+                                                                                  'Nenhum serviço disponível',
+                                                                          }
+                                                                      )
+                                                                    : au.map(
+                                                                          (a) =>
+                                                                              (0,
+                                                                              b.jsx)(
+                                                                                  k.SelectItem,
+                                                                                  {
+                                                                                      value: a.id,
+                                                                                      children:
+                                                                                          a.name,
+                                                                                  },
+                                                                                  a.id
+                                                                              )
+                                                                      ),
+                                                        }
+                                                    ),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    (0, b.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, b.jsx)('p', {
+                                                className:
+                                                    'text-label-medium-size text-content-primary',
+                                                children: 'Dia',
+                                            }),
+                                            (0, b.jsxs)(j.Popover, {
+                                                open: K,
+                                                onOpenChange: L,
+                                                children: [
+                                                    (0, b.jsx)(
+                                                        j.PopoverTrigger,
+                                                        {
+                                                            asChild: !0,
+                                                            children: (0,
+                                                            b.jsxs)(e.Button, {
+                                                                variant:
+                                                                    'outline',
+                                                                disabled:
+                                                                    !av ||
+                                                                    !$ ||
+                                                                    !aa ||
+                                                                    !ac,
+                                                                className: (0,
+                                                                m.cn)(
+                                                                    'w-full justify-between text-left font-normal bg-background-tertiary border-border-primary text-content-primary hover:bg-background-tertiary hover:border-border-secondary hover:text-content-primary focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand focus:border-border-brand focus-visible:border-border-brand disabled:opacity-60 disabled:cursor-not-allowed',
+                                                                    !ae &&
+                                                                        'text-content-secondary'
+                                                                ),
+                                                                children: [
+                                                                    (0, b.jsxs)(
+                                                                        'div',
+                                                                        {
+                                                                            className:
+                                                                                'flex items-center gap-2',
+                                                                            children:
+                                                                                [
+                                                                                    (0,
+                                                                                    b.jsx)(
+                                                                                        n.Calendar,
+                                                                                        {
+                                                                                            className:
+                                                                                                'text-content-brand',
+                                                                                            size: 20,
+                                                                                        }
+                                                                                    ),
+                                                                                    ae
+                                                                                        ? (0,
+                                                                                          z.format)(
+                                                                                              ae,
+                                                                                              'dd/MM/yyyy'
+                                                                                          )
+                                                                                        : (0,
+                                                                                          b.jsx)(
+                                                                                              'span',
+                                                                                              {
+                                                                                                  children:
+                                                                                                      av
+                                                                                                          ? $
+                                                                                                              ? aa
+                                                                                                                  ? ac
+                                                                                                                      ? 'Selecione um dia'
+                                                                                                                      : 'Selecione o serviço'
+                                                                                                                  : 'Selecione o profissional'
+                                                                                                              : 'Selecione a unidade'
+                                                                                                          : 'Selecione um cliente',
+                                                                                              }
+                                                                                          ),
+                                                                                ],
+                                                                        }
+                                                                    ),
+                                                                    (0, b.jsx)(
+                                                                        p.ChevronDown,
+                                                                        {
+                                                                            className:
+                                                                                'opacity-50 h-4 w-4',
+                                                                        }
+                                                                    ),
+                                                                ],
+                                                            }),
+                                                        }
+                                                    ),
+                                                    (0, b.jsx)(
+                                                        j.PopoverContent,
+                                                        {
+                                                            className:
+                                                                'w-auto p-0',
+                                                            align: 'start',
+                                                            children: (0,
+                                                            b.jsx)(l.Calendar, {
+                                                                mode: 'single',
+                                                                selected: ae,
+                                                                onSelect: (
+                                                                    a
+                                                                ) => {
+                                                                    (af(
+                                                                        a ??
+                                                                            void 0
+                                                                    ),
+                                                                        ah(''),
+                                                                        aj([]),
+                                                                        an(
+                                                                            null
+                                                                        ),
+                                                                        a &&
+                                                                            L(
+                                                                                !1
+                                                                            ));
+                                                                },
+                                                                disabled: (a) =>
+                                                                    a <
+                                                                    (0,
+                                                                    A.startOfToday)(),
+                                                            }),
+                                                        }
+                                                    ),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    (0, b.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, b.jsxs)('div', {
+                                                className:
+                                                    'flex items-center justify-between gap-3',
+                                                children: [
+                                                    (0, b.jsx)('p', {
+                                                        className:
+                                                            'text-label-medium-size text-content-primary',
+                                                        children: 'Horário',
+                                                    }),
+                                                    ak
+                                                        ? (0, b.jsxs)('span', {
+                                                              className:
+                                                                  'inline-flex items-center gap-2 text-xs text-content-secondary',
+                                                              children: [
+                                                                  (0, b.jsx)(
+                                                                      r.Loader2,
+                                                                      {
+                                                                          className:
+                                                                              'h-3.5 w-3.5 animate-spin',
+                                                                      }
+                                                                  ),
+                                                                  'Carregando horários...',
+                                                              ],
+                                                          })
+                                                        : null,
+                                                ],
+                                            }),
+                                            (0, b.jsxs)(k.Select, {
+                                                value: ag,
+                                                onValueChange: (a) => ah(a),
+                                                disabled: aA,
+                                                children: [
+                                                    (0, b.jsx)(
+                                                        k.SelectTrigger,
+                                                        {
+                                                            className:
+                                                                ' w-full justify-between text-left font-normal bg-background-tertiary border-border-primary text-content-primary focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand focus:border-border-brand focus-visible:border-border-brand disabled:opacity-60 disabled:cursor-not-allowed ',
+                                                            children: (0,
+                                                            b.jsxs)('div', {
+                                                                className:
+                                                                    'flex items-center gap-2',
+                                                                children: [
+                                                                    (0, b.jsx)(
+                                                                        q.Clock,
+                                                                        {
+                                                                            className:
+                                                                                'h-4 w-4 text-content-brand',
+                                                                        }
+                                                                    ),
+                                                                    (0, b.jsx)(
+                                                                        k.SelectValue,
+                                                                        {
+                                                                            placeholder:
+                                                                                av
+                                                                                    ? $
+                                                                                        ? aa
+                                                                                            ? ac
+                                                                                                ? ae
+                                                                                                    ? ak
+                                                                                                        ? 'Carregando horários...'
+                                                                                                        : am
+                                                                                                          ? 'Erro ao carregar horários'
+                                                                                                          : 0 ===
+                                                                                                              ai.length
+                                                                                                            ? 'Sem horários disponíveis'
+                                                                                                            : 'Selecione um horário'
+                                                                                                    : 'Selecione o dia'
+                                                                                                : 'Selecione o serviço'
+                                                                                            : 'Selecione o profissional'
+                                                                                        : 'Selecione a unidade'
+                                                                                    : 'Selecione um cliente',
+                                                                        }
+                                                                    ),
+                                                                ],
+                                                            }),
+                                                        }
+                                                    ),
+                                                    (0, b.jsx)(
+                                                        k.SelectContent,
+                                                        {
+                                                            children: am
+                                                                ? (0, b.jsx)(
+                                                                      k.SelectItem,
+                                                                      {
+                                                                          disabled:
+                                                                              !0,
+                                                                          value: 'times-error',
+                                                                          children:
+                                                                              am,
+                                                                      }
+                                                                  )
+                                                                : ak
+                                                                  ? (0, b.jsx)(
+                                                                        k.SelectItem,
+                                                                        {
+                                                                            disabled:
+                                                                                !0,
+                                                                            value: 'times-loading',
+                                                                            children:
+                                                                                'Carregando...',
+                                                                        }
+                                                                    )
+                                                                  : 0 ===
+                                                                      ai.length
+                                                                    ? (0,
+                                                                      b.jsx)(
+                                                                          k.SelectItem,
+                                                                          {
+                                                                              disabled:
+                                                                                  !0,
+                                                                              value: 'no-times',
+                                                                              children:
+                                                                                  'Nenhum horário disponível',
+                                                                          }
+                                                                      )
+                                                                    : ai.map(
+                                                                          (a) =>
+                                                                              (0,
+                                                                              b.jsx)(
+                                                                                  k.SelectItem,
+                                                                                  {
+                                                                                      value: a,
+                                                                                      children:
+                                                                                          a,
+                                                                                  },
+                                                                                  a
+                                                                              )
+                                                                      ),
+                                                        }
+                                                    ),
+                                                ],
+                                            }),
+                                            am
+                                                ? (0, b.jsx)('p', {
+                                                      className:
+                                                          'text-xs text-destructive',
+                                                      children: am,
+                                                  })
+                                                : null,
+                                        ],
+                                    }),
+                                    (0, b.jsx)('div', {
+                                        className: 'flex justify-end pt-2',
+                                        children: (0, b.jsxs)(e.Button, {
+                                            type: 'button',
+                                            variant: 'brand',
+                                            onClick: az,
+                                            disabled:
+                                                ap ||
+                                                !Q ||
+                                                !$ ||
+                                                !aa ||
+                                                !ac ||
+                                                !ae ||
+                                                !ag ||
+                                                ak,
+                                            children: [
+                                                ap
+                                                    ? (0, b.jsx)(r.Loader2, {
+                                                          className:
+                                                              'mr-2 h-4 w-4 animate-spin',
+                                                      })
+                                                    : null,
+                                                'Agendar',
+                                            ],
+                                        }),
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            });
+        }
+        var D = a.i(486192),
+            E = a.i(794729),
+            F = a.i(978179);
+        function G({ status: a }) {
+            return (0, b.jsx)('span', {
+                className: (0, m.cn)(
+                    'inline-flex items-center rounded-md border px-2 py-0.5 text-xs',
+                    'DONE' === a
+                        ? 'bg-green-500/15 text-green-600 border-green-500/30'
+                        : 'PENDING' === a
+                          ? 'bg-amber-500/15 text-amber-700 border-amber-500/30'
+                          : 'bg-red-500/15 text-red-600 border-red-500/30'
+                ),
+                children:
+                    'PENDING' === a
+                        ? 'Pendente'
+                        : 'DONE' === a
+                          ? 'Concluído'
+                          : 'Cancelado',
+            });
+        }
+        function H({
+            appt: a,
+            forcedUnitId: d = null,
+            units: h,
+            clients: i,
+            professionals: j,
+            services: k,
+        }) {
+            var l;
+            let m,
+                n,
+                o,
+                p = (0, f.useRouter)(),
+                [q, r] = c.useState(null),
+                s = 'PENDING' === a.status,
+                t = null !== q,
+                u = async () => {
+                    try {
+                        r('done');
+                        let b = await fetch(`/api/admin/appointments/${a.id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ action: 'done' }),
+                            }),
+                            c = await b.json().catch(() => ({}));
+                        if (!b.ok)
+                            return void g.toast.error(
+                                c?.error ??
+                                    'Não foi possível concluir o agendamento.'
+                            );
+                        (g.toast.success('Agendamento concluído!'),
+                            p.refresh());
+                    } catch {
+                        g.toast.error('Erro ao concluir o agendamento.');
+                    } finally {
+                        r(null);
+                    }
+                },
+                v = async () => {
+                    try {
+                        r('cancel');
+                        let b = await fetch(`/api/admin/appointments/${a.id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ action: 'cancel' }),
+                            }),
+                            c = await b.json().catch(() => ({}));
+                        if (!b.ok)
+                            return void g.toast.error(
+                                c?.error ??
+                                    'Não foi possível cancelar o agendamento.'
+                            );
+                        (g.toast.success('Agendamento cancelado.'),
+                            p.refresh());
+                    } catch {
+                        g.toast.error('Erro ao cancelar o agendamento.');
+                    } finally {
+                        r(null);
+                    }
+                },
+                w = {
+                    id: a.id,
+                    unitId: a.unitId,
+                    clientId: a.clientId,
+                    clientName: a.clientName,
+                    phone: a.phone,
+                    description: a.description,
+                    scheduleAt: a.scheduleAt,
+                    status: a.status,
+                    professionalId: a.professionalId,
+                    serviceId: a.serviceId,
+                },
+                x =
+                    ((n = String(
+                        (m =
+                            (l = a.scheduleAt) instanceof Date
+                                ? l
+                                : new Date(l)).getHours()
+                    ).padStart(2, '0')),
+                    (o = String(m.getMinutes()).padStart(2, '0')),
+                    `${n}:${o}`);
+            return (0, b.jsxs)('tr', {
+                className: 'border-b border-border-primary hover:bg-muted/30',
+                children: [
+                    (0, b.jsx)('td', {
+                        className: 'px-4 py-3 font-medium text-content-primary',
+                        children: x,
+                    }),
+                    (0, b.jsx)('td', {
+                        className: 'px-4 py-3 text-content-primary',
+                        children: a.clientName,
+                    }),
+                    (0, b.jsx)('td', {
+                        className: 'px-4 py-3 text-content-secondary',
+                        children: a.phone,
+                    }),
+                    (0, b.jsx)('td', {
+                        className: 'px-4 py-3 text-content-secondary',
+                        children: a.description,
+                    }),
+                    (0, b.jsx)('td', {
+                        className: 'px-4 py-3',
+                        children: (0, b.jsx)(G, { status: a.status }),
+                    }),
+                    (0, b.jsx)('td', {
+                        className: 'px-4 py-3 text-right',
+                        children: s
+                            ? (0, b.jsxs)('div', {
+                                  className:
+                                      'flex items-center justify-end gap-2',
+                                  children: [
+                                      (0, b.jsx)(F.default, {
+                                          appt: w,
+                                          forcedUnitId: d,
+                                          units: h,
+                                          clients: i,
+                                          professionals: j,
+                                          services: k,
+                                          children: (0, b.jsx)(e.Button, {
+                                              type: 'button',
+                                              variant: 'edit2',
+                                              size: 'sm',
+                                              disabled: t,
+                                              children: 'Editar',
+                                          }),
+                                      }),
+                                      (0, b.jsxs)(D.AlertDialog, {
+                                          children: [
+                                              (0, b.jsx)(D.AlertDialogTrigger, {
+                                                  asChild: !0,
+                                                  children: (0, b.jsx)(
+                                                      e.Button,
+                                                      {
+                                                          type: 'button',
+                                                          variant: 'active',
+                                                          size: 'sm',
+                                                          disabled: t,
+                                                          children: 'Concluir',
+                                                      }
+                                                  ),
+                                              }),
+                                              (0, b.jsxs)(
+                                                  D.AlertDialogContent,
+                                                  {
+                                                      children: [
+                                                          (0, b.jsxs)(
+                                                              D.AlertDialogHeader,
+                                                              {
+                                                                  children: [
+                                                                      (0,
+                                                                      b.jsx)(
+                                                                          D.AlertDialogTitle,
+                                                                          {
+                                                                              children:
+                                                                                  'Concluir este agendamento?',
+                                                                          }
+                                                                      ),
+                                                                      (0,
+                                                                      b.jsxs)(
+                                                                          D.AlertDialogDescription,
+                                                                          {
+                                                                              children:
+                                                                                  [
+                                                                                      'Você vai marcar como concluído o agendamento de ',
+                                                                                      (0,
+                                                                                      b.jsx)(
+                                                                                          'b',
+                                                                                          {
+                                                                                              children:
+                                                                                                  a.clientName,
+                                                                                          }
+                                                                                      ),
+                                                                                      ' ',
+                                                                                      'às ',
+                                                                                      (0,
+                                                                                      b.jsx)(
+                                                                                          'b',
+                                                                                          {
+                                                                                              children:
+                                                                                                  x,
+                                                                                          }
+                                                                                      ),
+                                                                                      ' (',
+                                                                                      a.description,
+                                                                                      ').',
+                                                                                  ],
+                                                                          }
+                                                                      ),
+                                                                  ],
+                                                              }
+                                                          ),
+                                                          (0, b.jsxs)(
+                                                              D.AlertDialogFooter,
+                                                              {
+                                                                  children: [
+                                                                      (0,
+                                                                      b.jsx)(
+                                                                          E.Cancel,
+                                                                          {
+                                                                              asChild:
+                                                                                  !0,
+                                                                              children:
+                                                                                  (0,
+                                                                                  b.jsx)(
+                                                                                      e.Button,
+                                                                                      {
+                                                                                          type: 'button',
+                                                                                          variant:
+                                                                                              'outline',
+                                                                                          size: 'sm',
+                                                                                          disabled:
+                                                                                              'done' ===
+                                                                                              q,
+                                                                                          children:
+                                                                                              'Voltar',
+                                                                                      }
+                                                                                  ),
+                                                                          }
+                                                                      ),
+                                                                      (0,
+                                                                      b.jsx)(
+                                                                          E.Action,
+                                                                          {
+                                                                              asChild:
+                                                                                  !0,
+                                                                              children:
+                                                                                  (0,
+                                                                                  b.jsx)(
+                                                                                      e.Button,
+                                                                                      {
+                                                                                          type: 'button',
+                                                                                          variant:
+                                                                                              'active',
+                                                                                          size: 'sm',
+                                                                                          onClick:
+                                                                                              u,
+                                                                                          disabled:
+                                                                                              'done' ===
+                                                                                              q,
+                                                                                          children:
+                                                                                              'done' ===
+                                                                                              q
+                                                                                                  ? 'Concluindo...'
+                                                                                                  : 'Concluir agendamento',
+                                                                                      }
+                                                                                  ),
+                                                                          }
+                                                                      ),
+                                                                  ],
+                                                              }
+                                                          ),
+                                                      ],
+                                                  }
+                                              ),
+                                          ],
+                                      }),
+                                      (0, b.jsxs)(D.AlertDialog, {
+                                          children: [
+                                              (0, b.jsx)(D.AlertDialogTrigger, {
+                                                  asChild: !0,
+                                                  children: (0, b.jsx)(
+                                                      e.Button,
+                                                      {
+                                                          type: 'button',
+                                                          variant:
+                                                              'destructive',
+                                                          size: 'sm',
+                                                          disabled: t,
+                                                          children: 'Cancelar',
+                                                      }
+                                                  ),
+                                              }),
+                                              (0, b.jsxs)(
+                                                  D.AlertDialogContent,
+                                                  {
+                                                      children: [
+                                                          (0, b.jsxs)(
+                                                              D.AlertDialogHeader,
+                                                              {
+                                                                  children: [
+                                                                      (0,
+                                                                      b.jsx)(
+                                                                          D.AlertDialogTitle,
+                                                                          {
+                                                                              children:
+                                                                                  'Cancelar este agendamento?',
+                                                                          }
+                                                                      ),
+                                                                      (0,
+                                                                      b.jsxs)(
+                                                                          D.AlertDialogDescription,
+                                                                          {
+                                                                              children:
+                                                                                  [
+                                                                                      'O agendamento de',
+                                                                                      ' ',
+                                                                                      (0,
+                                                                                      b.jsx)(
+                                                                                          'b',
+                                                                                          {
+                                                                                              children:
+                                                                                                  a.clientName,
+                                                                                          }
+                                                                                      ),
+                                                                                      ' às',
+                                                                                      ' ',
+                                                                                      (0,
+                                                                                      b.jsx)(
+                                                                                          'b',
+                                                                                          {
+                                                                                              children:
+                                                                                                  x,
+                                                                                          }
+                                                                                      ),
+                                                                                      ' será cancelado.',
+                                                                                  ],
+                                                                          }
+                                                                      ),
+                                                                  ],
+                                                              }
+                                                          ),
+                                                          (0, b.jsxs)(
+                                                              D.AlertDialogFooter,
+                                                              {
+                                                                  children: [
+                                                                      (0,
+                                                                      b.jsx)(
+                                                                          E.Cancel,
+                                                                          {
+                                                                              asChild:
+                                                                                  !0,
+                                                                              children:
+                                                                                  (0,
+                                                                                  b.jsx)(
+                                                                                      e.Button,
+                                                                                      {
+                                                                                          type: 'button',
+                                                                                          variant:
+                                                                                              'outline',
+                                                                                          size: 'sm',
+                                                                                          disabled:
+                                                                                              'cancel' ===
+                                                                                              q,
+                                                                                          children:
+                                                                                              'Voltar',
+                                                                                      }
+                                                                                  ),
+                                                                          }
+                                                                      ),
+                                                                      (0,
+                                                                      b.jsx)(
+                                                                          E.Action,
+                                                                          {
+                                                                              asChild:
+                                                                                  !0,
+                                                                              children:
+                                                                                  (0,
+                                                                                  b.jsx)(
+                                                                                      e.Button,
+                                                                                      {
+                                                                                          type: 'button',
+                                                                                          variant:
+                                                                                              'destructive',
+                                                                                          size: 'sm',
+                                                                                          onClick:
+                                                                                              v,
+                                                                                          disabled:
+                                                                                              'cancel' ===
+                                                                                              q,
+                                                                                          children:
+                                                                                              'cancel' ===
+                                                                                              q
+                                                                                                  ? 'Cancelando...'
+                                                                                                  : 'Cancelar agendamento',
+                                                                                      }
+                                                                                  ),
+                                                                          }
+                                                                      ),
+                                                                  ],
+                                                              }
+                                                          ),
+                                                      ],
+                                                  }
+                                              ),
+                                          ],
+                                      }),
+                                  ],
+                              })
+                            : (0, b.jsx)('span', {
+                                  className:
+                                      'text-paragraph-small text-content-tertiary',
+                                  children: '—',
+                              }),
+                    }),
+                ],
+            });
+        }
+        function I({
+            scopeLabel: a,
+            date: f,
+            activeUnitId: g,
+            units: h = [],
+            appointments: i = [],
+            professionals: j = [],
+            services: k = [],
+            clients: l = [],
+        }) {
+            let m = c.useMemo(() => {
+                let a = new Map();
+                for (let b of i) {
+                    let c = b.professionalId ?? 'no-professional',
+                        d = b.professional?.name ?? 'Sem profissional',
+                        e = b.professional?.imageUrl ?? null;
+                    (a.has(c) ||
+                        a.set(c, {
+                            key: c,
+                            professionalId: b.professionalId ?? null,
+                            professionalName: d,
+                            professionalImageUrl: e,
+                            appointments: [],
+                        }),
+                        a.get(c).appointments.push(b));
+                }
+                if (0 === i.length && j.length > 0)
+                    for (let b of j) {
+                        let c = b.id;
+                        a.has(c) ||
+                            a.set(c, {
+                                key: c,
+                                professionalId: b.id,
+                                professionalName: b.name,
+                                professionalImageUrl: b.imageUrl ?? null,
+                                appointments: [],
+                            });
+                    }
+                let b = Array.from(a.values());
+                for (let a of (b.sort((a, b) => {
+                    if ('no-professional' === a.key) return 1;
+                    if ('no-professional' === b.key) return -1;
+                    var c = a.professionalName,
+                        d = b.professionalName;
+                    try {
+                        return c.localeCompare(d, 'pt-BR', {
+                            sensitivity: 'base',
+                        });
+                    } catch {
+                        return c.localeCompare(d);
+                    }
+                }),
+                b))
+                    a.appointments.sort(
+                        (a, b) =>
+                            new Date(a.scheduleAt).getTime() -
+                            new Date(b.scheduleAt).getTime()
+                    );
+                return b;
+            }, [i, j]);
+            return (
+                c.useMemo(() => {
+                    if (!g) return null;
+                    let a = h.find((a) => a.id === g);
+                    return a?.name ?? null;
+                }, [g, h]),
+                (0, b.jsxs)('div', {
+                    className: 'space-y-6 max-w-7xl',
+                    children: [
+                        (0, b.jsxs)('div', {
+                            className:
+                                'flex flex-col gap-4 md:flex-row md:items-center md:justify-between',
+                            children: [
+                                (0, b.jsxs)('div', {
+                                    children: [
+                                        (0, b.jsx)('h1', {
+                                            className:
+                                                'text-title text-content-primary',
+                                            children: 'Agendamentos',
+                                        }),
+                                        (0, b.jsx)('p', {
+                                            className:
+                                                'text-paragraph-medium-size text-content-secondary',
+                                            children:
+                                                'Gerencie os agendamentos do dia, organizados por profissional.',
+                                        }),
+                                    ],
+                                }),
+                                (0, b.jsxs)('div', {
+                                    className:
+                                        'flex flex-wrap items-center justify-end gap-2',
+                                    children: [
+                                        (0, b.jsx)(C, {
+                                            forcedUnitId: g ?? null,
+                                            units: h,
+                                            clients: l,
+                                            professionals: j,
+                                            services: k,
+                                            appointments: i,
+                                            children: (0, b.jsx)(e.Button, {
+                                                variant: 'brand',
+                                                children: 'Agendar',
+                                            }),
+                                        }),
+                                        (0, b.jsx)(d.DatePicker, {}),
+                                    ],
+                                }),
+                            ],
+                        }),
+                        0 === m.length
+                            ? (0, b.jsxs)('section', {
+                                  className:
+                                      'border border-border-primary rounded-xl overflow-hidden bg-background-tertiary',
+                                  children: [
+                                      (0, b.jsx)('div', {
+                                          className:
+                                              'border-b border-border-primary px-4 py-3 bg-muted/40 flex justify-between items-center',
+                                          children: (0, b.jsx)('p', {
+                                              className:
+                                                  'font-medium text-content-primary',
+                                              children: 'Agendamentos',
+                                          }),
+                                      }),
+                                      (0, b.jsx)('div', {
+                                          className:
+                                              'p-6 text-paragraph-small text-content-secondary text-center',
+                                          children:
+                                              'Nenhum agendamento encontrado para esta data.',
+                                      }),
+                                  ],
+                              })
+                            : (0, b.jsx)('section', {
+                                  className: 'space-y-4',
+                                  children: m.map((a) => {
+                                      let c = String(a.professionalName ?? '')
+                                          .trim()
+                                          .split(/\s+/)
+                                          .filter(Boolean)
+                                          .map((a) => a[0])
+                                          .join('')
+                                          .slice(0, 2)
+                                          .toUpperCase();
+                                      return (0, b.jsxs)(
+                                          'div',
+                                          {
+                                              className:
+                                                  'border border-border-primary rounded-xl overflow-hidden bg-background-tertiary',
+                                              children: [
+                                                  (0, b.jsx)('div', {
+                                                      className:
+                                                          'border-b border-border-primary px-4 py-3 bg-muted/40 flex flex-col gap-1 md:flex-row md:items-center md:justify-between',
+                                                      children: (0, b.jsxs)(
+                                                          'div',
+                                                          {
+                                                              className:
+                                                                  'flex items-center gap-3',
+                                                              children: [
+                                                                  (0, b.jsx)(
+                                                                      'div',
+                                                                      {
+                                                                          className:
+                                                                              'h-9 w-9 rounded-full bg-background-secondary border border-border-primary overflow-hidden flex items-center justify-center text-[11px] font-medium text-content-secondary shrink-0',
+                                                                          children:
+                                                                              a.professionalImageUrl
+                                                                                  ? (0,
+                                                                                    b.jsx)(
+                                                                                        'img',
+                                                                                        {
+                                                                                            src: a.professionalImageUrl,
+                                                                                            alt: a.professionalName,
+                                                                                            className:
+                                                                                                'h-full w-full object-cover',
+                                                                                        }
+                                                                                    )
+                                                                                  : (0,
+                                                                                    b.jsx)(
+                                                                                        'span',
+                                                                                        {
+                                                                                            children:
+                                                                                                c ||
+                                                                                                '?',
+                                                                                        }
+                                                                                    ),
+                                                                      }
+                                                                  ),
+                                                                  (0, b.jsxs)(
+                                                                      'div',
+                                                                      {
+                                                                          className:
+                                                                              'flex flex-col',
+                                                                          children:
+                                                                              [
+                                                                                  (0,
+                                                                                  b.jsx)(
+                                                                                      'h2',
+                                                                                      {
+                                                                                          className:
+                                                                                              'text-label-large text-content-primary',
+                                                                                          children:
+                                                                                              a.professionalName,
+                                                                                      }
+                                                                                  ),
+                                                                                  (0,
+                                                                                  b.jsxs)(
+                                                                                      'p',
+                                                                                      {
+                                                                                          className:
+                                                                                              'text-paragraph-small text-content-secondary',
+                                                                                          children:
+                                                                                              [
+                                                                                                  'Agendamento(s):',
+                                                                                                  ' ',
+                                                                                                  a
+                                                                                                      .appointments
+                                                                                                      .length,
+                                                                                              ],
+                                                                                      }
+                                                                                  ),
+                                                                              ],
+                                                                      }
+                                                                  ),
+                                                              ],
+                                                          }
+                                                      ),
+                                                  }),
+                                                  0 === a.appointments.length
+                                                      ? (0, b.jsx)('div', {
+                                                            className:
+                                                                'p-6 text-paragraph-small text-content-secondary text-center',
+                                                            children:
+                                                                'Nenhum agendamento para este profissional.',
+                                                        })
+                                                      : (0, b.jsx)('div', {
+                                                            className:
+                                                                'overflow-x-auto',
+                                                            children: (0,
+                                                            b.jsxs)('table', {
+                                                                className:
+                                                                    'min-w-full text-sm',
+                                                                children: [
+                                                                    (0, b.jsx)(
+                                                                        'thead',
+                                                                        {
+                                                                            children:
+                                                                                (0,
+                                                                                b.jsxs)(
+                                                                                    'tr',
+                                                                                    {
+                                                                                        className:
+                                                                                            'border-b border-border-primary text-content-secondary',
+                                                                                        children:
+                                                                                            [
+                                                                                                (0,
+                                                                                                b.jsx)(
+                                                                                                    'th',
+                                                                                                    {
+                                                                                                        className:
+                                                                                                            'px-4 py-3 text-left font-medium',
+                                                                                                        children:
+                                                                                                            'Hora',
+                                                                                                    }
+                                                                                                ),
+                                                                                                (0,
+                                                                                                b.jsx)(
+                                                                                                    'th',
+                                                                                                    {
+                                                                                                        className:
+                                                                                                            'px-4 py-3 text-left font-medium',
+                                                                                                        children:
+                                                                                                            'Cliente',
+                                                                                                    }
+                                                                                                ),
+                                                                                                (0,
+                                                                                                b.jsx)(
+                                                                                                    'th',
+                                                                                                    {
+                                                                                                        className:
+                                                                                                            'px-4 py-3 text-left font-medium',
+                                                                                                        children:
+                                                                                                            'Telefone',
+                                                                                                    }
+                                                                                                ),
+                                                                                                (0,
+                                                                                                b.jsx)(
+                                                                                                    'th',
+                                                                                                    {
+                                                                                                        className:
+                                                                                                            'px-4 py-3 text-left font-medium',
+                                                                                                        children:
+                                                                                                            'Serviço',
+                                                                                                    }
+                                                                                                ),
+                                                                                                (0,
+                                                                                                b.jsx)(
+                                                                                                    'th',
+                                                                                                    {
+                                                                                                        className:
+                                                                                                            'px-4 py-3 text-left font-medium',
+                                                                                                        children:
+                                                                                                            'Status',
+                                                                                                    }
+                                                                                                ),
+                                                                                                (0,
+                                                                                                b.jsx)(
+                                                                                                    'th',
+                                                                                                    {
+                                                                                                        className:
+                                                                                                            'px-4 py-3 text-right font-medium',
+                                                                                                        children:
+                                                                                                            'Ações',
+                                                                                                    }
+                                                                                                ),
+                                                                                            ],
+                                                                                    }
+                                                                                ),
+                                                                        }
+                                                                    ),
+                                                                    (0, b.jsx)(
+                                                                        'tbody',
+                                                                        {
+                                                                            children:
+                                                                                a.appointments.map(
+                                                                                    (
+                                                                                        a
+                                                                                    ) =>
+                                                                                        (0,
+                                                                                        b.jsx)(
+                                                                                            H,
+                                                                                            {
+                                                                                                appt: a,
+                                                                                                forcedUnitId:
+                                                                                                    g ??
+                                                                                                    null,
+                                                                                                units: h,
+                                                                                                clients:
+                                                                                                    l,
+                                                                                                professionals:
+                                                                                                    j,
+                                                                                                services:
+                                                                                                    k,
+                                                                                            },
+                                                                                            a.id
+                                                                                        )
+                                                                                ),
+                                                                        }
+                                                                    ),
+                                                                ],
+                                                            }),
+                                                        }),
+                                              ],
+                                          },
+                                          a.key
+                                      );
+                                  }),
+                              }),
+                    ],
+                })
+            );
+        }
+        a.s(['default', () => I], 547996);
+    },
+];
+
+//# sourceMappingURL=src_app_admin_appointments_admin-appointments-client_tsx_30fc25a3._.js.map

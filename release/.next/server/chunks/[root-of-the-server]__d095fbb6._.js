@@ -1,0 +1,704 @@
+module.exports = [
+    918622,
+    (e, s, t) => {
+        s.exports = e.x(
+            'next/dist/compiled/next-server/app-page-turbo.runtime.prod.js',
+            () =>
+                require('next/dist/compiled/next-server/app-page-turbo.runtime.prod.js')
+        );
+    },
+    556704,
+    (e, s, t) => {
+        s.exports = e.x(
+            'next/dist/server/app-render/work-async-storage.external.js',
+            () =>
+                require('next/dist/server/app-render/work-async-storage.external.js')
+        );
+    },
+    832319,
+    (e, s, t) => {
+        s.exports = e.x(
+            'next/dist/server/app-render/work-unit-async-storage.external.js',
+            () =>
+                require('next/dist/server/app-render/work-unit-async-storage.external.js')
+        );
+    },
+    324725,
+    (e, s, t) => {
+        s.exports = e.x(
+            'next/dist/server/app-render/after-task-async-storage.external.js',
+            () =>
+                require('next/dist/server/app-render/after-task-async-storage.external.js')
+        );
+    },
+    120635,
+    (e, s, t) => {
+        s.exports = e.x(
+            'next/dist/server/app-render/action-async-storage.external.js',
+            () =>
+                require('next/dist/server/app-render/action-async-storage.external.js')
+        );
+    },
+    395446,
+    (e) => {
+        'use strict';
+        var s = e.i(154154),
+            t = e.i(140407),
+            c = e.i(493068),
+            n = e.i(821498),
+            a = e.i(161599),
+            r = e.i(182716),
+            i = e.i(857635),
+            o = e.i(337047),
+            d = e.i(528171),
+            l = e.i(367300),
+            u = e.i(102610),
+            A = e.i(670893),
+            p = e.i(902769),
+            v = e.i(46094),
+            h = e.i(622730),
+            m = e.i(811178),
+            R = e.i(193695);
+        e.i(629399);
+        var f = e.i(377404),
+            w = e.i(738342),
+            g = e.i(698043),
+            C = e.i(212669);
+        function x(e, s = 400) {
+            return w.NextResponse.json({ ok: !1, error: e }, { status: s });
+        }
+        async function P(e) {
+            let s = await e.params;
+            return String(s?.id || '').trim();
+        }
+        async function y(e, s) {
+            let t = await (0, C.requireAdminForModuleApi)('SETTINGS');
+            if (t instanceof w.NextResponse) return t;
+            if (!t.isOwner) return x('forbidden_owner_only', 403);
+            let c = await P(s);
+            if (!c) return x('invalid_id', 400);
+            let n = null;
+            try {
+                n = await e.json();
+            } catch {
+                return x('invalid_json', 400);
+            }
+            let a = (function (e) {
+                    if (!e || 'object' != typeof e) return;
+                    let s = {},
+                        t = !1;
+                    for (let c of [
+                        'canAccessDashboard',
+                        'canAccessReports',
+                        'canAccessCheckout',
+                        'canAccessAppointments',
+                        'canAccessProfessionals',
+                        'canAccessServices',
+                        'canAccessReviews',
+                        'canAccessProducts',
+                        'canAccessPartners',
+                        'canAccessClients',
+                        'canAccessClientLevels',
+                        'canAccessFinance',
+                        'canAccessSettings',
+                    ])
+                        if (c in e) {
+                            let n = e[c];
+                            ((s[c] = !!n), (t = !0));
+                        }
+                    return t ? s : void 0;
+                })(n?.permissions),
+                r = 'boolean' == typeof n?.isActive ? n.isActive : void 0;
+            if (!a && void 0 === r) return x('nothing_to_update', 400);
+            let i = await g.prisma.companyMember.findFirst({
+                where: {
+                    companyId: t.companyId,
+                    userId: c,
+                    isActive: !0,
+                    role: { in: ['ADMIN', 'OWNER'] },
+                },
+                select: { role: !0 },
+            });
+            if (!i?.role) return x('target_not_found', 404);
+            if ('OWNER' === i.role)
+                return x('forbidden_cannot_edit_owner', 403);
+            let o = await g.prisma.user.findUnique({
+                where: { id: c },
+                select: {
+                    id: !0,
+                    name: !0,
+                    email: !0,
+                    phone: !0,
+                    isOwner: !0,
+                    isActive: !0,
+                    createdAt: !0,
+                    role: !0,
+                },
+            });
+            if (!o?.id) return x('target_not_found', 404);
+            if ('ADMIN' !== o.role) return x('target_not_admin', 400);
+            try {
+                var d;
+                return (
+                    (d = await g.prisma.$transaction(async (e) => {
+                        var s, n;
+                        let i,
+                            o = await e.adminAccess.findFirst({
+                                where: { companyId: t.companyId, userId: c },
+                                select: {
+                                    id: !0,
+                                    canAccessDashboard: !0,
+                                    canAccessReports: !0,
+                                    canAccessCheckout: !0,
+                                    canAccessAppointments: !0,
+                                    canAccessProfessionals: !0,
+                                    canAccessServices: !0,
+                                    canAccessReviews: !0,
+                                    canAccessProducts: !0,
+                                    canAccessPartners: !0,
+                                    canAccessClients: !0,
+                                    canAccessClientLevels: !0,
+                                    canAccessFinance: !0,
+                                    canAccessSettings: !0,
+                                },
+                            }),
+                            d = o
+                                ? {
+                                      canAccessDashboard:
+                                          !!o.canAccessDashboard,
+                                      canAccessReports: !!o.canAccessReports,
+                                      canAccessCheckout: !!o.canAccessCheckout,
+                                      canAccessAppointments:
+                                          !!o.canAccessAppointments,
+                                      canAccessProfessionals:
+                                          !!o.canAccessProfessionals,
+                                      canAccessServices: !!o.canAccessServices,
+                                      canAccessReviews: !!o.canAccessReviews,
+                                      canAccessProducts: !!o.canAccessProducts,
+                                      canAccessPartners: !!o.canAccessPartners,
+                                      canAccessClients: !!o.canAccessClients,
+                                      canAccessClientLevels:
+                                          !!o.canAccessClientLevels,
+                                      canAccessFinance: !!o.canAccessFinance,
+                                      canAccessSettings: !!o.canAccessSettings,
+                                  }
+                                : ((s = void 0),
+                                  {
+                                      canAccessDashboard: !!(
+                                          s?.canAccessDashboard ?? !0
+                                      ),
+                                      canAccessReports: !!s?.canAccessReports,
+                                      canAccessCheckout: !!s?.canAccessCheckout,
+                                      canAccessAppointments: !!(
+                                          s?.canAccessAppointments ?? !0
+                                      ),
+                                      canAccessProfessionals:
+                                          !!s?.canAccessProfessionals,
+                                      canAccessServices: !!s?.canAccessServices,
+                                      canAccessReviews: !!s?.canAccessReviews,
+                                      canAccessProducts: !!s?.canAccessProducts,
+                                      canAccessPartners: !!s?.canAccessPartners,
+                                      canAccessClients: !!(
+                                          s?.canAccessClients ?? !0
+                                      ),
+                                      canAccessClientLevels:
+                                          !!s?.canAccessClientLevels,
+                                      canAccessFinance: !!s?.canAccessFinance,
+                                      canAccessSettings: !!s?.canAccessSettings,
+                                  }),
+                            l = a
+                                ? ((i =
+                                      (n = { current: d, patch: a }).patch ??
+                                      {}),
+                                  {
+                                      canAccessDashboard:
+                                          void 0 !== i.canAccessDashboard
+                                              ? !!i.canAccessDashboard
+                                              : n.current.canAccessDashboard,
+                                      canAccessReports:
+                                          void 0 !== i.canAccessReports
+                                              ? !!i.canAccessReports
+                                              : n.current.canAccessReports,
+                                      canAccessCheckout:
+                                          void 0 !== i.canAccessCheckout
+                                              ? !!i.canAccessCheckout
+                                              : n.current.canAccessCheckout,
+                                      canAccessAppointments:
+                                          void 0 !== i.canAccessAppointments
+                                              ? !!i.canAccessAppointments
+                                              : n.current.canAccessAppointments,
+                                      canAccessProfessionals:
+                                          void 0 !== i.canAccessProfessionals
+                                              ? !!i.canAccessProfessionals
+                                              : n.current
+                                                    .canAccessProfessionals,
+                                      canAccessServices:
+                                          void 0 !== i.canAccessServices
+                                              ? !!i.canAccessServices
+                                              : n.current.canAccessServices,
+                                      canAccessReviews:
+                                          void 0 !== i.canAccessReviews
+                                              ? !!i.canAccessReviews
+                                              : n.current.canAccessReviews,
+                                      canAccessProducts:
+                                          void 0 !== i.canAccessProducts
+                                              ? !!i.canAccessProducts
+                                              : n.current.canAccessProducts,
+                                      canAccessPartners:
+                                          void 0 !== i.canAccessPartners
+                                              ? !!i.canAccessPartners
+                                              : n.current.canAccessPartners,
+                                      canAccessClients:
+                                          void 0 !== i.canAccessClients
+                                              ? !!i.canAccessClients
+                                              : n.current.canAccessClients,
+                                      canAccessClientLevels:
+                                          void 0 !== i.canAccessClientLevels
+                                              ? !!i.canAccessClientLevels
+                                              : n.current.canAccessClientLevels,
+                                      canAccessFinance:
+                                          void 0 !== i.canAccessFinance
+                                              ? !!i.canAccessFinance
+                                              : n.current.canAccessFinance,
+                                      canAccessSettings:
+                                          void 0 !== i.canAccessSettings
+                                              ? !!i.canAccessSettings
+                                              : n.current.canAccessSettings,
+                                  })
+                                : d;
+                        (a &&
+                            (o?.id
+                                ? await e.adminAccess.update({
+                                      where: { id: o.id },
+                                      data: { ...l },
+                                  })
+                                : await e.adminAccess.create({
+                                      data: {
+                                          companyId: t.companyId,
+                                          userId: c,
+                                          unitId: null,
+                                          ...l,
+                                      },
+                                  })),
+                            void 0 !== r &&
+                                (await e.user.update({
+                                    where: { id: c },
+                                    data: { isActive: r },
+                                })));
+                        let u = await e.user.findUnique({
+                            where: { id: c },
+                            select: {
+                                id: !0,
+                                name: !0,
+                                email: !0,
+                                phone: !0,
+                                isOwner: !0,
+                                isActive: !0,
+                                createdAt: !0,
+                            },
+                        });
+                        return {
+                            id: u.id,
+                            name: u.name ?? null,
+                            email: u.email,
+                            phone: u.phone ?? null,
+                            createdAt: u.createdAt.toISOString(),
+                            isOwner: !!u.isOwner,
+                            isActive: !!u.isActive,
+                            permissions: l,
+                        };
+                    })),
+                    w.NextResponse.json({ ok: !0, data: d }, void 0)
+                );
+            } catch {
+                return x('internal_error', 500);
+            }
+        }
+        e.s(['PATCH', () => y], 183629);
+        var S = e.i(183629);
+        let E = new s.AppRouteRouteModule({
+                definition: {
+                    kind: t.RouteKind.APP_ROUTE,
+                    page: '/api/admin/settings/admins/[id]/route',
+                    pathname: '/api/admin/settings/admins/[id]',
+                    filename: 'route',
+                    bundlePath: '',
+                },
+                distDir: '.next',
+                relativeProjectDir: '',
+                resolvedPagePath:
+                    '[project]/src/app/api/admin/settings/admins/[id]/route.ts',
+                nextConfigOutput: 'standalone',
+                userland: S,
+            }),
+            {
+                workAsyncStorage: b,
+                workUnitAsyncStorage: _,
+                serverHooks: k,
+            } = E;
+        function N() {
+            return (0, c.patchFetch)({
+                workAsyncStorage: b,
+                workUnitAsyncStorage: _,
+            });
+        }
+        async function I(e, s, c) {
+            E.isDev &&
+                (0, n.addRequestMeta)(
+                    e,
+                    'devRequestTimingInternalsEnd',
+                    process.hrtime.bigint()
+                );
+            let w = '/api/admin/settings/admins/[id]/route';
+            w = w.replace(/\/index$/, '') || '/';
+            let g = await E.prepare(e, s, {
+                srcPage: w,
+                multiZoneDraftMode: !1,
+            });
+            if (!g)
+                return (
+                    (s.statusCode = 400),
+                    s.end('Bad Request'),
+                    null == c.waitUntil ||
+                        c.waitUntil.call(c, Promise.resolve()),
+                    null
+                );
+            let {
+                    buildId: C,
+                    params: x,
+                    nextConfig: P,
+                    parsedUrl: y,
+                    isDraftMode: S,
+                    prerenderManifest: b,
+                    routerServerContext: _,
+                    isOnDemandRevalidate: k,
+                    revalidateOnlyGenerated: N,
+                    resolvedPathname: I,
+                    clientReferenceManifest: O,
+                    serverActionsManifest: T,
+                } = g,
+                D = (0, o.normalizeAppPath)(w),
+                j = !!(b.dynamicRoutes[D] || b.routes[I]),
+                q = async () => (
+                    (null == _ ? void 0 : _.render404)
+                        ? await _.render404(e, s, y, !1)
+                        : s.end('This page could not be found'),
+                    null
+                );
+            if (j && !S) {
+                let e = !!b.routes[I],
+                    s = b.dynamicRoutes[D];
+                if (s && !1 === s.fallback && !e) {
+                    if (P.experimental.adapterPath) return await q();
+                    throw new R.NoFallbackError();
+                }
+            }
+            let F = null;
+            !j || E.isDev || S || (F = '/index' === (F = I) ? '/' : F);
+            let M = !0 === E.isDev || !j,
+                H = j && !M;
+            T &&
+                O &&
+                (0, r.setReferenceManifestsSingleton)({
+                    page: w,
+                    clientReferenceManifest: O,
+                    serverActionsManifest: T,
+                    serverModuleMap: (0, i.createServerModuleMap)({
+                        serverActionsManifest: T,
+                    }),
+                });
+            let U = e.method || 'GET',
+                L = (0, a.getTracer)(),
+                $ = L.getActiveScopeSpan(),
+                K = {
+                    params: x,
+                    prerenderManifest: b,
+                    renderOpts: {
+                        experimental: {
+                            authInterrupts: !!P.experimental.authInterrupts,
+                        },
+                        cacheComponents: !!P.cacheComponents,
+                        supportsDynamicResponse: M,
+                        incrementalCache: (0, n.getRequestMeta)(
+                            e,
+                            'incrementalCache'
+                        ),
+                        cacheLifeProfiles: P.cacheLife,
+                        waitUntil: c.waitUntil,
+                        onClose: (e) => {
+                            s.on('close', e);
+                        },
+                        onAfterTaskError: void 0,
+                        onInstrumentationRequestError: (s, t, c) =>
+                            E.onRequestError(e, s, c, _),
+                    },
+                    sharedContext: { buildId: C },
+                },
+                B = new d.NodeNextRequest(e),
+                G = new d.NodeNextResponse(s),
+                W = l.NextRequestAdapter.fromNodeNextRequest(
+                    B,
+                    (0, l.signalFromNodeResponse)(s)
+                );
+            try {
+                let r = async (e) =>
+                        E.handle(W, K).finally(() => {
+                            if (!e) return;
+                            e.setAttributes({
+                                'http.status_code': s.statusCode,
+                                'next.rsc': !1,
+                            });
+                            let t = L.getRootSpanAttributes();
+                            if (!t) return;
+                            if (
+                                t.get('next.span_type') !==
+                                u.BaseServerSpan.handleRequest
+                            )
+                                return void console.warn(
+                                    `Unexpected root span type '${t.get('next.span_type')}'. Please report this Next.js issue https://github.com/vercel/next.js`
+                                );
+                            let c = t.get('next.route');
+                            if (c) {
+                                let s = `${U} ${c}`;
+                                (e.setAttributes({
+                                    'next.route': c,
+                                    'http.route': c,
+                                    'next.span_name': s,
+                                }),
+                                    e.updateName(s));
+                            } else e.updateName(`${U} ${w}`);
+                        }),
+                    i = !!(0, n.getRequestMeta)(e, 'minimalMode'),
+                    o = async (n) => {
+                        var a, o;
+                        let d = async ({ previousCacheEntry: t }) => {
+                                try {
+                                    if (!i && k && N && !t)
+                                        return (
+                                            (s.statusCode = 404),
+                                            s.setHeader(
+                                                'x-nextjs-cache',
+                                                'REVALIDATED'
+                                            ),
+                                            s.end(
+                                                'This page could not be found'
+                                            ),
+                                            null
+                                        );
+                                    let a = await r(n);
+                                    e.fetchMetrics = K.renderOpts.fetchMetrics;
+                                    let o = K.renderOpts.pendingWaitUntil;
+                                    o &&
+                                        c.waitUntil &&
+                                        (c.waitUntil(o), (o = void 0));
+                                    let d = K.renderOpts.collectedTags;
+                                    if (!j)
+                                        return (
+                                            await (0, p.sendResponse)(
+                                                B,
+                                                G,
+                                                a,
+                                                K.renderOpts.pendingWaitUntil
+                                            ),
+                                            null
+                                        );
+                                    {
+                                        let e = await a.blob(),
+                                            s = (0,
+                                            v.toNodeOutgoingHttpHeaders)(
+                                                a.headers
+                                            );
+                                        (d && (s[m.NEXT_CACHE_TAGS_HEADER] = d),
+                                            !s['content-type'] &&
+                                                e.type &&
+                                                (s['content-type'] = e.type));
+                                        let t =
+                                                void 0 !==
+                                                    K.renderOpts
+                                                        .collectedRevalidate &&
+                                                !(
+                                                    K.renderOpts
+                                                        .collectedRevalidate >=
+                                                    m.INFINITE_CACHE
+                                                ) &&
+                                                K.renderOpts
+                                                    .collectedRevalidate,
+                                            c =
+                                                void 0 ===
+                                                    K.renderOpts
+                                                        .collectedExpire ||
+                                                K.renderOpts.collectedExpire >=
+                                                    m.INFINITE_CACHE
+                                                    ? void 0
+                                                    : K.renderOpts
+                                                          .collectedExpire;
+                                        return {
+                                            value: {
+                                                kind: f.CachedRouteKind
+                                                    .APP_ROUTE,
+                                                status: a.status,
+                                                body: Buffer.from(
+                                                    await e.arrayBuffer()
+                                                ),
+                                                headers: s,
+                                            },
+                                            cacheControl: {
+                                                revalidate: t,
+                                                expire: c,
+                                            },
+                                        };
+                                    }
+                                } catch (s) {
+                                    throw (
+                                        (null == t ? void 0 : t.isStale) &&
+                                            (await E.onRequestError(
+                                                e,
+                                                s,
+                                                {
+                                                    routerKind: 'App Router',
+                                                    routePath: w,
+                                                    routeType: 'route',
+                                                    revalidateReason: (0,
+                                                    A.getRevalidateReason)({
+                                                        isStaticGeneration: H,
+                                                        isOnDemandRevalidate: k,
+                                                    }),
+                                                },
+                                                _
+                                            )),
+                                        s
+                                    );
+                                }
+                            },
+                            l = await E.handleResponse({
+                                req: e,
+                                nextConfig: P,
+                                cacheKey: F,
+                                routeKind: t.RouteKind.APP_ROUTE,
+                                isFallback: !1,
+                                prerenderManifest: b,
+                                isRoutePPREnabled: !1,
+                                isOnDemandRevalidate: k,
+                                revalidateOnlyGenerated: N,
+                                responseGenerator: d,
+                                waitUntil: c.waitUntil,
+                                isMinimalMode: i,
+                            });
+                        if (!j) return null;
+                        if (
+                            (null == l || null == (a = l.value)
+                                ? void 0
+                                : a.kind) !== f.CachedRouteKind.APP_ROUTE
+                        )
+                            throw Object.defineProperty(
+                                Error(
+                                    `Invariant: app-route received invalid cache entry ${null == l || null == (o = l.value) ? void 0 : o.kind}`
+                                ),
+                                '__NEXT_ERROR_CODE',
+                                {
+                                    value: 'E701',
+                                    enumerable: !1,
+                                    configurable: !0,
+                                }
+                            );
+                        (i ||
+                            s.setHeader(
+                                'x-nextjs-cache',
+                                k
+                                    ? 'REVALIDATED'
+                                    : l.isMiss
+                                      ? 'MISS'
+                                      : l.isStale
+                                        ? 'STALE'
+                                        : 'HIT'
+                            ),
+                            S &&
+                                s.setHeader(
+                                    'Cache-Control',
+                                    'private, no-cache, no-store, max-age=0, must-revalidate'
+                                ));
+                        let u = (0, v.fromNodeOutgoingHttpHeaders)(
+                            l.value.headers
+                        );
+                        return (
+                            (i && j) || u.delete(m.NEXT_CACHE_TAGS_HEADER),
+                            !l.cacheControl ||
+                                s.getHeader('Cache-Control') ||
+                                u.get('Cache-Control') ||
+                                u.set(
+                                    'Cache-Control',
+                                    (0, h.getCacheControlHeader)(l.cacheControl)
+                                ),
+                            await (0, p.sendResponse)(
+                                B,
+                                G,
+                                new Response(l.value.body, {
+                                    headers: u,
+                                    status: l.value.status || 200,
+                                })
+                            ),
+                            null
+                        );
+                    };
+                $
+                    ? await o($)
+                    : await L.withPropagatedContext(e.headers, () =>
+                          L.trace(
+                              u.BaseServerSpan.handleRequest,
+                              {
+                                  spanName: `${U} ${w}`,
+                                  kind: a.SpanKind.SERVER,
+                                  attributes: {
+                                      'http.method': U,
+                                      'http.target': e.url,
+                                  },
+                              },
+                              o
+                          )
+                      );
+            } catch (s) {
+                if (
+                    (s instanceof R.NoFallbackError ||
+                        (await E.onRequestError(e, s, {
+                            routerKind: 'App Router',
+                            routePath: D,
+                            routeType: 'route',
+                            revalidateReason: (0, A.getRevalidateReason)({
+                                isStaticGeneration: H,
+                                isOnDemandRevalidate: k,
+                            }),
+                        })),
+                    j)
+                )
+                    throw s;
+                return (
+                    await (0, p.sendResponse)(
+                        B,
+                        G,
+                        new Response(null, { status: 500 })
+                    ),
+                    null
+                );
+            }
+        }
+        e.s(
+            [
+                'handler',
+                () => I,
+                'patchFetch',
+                () => N,
+                'routeModule',
+                () => E,
+                'serverHooks',
+                () => k,
+                'workAsyncStorage',
+                () => b,
+                'workUnitAsyncStorage',
+                () => _,
+            ],
+            395446
+        );
+    },
+];
+
+//# sourceMappingURL=%5Broot-of-the-server%5D__d095fbb6._.js.map

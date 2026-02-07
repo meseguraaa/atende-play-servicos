@@ -1,0 +1,878 @@
+module.exports = [
+    261424,
+    (e) => {
+        'use strict';
+        var t = e.i(154154),
+            r = e.i(140407),
+            n = e.i(493068),
+            a = e.i(821498),
+            i = e.i(161599),
+            s = e.i(182716),
+            o = e.i(857635),
+            l = e.i(337047),
+            u = e.i(528171),
+            d = e.i(367300),
+            c = e.i(102610),
+            p = e.i(670893),
+            h = e.i(902769),
+            m = e.i(46094),
+            f = e.i(622730),
+            w = e.i(811178),
+            g = e.i(193695);
+        e.i(629399);
+        var y = e.i(377404),
+            v = e.i(738342),
+            R = e.i(698043),
+            N = e.i(666680);
+        async function A(e) {}
+        function E() {
+            return {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET,PATCH,OPTIONS',
+                'Access-Control-Allow-Headers':
+                    'Content-Type, Authorization, x-company-id',
+            };
+        }
+        async function b() {
+            return new v.NextResponse(null, { status: 204, headers: E() });
+        }
+        function _(e) {
+            let t =
+                e.headers.get('authorization') ||
+                e.headers.get('Authorization');
+            if (!t) return null;
+            let [r, n] = t.split(' ');
+            return r?.toLowerCase() === 'bearer' && n ? n.trim() : null;
+        }
+        function C(e) {
+            let t =
+                    e.headers.get('x-company-id') ||
+                    e.headers.get('X-Company-Id') ||
+                    e.headers.get('x-companyid') ||
+                    e.headers.get('X-CompanyId'),
+                r = 'string' == typeof t ? t.trim() : '';
+            return r.length ? r : null;
+        }
+        function x() {
+            return {
+                id: !0,
+                name: !0,
+                email: !0,
+                role: !0,
+                image: !0,
+                phone: !0,
+                birthday: !0,
+                isOwner: !0,
+                isActive: !0,
+                createdAt: !0,
+                updatedAt: !0,
+            };
+        }
+        function I(e) {
+            let t = [],
+                r = 'string' == typeof e.phone && e.phone.trim().length > 0,
+                n =
+                    e.birthday instanceof Date &&
+                    !Number.isNaN(e.birthday.getTime());
+            return (
+                r || t.push('phone'),
+                n || t.push('birthday'),
+                { profileComplete: 0 === t.length, missingFields: t }
+            );
+        }
+        function T(e) {
+            switch (String(e || 'BRONZE').toUpperCase()) {
+                case 'DIAMANTE':
+                    return {
+                        level: 'DIAMANTE',
+                        label: 'Diamante',
+                        icon: 'diamond',
+                    };
+                case 'OURO':
+                    return { level: 'OURO', label: 'Ouro', icon: 'trophy' };
+                case 'PRATA':
+                    return { level: 'PRATA', label: 'Prata', icon: 'star' };
+                default:
+                    return { level: 'BRONZE', label: 'Bronze', icon: 'star-o' };
+            }
+        }
+        class S extends Error {
+            constructor(e = 'invalid token payload') {
+                (super(e), (this.name = 'InvalidAppTokenError'));
+            }
+        }
+        async function O(e) {
+            var t, r;
+            let n,
+                a,
+                i =
+                    process.env.APP_JWT_SECRET?.trim() ||
+                    process.env.MOBILE_JWT_SECRET?.trim() ||
+                    process.env.JWT_SECRET?.trim() ||
+                    process.env.NEXTAUTH_SECRET?.trim() ||
+                    '';
+            if (!i) throw new S('missing token payload');
+            let s = String(e || '').split('.');
+            if (3 !== s.length) throw new S('invalid token payload');
+            let [o, l, u] = s;
+            if (
+                ((t = `${o}.${l}`),
+                ('string' ==
+                typeof (r = N.default
+                    .createHmac('sha256', i)
+                    .update(t)
+                    .digest())
+                    ? Buffer.from(r)
+                    : r
+                )
+                    .toString('base64')
+                    .replace(/=/g, '')
+                    .replace(/\+/g, '-')
+                    .replace(/\//g, '_') !== u)
+            )
+                throw new S('invalid token payload');
+            let d = JSON.parse(
+                ((n = l.length % 4 == 0 ? '' : '='.repeat(4 - (l.length % 4))),
+                (a = l.replace(/-/g, '+').replace(/_/g, '/') + n),
+                Buffer.from(a, 'base64')).toString('utf-8')
+            );
+            if (d?.exp) {
+                let e = Math.floor(Date.now() / 1e3);
+                if (Number(d.exp) < e) throw new S('invalid token payload');
+            }
+            let c = String(d?.sub || '').trim(),
+                p = String(d?.companyId || '').trim();
+            if (!c) throw new S('invalid token payload');
+            if (!p) throw new S('missing_company_id');
+            return d;
+        }
+        async function P(e) {
+            let { companyId: t, userId: r } = e;
+            await R.prisma.companyMember.upsert({
+                where: { companyId_userId: { companyId: t, userId: r } },
+                create: {
+                    companyId: t,
+                    userId: r,
+                    role: 'CLIENT',
+                    isActive: !0,
+                },
+                update: { isActive: !0 },
+            });
+        }
+        async function j(e) {
+            let { userId: t, companyId: r } = e,
+                n = new Date(new Date().getTime() - 864e5),
+                a = await R.prisma.appointment.findFirst({
+                    where: {
+                        companyId: r,
+                        clientId: t,
+                        status: 'PENDING',
+                        scheduleAt: { gte: n },
+                    },
+                    orderBy: { scheduleAt: 'asc' },
+                    select: { unitId: !0 },
+                });
+            if (a?.unitId) return a.unitId;
+            let i = await R.prisma.appointment.findFirst({
+                where: { companyId: r, clientId: t },
+                orderBy: { scheduleAt: 'desc' },
+                select: { unitId: !0 },
+            });
+            if (i?.unitId) return i.unitId;
+            let s =
+                (await R.prisma.unit.findFirst({
+                    where: { companyId: r, isActive: !0 },
+                    select: { id: !0 },
+                    orderBy: { createdAt: 'asc' },
+                })) ??
+                (await R.prisma.unit.findFirst({
+                    where: { companyId: r },
+                    select: { id: !0 },
+                    orderBy: { createdAt: 'asc' },
+                }));
+            return s?.id ?? null;
+        }
+        async function k(e) {
+            try {
+                return !!(await R.prisma.unit.findFirst({
+                    where: { id: e.unitId, companyId: e.companyId },
+                    select: { id: !0 },
+                }));
+            } catch {
+                return !1;
+            }
+        }
+        async function D(e, t) {
+            let r = await R.prisma.customerLevelState.findUnique({
+                where: { unitId_userId: { unitId: t, userId: e } },
+                select: {
+                    levelCurrent: !0,
+                    unitId: !0,
+                    levelEffectiveFrom: !0,
+                    updatedAt: !0,
+                },
+            });
+            return { customerLevel: T(r?.levelCurrent), _debugLevelState: r };
+        }
+        async function U(e) {
+            let t = (function (e) {
+                let { year: t, month: r } = (function (e) {
+                        let t = new Intl.DateTimeFormat('en-CA', {
+                                timeZone: 'America/Sao_Paulo',
+                                year: 'numeric',
+                                month: '2-digit',
+                            }).formatToParts(e),
+                            r = {};
+                        for (let e of t)
+                            'literal' !== e.type && (r[e.type] = e.value);
+                        return { year: Number(r.year), month: Number(r.month) };
+                    })(e),
+                    n = t,
+                    a = r - 1;
+                a <= 0 && ((a = 12), (n = t - 1));
+                let i = String(a).padStart(2, '0');
+                return `${n}-${i}`;
+            })(e.now);
+            return !(await R.prisma.customerLevelPeriod.findUnique({
+                where: {
+                    unitId_userId_periodKey: {
+                        unitId: e.unitId,
+                        userId: e.userId,
+                        periodKey: t,
+                    },
+                },
+                select: { id: !0 },
+            }));
+        }
+        async function H(e) {
+            try {
+                if (!(await U(e))) return;
+                await A({ userId: e.userId, unitId: e.unitId, now: e.now });
+            } catch {}
+        }
+        function M(e) {
+            let t = String(e?.message || '').toLowerCase();
+            return t.includes('invalid token payload') ||
+                t.includes('jwt') ||
+                t.includes('token') ||
+                t.includes('signature') ||
+                t.includes('missing_company_id') ||
+                t.includes('missing token payload') ||
+                t.includes('missing companyid')
+                ? v.NextResponse.json(
+                      { error: 'invalid_token' },
+                      { status: 401, headers: E() }
+                  )
+                : v.NextResponse.json(
+                      { error: 'server_error' },
+                      { status: 500, headers: E() }
+                  );
+        }
+        async function L(e) {
+            try {
+                let t = _(e);
+                if (!t)
+                    return v.NextResponse.json(
+                        { error: 'missing_token' },
+                        { status: 401, headers: E() }
+                    );
+                let r = await O(t),
+                    n = String(r.sub || '').trim(),
+                    a = String(r.companyId || '').trim(),
+                    i = String(r.role || '')
+                        .trim()
+                        .toUpperCase();
+                if (!n)
+                    return v.NextResponse.json(
+                        { error: 'invalid_token' },
+                        { status: 401, headers: E() }
+                    );
+                if (!a)
+                    return v.NextResponse.json(
+                        { error: 'missing_company_id' },
+                        { status: 401, headers: E() }
+                    );
+                await P({ companyId: a, userId: n });
+                let s = await R.prisma.user.findUnique({
+                    where: { id: n },
+                    select: x(),
+                });
+                if (!s)
+                    return v.NextResponse.json(
+                        { error: 'user_not_found' },
+                        { status: 401, headers: E() }
+                    );
+                if (!s.isActive)
+                    return v.NextResponse.json(
+                        { error: 'user_inactive' },
+                        { status: 403, headers: E() }
+                    );
+                let o = new Date(),
+                    l = null;
+                'CLIENT' === i &&
+                    ((l = await j({ userId: n, companyId: a })) &&
+                        ((await k({ unitId: l, companyId: a })) || (l = null)),
+                    l && (await H({ userId: n, unitId: l, now: o })));
+                let { customerLevel: u, _debugLevelState: d } = l
+                        ? await D(n, l)
+                        : {
+                              customerLevel: T('BRONZE'),
+                              _debugLevelState: null,
+                          },
+                    { profileComplete: c, missingFields: p } = I({
+                        phone: s.phone ?? null,
+                        birthday: s.birthday ?? null,
+                    });
+                C(e);
+                let h = v.NextResponse.json(
+                    {
+                        user: {
+                            ...s,
+                            customerLevel: u,
+                            adminAccess: null,
+                            companyId: a,
+                            profileComplete: c,
+                            missingFields: p,
+                        },
+                        profileComplete: c,
+                        companyId: a,
+                        _debug: void 0,
+                    },
+                    { status: 200, headers: E() }
+                );
+                return (h.headers.set('x-company-id', a), h);
+            } catch (e) {
+                return (console.error('[api/mobile/me] GET error:', e), M(e));
+            }
+        }
+        async function q(e) {
+            try {
+                let t,
+                    r,
+                    n = _(e);
+                if (!n)
+                    return v.NextResponse.json(
+                        { error: 'missing_token' },
+                        { status: 401, headers: E() }
+                    );
+                let a = await O(n),
+                    i = String(a.sub || '').trim(),
+                    s = String(a.companyId || '').trim(),
+                    o = String(a.role || '')
+                        .trim()
+                        .toUpperCase();
+                if (!i)
+                    return v.NextResponse.json(
+                        { error: 'invalid_token' },
+                        { status: 401, headers: E() }
+                    );
+                if (!s)
+                    return v.NextResponse.json(
+                        { error: 'missing_company_id' },
+                        { status: 401, headers: E() }
+                    );
+                await P({ companyId: s, userId: i });
+                let l = await R.prisma.user.findUnique({
+                    where: { id: i },
+                    select: { id: !0, isActive: !0 },
+                });
+                if (!l)
+                    return v.NextResponse.json(
+                        { error: 'user_not_found' },
+                        { status: 401, headers: E() }
+                    );
+                if (!l.isActive)
+                    return v.NextResponse.json(
+                        { error: 'user_inactive' },
+                        { status: 403, headers: E() }
+                    );
+                let u = await e.json().catch(() => null);
+                if (!u || 'object' != typeof u)
+                    return v.NextResponse.json(
+                        { error: 'invalid_body' },
+                        { status: 400, headers: E() }
+                    );
+                let d = u.phone,
+                    c = u.birthday;
+                if (null === d) t = null;
+                else if ('string' == typeof d) {
+                    let e = d.trim();
+                    if ((t = e.length ? e : null) && t.length > 32)
+                        return v.NextResponse.json(
+                            { error: 'phone_too_long' },
+                            { status: 400, headers: E() }
+                        );
+                } else if (void 0 !== d)
+                    return v.NextResponse.json(
+                        { error: 'invalid_phone' },
+                        { status: 400, headers: E() }
+                    );
+                if (void 0 !== c) {
+                    let e = (function (e) {
+                        if (null == e || '' === e || 'string' != typeof e)
+                            return null;
+                        let t = e.trim(),
+                            r = new Date(t);
+                        if (!Number.isNaN(r.getTime())) return r;
+                        let n = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(t);
+                        if (n) {
+                            let e = Number(n[1]),
+                                t = Number(n[2]),
+                                r = new Date(Date.UTC(Number(n[3]), t - 1, e));
+                            if (!Number.isNaN(r.getTime())) return r;
+                        }
+                        return null;
+                    })(c);
+                    if (c && !e)
+                        return v.NextResponse.json(
+                            { error: 'invalid_birthday' },
+                            { status: 400, headers: E() }
+                        );
+                    r = e;
+                }
+                let p = await R.prisma.user.update({
+                        where: { id: i },
+                        data: {
+                            ...(void 0 !== t ? { phone: t } : {}),
+                            ...(void 0 !== r ? { birthday: r } : {}),
+                        },
+                        select: x(),
+                    }),
+                    h = new Date(),
+                    m = null;
+                'CLIENT' === o &&
+                    ((m = await j({ userId: i, companyId: s })) &&
+                        ((await k({ unitId: m, companyId: s })) || (m = null)),
+                    m && (await H({ userId: i, unitId: m, now: h })));
+                let { customerLevel: f, _debugLevelState: w } = m
+                        ? await D(i, m)
+                        : {
+                              customerLevel: T('BRONZE'),
+                              _debugLevelState: null,
+                          },
+                    { profileComplete: g, missingFields: y } = I({
+                        phone: p.phone ?? null,
+                        birthday: p.birthday ?? null,
+                    });
+                C(e);
+                let N = v.NextResponse.json(
+                    {
+                        user: {
+                            ...p,
+                            customerLevel: f,
+                            adminAccess: null,
+                            companyId: s,
+                            profileComplete: g,
+                            missingFields: y,
+                        },
+                        profileComplete: g,
+                        companyId: s,
+                        _debug: void 0,
+                    },
+                    { status: 200, headers: E() }
+                );
+                return (N.headers.set('x-company-id', s), N);
+            } catch (e) {
+                return (console.error('[api/mobile/me] PATCH error:', e), M(e));
+            }
+        }
+        e.s(
+            [
+                'GET',
+                () => L,
+                'OPTIONS',
+                () => b,
+                'PATCH',
+                () => q,
+                'dynamic',
+                0,
+                'force-dynamic',
+            ],
+            535878
+        );
+        var B = e.i(535878);
+        let F = new t.AppRouteRouteModule({
+                definition: {
+                    kind: r.RouteKind.APP_ROUTE,
+                    page: '/api/mobile/me/route',
+                    pathname: '/api/mobile/me',
+                    filename: 'route',
+                    bundlePath: '',
+                },
+                distDir: '.next',
+                relativeProjectDir: '',
+                resolvedPagePath: '[project]/src/app/api/mobile/me/route.ts',
+                nextConfigOutput: 'standalone',
+                userland: B,
+            }),
+            {
+                workAsyncStorage: $,
+                workUnitAsyncStorage: K,
+                serverHooks: G,
+            } = F;
+        function X() {
+            return (0, n.patchFetch)({
+                workAsyncStorage: $,
+                workUnitAsyncStorage: K,
+            });
+        }
+        async function Z(e, t, n) {
+            F.isDev &&
+                (0, a.addRequestMeta)(
+                    e,
+                    'devRequestTimingInternalsEnd',
+                    process.hrtime.bigint()
+                );
+            let v = '/api/mobile/me/route';
+            v = v.replace(/\/index$/, '') || '/';
+            let R = await F.prepare(e, t, {
+                srcPage: v,
+                multiZoneDraftMode: !1,
+            });
+            if (!R)
+                return (
+                    (t.statusCode = 400),
+                    t.end('Bad Request'),
+                    null == n.waitUntil ||
+                        n.waitUntil.call(n, Promise.resolve()),
+                    null
+                );
+            let {
+                    buildId: N,
+                    params: A,
+                    nextConfig: E,
+                    parsedUrl: b,
+                    isDraftMode: _,
+                    prerenderManifest: C,
+                    routerServerContext: x,
+                    isOnDemandRevalidate: I,
+                    revalidateOnlyGenerated: T,
+                    resolvedPathname: S,
+                    clientReferenceManifest: O,
+                    serverActionsManifest: P,
+                } = R,
+                j = (0, l.normalizeAppPath)(v),
+                k = !!(C.dynamicRoutes[j] || C.routes[S]),
+                D = async () => (
+                    (null == x ? void 0 : x.render404)
+                        ? await x.render404(e, t, b, !1)
+                        : t.end('This page could not be found'),
+                    null
+                );
+            if (k && !_) {
+                let e = !!C.routes[S],
+                    t = C.dynamicRoutes[j];
+                if (t && !1 === t.fallback && !e) {
+                    if (E.experimental.adapterPath) return await D();
+                    throw new g.NoFallbackError();
+                }
+            }
+            let U = null;
+            !k || F.isDev || _ || (U = '/index' === (U = S) ? '/' : U);
+            let H = !0 === F.isDev || !k,
+                M = k && !H;
+            P &&
+                O &&
+                (0, s.setReferenceManifestsSingleton)({
+                    page: v,
+                    clientReferenceManifest: O,
+                    serverActionsManifest: P,
+                    serverModuleMap: (0, o.createServerModuleMap)({
+                        serverActionsManifest: P,
+                    }),
+                });
+            let L = e.method || 'GET',
+                q = (0, i.getTracer)(),
+                B = q.getActiveScopeSpan(),
+                $ = {
+                    params: A,
+                    prerenderManifest: C,
+                    renderOpts: {
+                        experimental: {
+                            authInterrupts: !!E.experimental.authInterrupts,
+                        },
+                        cacheComponents: !!E.cacheComponents,
+                        supportsDynamicResponse: H,
+                        incrementalCache: (0, a.getRequestMeta)(
+                            e,
+                            'incrementalCache'
+                        ),
+                        cacheLifeProfiles: E.cacheLife,
+                        waitUntil: n.waitUntil,
+                        onClose: (e) => {
+                            t.on('close', e);
+                        },
+                        onAfterTaskError: void 0,
+                        onInstrumentationRequestError: (t, r, n) =>
+                            F.onRequestError(e, t, n, x),
+                    },
+                    sharedContext: { buildId: N },
+                },
+                K = new u.NodeNextRequest(e),
+                G = new u.NodeNextResponse(t),
+                X = d.NextRequestAdapter.fromNodeNextRequest(
+                    K,
+                    (0, d.signalFromNodeResponse)(t)
+                );
+            try {
+                let s = async (e) =>
+                        F.handle(X, $).finally(() => {
+                            if (!e) return;
+                            e.setAttributes({
+                                'http.status_code': t.statusCode,
+                                'next.rsc': !1,
+                            });
+                            let r = q.getRootSpanAttributes();
+                            if (!r) return;
+                            if (
+                                r.get('next.span_type') !==
+                                c.BaseServerSpan.handleRequest
+                            )
+                                return void console.warn(
+                                    `Unexpected root span type '${r.get('next.span_type')}'. Please report this Next.js issue https://github.com/vercel/next.js`
+                                );
+                            let n = r.get('next.route');
+                            if (n) {
+                                let t = `${L} ${n}`;
+                                (e.setAttributes({
+                                    'next.route': n,
+                                    'http.route': n,
+                                    'next.span_name': t,
+                                }),
+                                    e.updateName(t));
+                            } else e.updateName(`${L} ${v}`);
+                        }),
+                    o = !!(0, a.getRequestMeta)(e, 'minimalMode'),
+                    l = async (a) => {
+                        var i, l;
+                        let u = async ({ previousCacheEntry: r }) => {
+                                try {
+                                    if (!o && I && T && !r)
+                                        return (
+                                            (t.statusCode = 404),
+                                            t.setHeader(
+                                                'x-nextjs-cache',
+                                                'REVALIDATED'
+                                            ),
+                                            t.end(
+                                                'This page could not be found'
+                                            ),
+                                            null
+                                        );
+                                    let i = await s(a);
+                                    e.fetchMetrics = $.renderOpts.fetchMetrics;
+                                    let l = $.renderOpts.pendingWaitUntil;
+                                    l &&
+                                        n.waitUntil &&
+                                        (n.waitUntil(l), (l = void 0));
+                                    let u = $.renderOpts.collectedTags;
+                                    if (!k)
+                                        return (
+                                            await (0, h.sendResponse)(
+                                                K,
+                                                G,
+                                                i,
+                                                $.renderOpts.pendingWaitUntil
+                                            ),
+                                            null
+                                        );
+                                    {
+                                        let e = await i.blob(),
+                                            t = (0,
+                                            m.toNodeOutgoingHttpHeaders)(
+                                                i.headers
+                                            );
+                                        (u && (t[w.NEXT_CACHE_TAGS_HEADER] = u),
+                                            !t['content-type'] &&
+                                                e.type &&
+                                                (t['content-type'] = e.type));
+                                        let r =
+                                                void 0 !==
+                                                    $.renderOpts
+                                                        .collectedRevalidate &&
+                                                !(
+                                                    $.renderOpts
+                                                        .collectedRevalidate >=
+                                                    w.INFINITE_CACHE
+                                                ) &&
+                                                $.renderOpts
+                                                    .collectedRevalidate,
+                                            n =
+                                                void 0 ===
+                                                    $.renderOpts
+                                                        .collectedExpire ||
+                                                $.renderOpts.collectedExpire >=
+                                                    w.INFINITE_CACHE
+                                                    ? void 0
+                                                    : $.renderOpts
+                                                          .collectedExpire;
+                                        return {
+                                            value: {
+                                                kind: y.CachedRouteKind
+                                                    .APP_ROUTE,
+                                                status: i.status,
+                                                body: Buffer.from(
+                                                    await e.arrayBuffer()
+                                                ),
+                                                headers: t,
+                                            },
+                                            cacheControl: {
+                                                revalidate: r,
+                                                expire: n,
+                                            },
+                                        };
+                                    }
+                                } catch (t) {
+                                    throw (
+                                        (null == r ? void 0 : r.isStale) &&
+                                            (await F.onRequestError(
+                                                e,
+                                                t,
+                                                {
+                                                    routerKind: 'App Router',
+                                                    routePath: v,
+                                                    routeType: 'route',
+                                                    revalidateReason: (0,
+                                                    p.getRevalidateReason)({
+                                                        isStaticGeneration: M,
+                                                        isOnDemandRevalidate: I,
+                                                    }),
+                                                },
+                                                x
+                                            )),
+                                        t
+                                    );
+                                }
+                            },
+                            d = await F.handleResponse({
+                                req: e,
+                                nextConfig: E,
+                                cacheKey: U,
+                                routeKind: r.RouteKind.APP_ROUTE,
+                                isFallback: !1,
+                                prerenderManifest: C,
+                                isRoutePPREnabled: !1,
+                                isOnDemandRevalidate: I,
+                                revalidateOnlyGenerated: T,
+                                responseGenerator: u,
+                                waitUntil: n.waitUntil,
+                                isMinimalMode: o,
+                            });
+                        if (!k) return null;
+                        if (
+                            (null == d || null == (i = d.value)
+                                ? void 0
+                                : i.kind) !== y.CachedRouteKind.APP_ROUTE
+                        )
+                            throw Object.defineProperty(
+                                Error(
+                                    `Invariant: app-route received invalid cache entry ${null == d || null == (l = d.value) ? void 0 : l.kind}`
+                                ),
+                                '__NEXT_ERROR_CODE',
+                                {
+                                    value: 'E701',
+                                    enumerable: !1,
+                                    configurable: !0,
+                                }
+                            );
+                        (o ||
+                            t.setHeader(
+                                'x-nextjs-cache',
+                                I
+                                    ? 'REVALIDATED'
+                                    : d.isMiss
+                                      ? 'MISS'
+                                      : d.isStale
+                                        ? 'STALE'
+                                        : 'HIT'
+                            ),
+                            _ &&
+                                t.setHeader(
+                                    'Cache-Control',
+                                    'private, no-cache, no-store, max-age=0, must-revalidate'
+                                ));
+                        let c = (0, m.fromNodeOutgoingHttpHeaders)(
+                            d.value.headers
+                        );
+                        return (
+                            (o && k) || c.delete(w.NEXT_CACHE_TAGS_HEADER),
+                            !d.cacheControl ||
+                                t.getHeader('Cache-Control') ||
+                                c.get('Cache-Control') ||
+                                c.set(
+                                    'Cache-Control',
+                                    (0, f.getCacheControlHeader)(d.cacheControl)
+                                ),
+                            await (0, h.sendResponse)(
+                                K,
+                                G,
+                                new Response(d.value.body, {
+                                    headers: c,
+                                    status: d.value.status || 200,
+                                })
+                            ),
+                            null
+                        );
+                    };
+                B
+                    ? await l(B)
+                    : await q.withPropagatedContext(e.headers, () =>
+                          q.trace(
+                              c.BaseServerSpan.handleRequest,
+                              {
+                                  spanName: `${L} ${v}`,
+                                  kind: i.SpanKind.SERVER,
+                                  attributes: {
+                                      'http.method': L,
+                                      'http.target': e.url,
+                                  },
+                              },
+                              l
+                          )
+                      );
+            } catch (t) {
+                if (
+                    (t instanceof g.NoFallbackError ||
+                        (await F.onRequestError(e, t, {
+                            routerKind: 'App Router',
+                            routePath: j,
+                            routeType: 'route',
+                            revalidateReason: (0, p.getRevalidateReason)({
+                                isStaticGeneration: M,
+                                isOnDemandRevalidate: I,
+                            }),
+                        })),
+                    k)
+                )
+                    throw t;
+                return (
+                    await (0, h.sendResponse)(
+                        K,
+                        G,
+                        new Response(null, { status: 500 })
+                    ),
+                    null
+                );
+            }
+        }
+        e.s(
+            [
+                'handler',
+                () => Z,
+                'patchFetch',
+                () => X,
+                'routeModule',
+                () => F,
+                'serverHooks',
+                () => G,
+                'workAsyncStorage',
+                () => $,
+                'workUnitAsyncStorage',
+                () => K,
+            ],
+            261424
+        );
+    },
+];
+
+//# sourceMappingURL=c2dd8_next_dist_esm_build_templates_app-route_30546244.js.map

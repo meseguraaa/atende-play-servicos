@@ -1,0 +1,4123 @@
+(globalThis.TURBOPACK || (globalThis.TURBOPACK = [])).push([
+    'object' == typeof document ? document.currentScript : void 0,
+    98556,
+    (e) => {
+        'use strict';
+        let t = (0, e.i(383206).default)('calendar', [
+            ['path', { d: 'M8 2v4', key: '1cmpym' }],
+            ['path', { d: 'M16 2v4', key: '4m81vk' }],
+            [
+                'rect',
+                {
+                    width: '18',
+                    height: '18',
+                    x: '3',
+                    y: '4',
+                    rx: '2',
+                    key: '1hopcy',
+                },
+            ],
+            ['path', { d: 'M3 10h18', key: '8toen8' }],
+        ]);
+        e.s(['default', () => t]);
+    },
+    926991,
+    859502,
+    495794,
+    432286,
+    (e) => {
+        'use strict';
+        var t = e.i(383206);
+        let r = (0, t.default)('chevron-left', [
+            ['path', { d: 'm15 18-6-6 6-6', key: '1wnfg3' }],
+        ]);
+        e.s(['default', () => r], 926991);
+        let a = (0, t.default)('chevron-right', [
+            ['path', { d: 'm9 18 6-6-6-6', key: 'mthhwq' }],
+        ]);
+        e.s(['default', () => a], 859502);
+        var n = e.i(487122),
+            o = e.i(516467);
+        function s(e, t, r) {
+            let a = (0, o.toDate)(e, r?.in);
+            if (isNaN(t)) return (0, n.constructFrom)(r?.in || e, NaN);
+            if (!t) return a;
+            let s = a.getDate(),
+                i = (0, n.constructFrom)(r?.in || e, a.getTime());
+            return (i.setMonth(a.getMonth() + t + 1, 0), s >= i.getDate())
+                ? i
+                : (a.setFullYear(i.getFullYear(), i.getMonth(), s), a);
+        }
+        function i(e, t) {
+            let r = (0, o.toDate)(e, t?.in);
+            return (r.setDate(1), r.setHours(0, 0, 0, 0), r);
+        }
+        (e.s(['addMonths', () => s], 495794),
+            e.s(['startOfMonth', () => i], 432286));
+    },
+    337822,
+    (e) => {
+        'use strict';
+        var t = e.i(565750),
+            r = e.i(990341),
+            a = e.i(291967),
+            n = e.i(672687),
+            o = e.i(784711),
+            s = e.i(846357),
+            i = e.i(774621),
+            l = e.i(60126),
+            d = e.i(910529),
+            c = e.i(75355),
+            u = e.i(546354),
+            p = e.i(861181),
+            m = e.i(403078),
+            f = e.i(655875),
+            x = e.i(695145),
+            h = e.i(73772),
+            g = e.i(595357),
+            v = 'Popover',
+            [b, y] = (0, o.createContextScope)(v, [c.createPopperScope]),
+            j = (0, c.createPopperScope)(),
+            [N, w] = b(v),
+            C = (e) => {
+                let {
+                        __scopePopover: a,
+                        children: n,
+                        open: o,
+                        defaultOpen: s,
+                        onOpenChange: i,
+                        modal: l = !1,
+                    } = e,
+                    u = j(a),
+                    p = r.useRef(null),
+                    [m, f] = r.useState(!1),
+                    [h, g] = (0, x.useControllableState)({
+                        prop: o,
+                        defaultProp: s ?? !1,
+                        onChange: i,
+                        caller: v,
+                    });
+                return (0, t.jsx)(c.Root, {
+                    ...u,
+                    children: (0, t.jsx)(N, {
+                        scope: a,
+                        contentId: (0, d.useId)(),
+                        triggerRef: p,
+                        open: h,
+                        onOpenChange: g,
+                        onOpenToggle: r.useCallback(() => g((e) => !e), [g]),
+                        hasCustomAnchor: m,
+                        onCustomAnchorAdd: r.useCallback(() => f(!0), []),
+                        onCustomAnchorRemove: r.useCallback(() => f(!1), []),
+                        modal: l,
+                        children: n,
+                    }),
+                });
+            };
+        C.displayName = v;
+        var D = 'PopoverAnchor';
+        r.forwardRef((e, a) => {
+            let { __scopePopover: n, ...o } = e,
+                s = w(D, n),
+                i = j(n),
+                { onCustomAnchorAdd: l, onCustomAnchorRemove: d } = s;
+            return (
+                r.useEffect(() => (l(), () => d()), [l, d]),
+                (0, t.jsx)(c.Anchor, { ...i, ...o, ref: a })
+            );
+        }).displayName = D;
+        var S = 'PopoverTrigger',
+            k = r.forwardRef((e, r) => {
+                let { __scopePopover: o, ...s } = e,
+                    i = w(S, o),
+                    l = j(o),
+                    d = (0, n.useComposedRefs)(r, i.triggerRef),
+                    u = (0, t.jsx)(m.Primitive.button, {
+                        type: 'button',
+                        'aria-haspopup': 'dialog',
+                        'aria-expanded': i.open,
+                        'aria-controls': i.contentId,
+                        'data-state': L(i.open),
+                        ...s,
+                        ref: d,
+                        onClick: (0, a.composeEventHandlers)(
+                            e.onClick,
+                            i.onOpenToggle
+                        ),
+                    });
+                return i.hasCustomAnchor
+                    ? u
+                    : (0, t.jsx)(c.Anchor, { asChild: !0, ...l, children: u });
+            });
+        k.displayName = S;
+        var P = 'PopoverPortal',
+            [R, A] = b(P, { forceMount: void 0 }),
+            T = (e) => {
+                let {
+                        __scopePopover: r,
+                        forceMount: a,
+                        children: n,
+                        container: o,
+                    } = e,
+                    s = w(P, r);
+                return (0, t.jsx)(R, {
+                    scope: r,
+                    forceMount: a,
+                    children: (0, t.jsx)(p.Presence, {
+                        present: a || s.open,
+                        children: (0, t.jsx)(u.Portal, {
+                            asChild: !0,
+                            container: o,
+                            children: n,
+                        }),
+                    }),
+                });
+            };
+        T.displayName = P;
+        var I = 'PopoverContent',
+            E = r.forwardRef((e, r) => {
+                let a = A(I, e.__scopePopover),
+                    { forceMount: n = a.forceMount, ...o } = e,
+                    s = w(I, e.__scopePopover);
+                return (0, t.jsx)(p.Presence, {
+                    present: n || s.open,
+                    children: s.modal
+                        ? (0, t.jsx)(M, { ...o, ref: r })
+                        : (0, t.jsx)(F, { ...o, ref: r }),
+                });
+            });
+        E.displayName = I;
+        var O = (0, f.createSlot)('PopoverContent.RemoveScroll'),
+            M = r.forwardRef((e, o) => {
+                let s = w(I, e.__scopePopover),
+                    i = r.useRef(null),
+                    l = (0, n.useComposedRefs)(o, i),
+                    d = r.useRef(!1);
+                return (
+                    r.useEffect(() => {
+                        let e = i.current;
+                        if (e) return (0, h.hideOthers)(e);
+                    }, []),
+                    (0, t.jsx)(g.RemoveScroll, {
+                        as: O,
+                        allowPinchZoom: !0,
+                        children: (0, t.jsx)(z, {
+                            ...e,
+                            ref: l,
+                            trapFocus: s.open,
+                            disableOutsidePointerEvents: !0,
+                            onCloseAutoFocus: (0, a.composeEventHandlers)(
+                                e.onCloseAutoFocus,
+                                (e) => {
+                                    (e.preventDefault(),
+                                        d.current ||
+                                            s.triggerRef.current?.focus());
+                                }
+                            ),
+                            onPointerDownOutside: (0, a.composeEventHandlers)(
+                                e.onPointerDownOutside,
+                                (e) => {
+                                    let t = e.detail.originalEvent,
+                                        r = 0 === t.button && !0 === t.ctrlKey;
+                                    d.current = 2 === t.button || r;
+                                },
+                                { checkForDefaultPrevented: !1 }
+                            ),
+                            onFocusOutside: (0, a.composeEventHandlers)(
+                                e.onFocusOutside,
+                                (e) => e.preventDefault(),
+                                { checkForDefaultPrevented: !1 }
+                            ),
+                        }),
+                    })
+                );
+            }),
+            F = r.forwardRef((e, a) => {
+                let n = w(I, e.__scopePopover),
+                    o = r.useRef(!1),
+                    s = r.useRef(!1);
+                return (0, t.jsx)(z, {
+                    ...e,
+                    ref: a,
+                    trapFocus: !1,
+                    disableOutsidePointerEvents: !1,
+                    onCloseAutoFocus: (t) => {
+                        (e.onCloseAutoFocus?.(t),
+                            t.defaultPrevented ||
+                                (o.current || n.triggerRef.current?.focus(),
+                                t.preventDefault()),
+                            (o.current = !1),
+                            (s.current = !1));
+                    },
+                    onInteractOutside: (t) => {
+                        (e.onInteractOutside?.(t),
+                            t.defaultPrevented ||
+                                ((o.current = !0),
+                                'pointerdown' === t.detail.originalEvent.type &&
+                                    (s.current = !0)));
+                        let r = t.target;
+                        (n.triggerRef.current?.contains(r) &&
+                            t.preventDefault(),
+                            'focusin' === t.detail.originalEvent.type &&
+                                s.current &&
+                                t.preventDefault());
+                    },
+                });
+            }),
+            z = r.forwardRef((e, r) => {
+                let {
+                        __scopePopover: a,
+                        trapFocus: n,
+                        onOpenAutoFocus: o,
+                        onCloseAutoFocus: d,
+                        disableOutsidePointerEvents: u,
+                        onEscapeKeyDown: p,
+                        onPointerDownOutside: m,
+                        onFocusOutside: f,
+                        onInteractOutside: x,
+                        ...h
+                    } = e,
+                    g = w(I, a),
+                    v = j(a);
+                return (
+                    (0, i.useFocusGuards)(),
+                    (0, t.jsx)(l.FocusScope, {
+                        asChild: !0,
+                        loop: !0,
+                        trapped: n,
+                        onMountAutoFocus: o,
+                        onUnmountAutoFocus: d,
+                        children: (0, t.jsx)(s.DismissableLayer, {
+                            asChild: !0,
+                            disableOutsidePointerEvents: u,
+                            onInteractOutside: x,
+                            onEscapeKeyDown: p,
+                            onPointerDownOutside: m,
+                            onFocusOutside: f,
+                            onDismiss: () => g.onOpenChange(!1),
+                            children: (0, t.jsx)(c.Content, {
+                                'data-state': L(g.open),
+                                role: 'dialog',
+                                id: g.contentId,
+                                ...v,
+                                ...h,
+                                ref: r,
+                                style: {
+                                    ...h.style,
+                                    '--radix-popover-content-transform-origin':
+                                        'var(--radix-popper-transform-origin)',
+                                    '--radix-popover-content-available-width':
+                                        'var(--radix-popper-available-width)',
+                                    '--radix-popover-content-available-height':
+                                        'var(--radix-popper-available-height)',
+                                    '--radix-popover-trigger-width':
+                                        'var(--radix-popper-anchor-width)',
+                                    '--radix-popover-trigger-height':
+                                        'var(--radix-popper-anchor-height)',
+                                },
+                            }),
+                        }),
+                    })
+                );
+            }),
+            H = 'PopoverClose';
+        function L(e) {
+            return e ? 'open' : 'closed';
+        }
+        ((r.forwardRef((e, r) => {
+            let { __scopePopover: n, ...o } = e,
+                s = w(H, n);
+            return (0, t.jsx)(m.Primitive.button, {
+                type: 'button',
+                ...o,
+                ref: r,
+                onClick: (0, a.composeEventHandlers)(e.onClick, () =>
+                    s.onOpenChange(!1)
+                ),
+            });
+        }).displayName = H),
+            (r.forwardRef((e, r) => {
+                let { __scopePopover: a, ...n } = e,
+                    o = j(a);
+                return (0, t.jsx)(c.Arrow, { ...o, ...n, ref: r });
+            }).displayName = 'PopoverArrow'));
+        var _ = e.i(975157);
+        function B({ ...e }) {
+            return (0, t.jsx)(C, { 'data-slot': 'popover', ...e });
+        }
+        function $({ ...e }) {
+            return (0, t.jsx)(k, { 'data-slot': 'popover-trigger', ...e });
+        }
+        function V({
+            className: e,
+            align: r = 'center',
+            sideOffset: a = 4,
+            ...n
+        }) {
+            return (0, t.jsx)(T, {
+                children: (0, t.jsx)(E, {
+                    'data-slot': 'popover-content',
+                    align: r,
+                    sideOffset: a,
+                    className: (0, _.cn)(
+                        'bg-popover text-popover-foreground border border-border-primary data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-md p-4 shadow-md outline-hidden',
+                        e
+                    ),
+                    ...n,
+                }),
+            });
+        }
+        e.s(
+            [
+                'Popover',
+                () => B,
+                'PopoverContent',
+                () => V,
+                'PopoverTrigger',
+                () => $,
+            ],
+            337822
+        );
+    },
+    276389,
+    (e) => {
+        'use strict';
+        var t = e.i(98556);
+        e.s(['Calendar', () => t.default]);
+    },
+    512710,
+    (e) => {
+        'use strict';
+        var t = e.i(158166);
+        e.s(['ChevronDown', () => t.default]);
+    },
+    51866,
+    87912,
+    83972,
+    746798,
+    (e) => {
+        'use strict';
+        var t = e.i(926991);
+        e.s(['ChevronLeft', () => t.default], 51866);
+        var r = e.i(859502);
+        e.s(['ChevronRight', () => r.default], 87912);
+        var a = e.i(990341),
+            n = e.i(291967),
+            o = e.i(672687),
+            s = e.i(784711),
+            i = e.i(846357),
+            l = e.i(910529),
+            d = e.i(75355),
+            c = e.i(546354),
+            u = e.i(861181),
+            p = e.i(403078),
+            m = e.i(655875),
+            f = e.i(695145),
+            x = e.i(880282),
+            h = e.i(565750),
+            [g, v] = (0, s.createContextScope)('Tooltip', [
+                d.createPopperScope,
+            ]),
+            b = (0, d.createPopperScope)(),
+            y = 'TooltipProvider',
+            j = 'tooltip.open',
+            [N, w] = g(y),
+            C = (e) => {
+                let {
+                        __scopeTooltip: t,
+                        delayDuration: r = 700,
+                        skipDelayDuration: n = 300,
+                        disableHoverableContent: o = !1,
+                        children: s,
+                    } = e,
+                    i = a.useRef(!0),
+                    l = a.useRef(!1),
+                    d = a.useRef(0);
+                return (
+                    a.useEffect(() => {
+                        let e = d.current;
+                        return () => window.clearTimeout(e);
+                    }, []),
+                    (0, h.jsx)(N, {
+                        scope: t,
+                        isOpenDelayedRef: i,
+                        delayDuration: r,
+                        onOpen: a.useCallback(() => {
+                            (window.clearTimeout(d.current), (i.current = !1));
+                        }, []),
+                        onClose: a.useCallback(() => {
+                            (window.clearTimeout(d.current),
+                                (d.current = window.setTimeout(
+                                    () => (i.current = !0),
+                                    n
+                                )));
+                        }, [n]),
+                        isPointerInTransitRef: l,
+                        onPointerInTransitChange: a.useCallback((e) => {
+                            l.current = e;
+                        }, []),
+                        disableHoverableContent: o,
+                        children: s,
+                    })
+                );
+            };
+        C.displayName = y;
+        var D = 'Tooltip',
+            [S, k] = g(D),
+            P = (e) => {
+                let {
+                        __scopeTooltip: t,
+                        children: r,
+                        open: n,
+                        defaultOpen: o,
+                        onOpenChange: s,
+                        disableHoverableContent: i,
+                        delayDuration: c,
+                    } = e,
+                    u = w(D, e.__scopeTooltip),
+                    p = b(t),
+                    [m, x] = a.useState(null),
+                    g = (0, l.useId)(),
+                    v = a.useRef(0),
+                    y = i ?? u.disableHoverableContent,
+                    N = c ?? u.delayDuration,
+                    C = a.useRef(!1),
+                    [k, P] = (0, f.useControllableState)({
+                        prop: n,
+                        defaultProp: o ?? !1,
+                        onChange: (e) => {
+                            (e
+                                ? (u.onOpen(),
+                                  document.dispatchEvent(new CustomEvent(j)))
+                                : u.onClose(),
+                                s?.(e));
+                        },
+                        caller: D,
+                    }),
+                    R = a.useMemo(
+                        () =>
+                            k
+                                ? C.current
+                                    ? 'delayed-open'
+                                    : 'instant-open'
+                                : 'closed',
+                        [k]
+                    ),
+                    A = a.useCallback(() => {
+                        (window.clearTimeout(v.current),
+                            (v.current = 0),
+                            (C.current = !1),
+                            P(!0));
+                    }, [P]),
+                    T = a.useCallback(() => {
+                        (window.clearTimeout(v.current),
+                            (v.current = 0),
+                            P(!1));
+                    }, [P]),
+                    I = a.useCallback(() => {
+                        (window.clearTimeout(v.current),
+                            (v.current = window.setTimeout(() => {
+                                ((C.current = !0), P(!0), (v.current = 0));
+                            }, N)));
+                    }, [N, P]);
+                return (
+                    a.useEffect(
+                        () => () => {
+                            v.current &&
+                                (window.clearTimeout(v.current),
+                                (v.current = 0));
+                        },
+                        []
+                    ),
+                    (0, h.jsx)(d.Root, {
+                        ...p,
+                        children: (0, h.jsx)(S, {
+                            scope: t,
+                            contentId: g,
+                            open: k,
+                            stateAttribute: R,
+                            trigger: m,
+                            onTriggerChange: x,
+                            onTriggerEnter: a.useCallback(() => {
+                                u.isOpenDelayedRef.current ? I() : A();
+                            }, [u.isOpenDelayedRef, I, A]),
+                            onTriggerLeave: a.useCallback(() => {
+                                y
+                                    ? T()
+                                    : (window.clearTimeout(v.current),
+                                      (v.current = 0));
+                            }, [T, y]),
+                            onOpen: A,
+                            onClose: T,
+                            disableHoverableContent: y,
+                            children: r,
+                        }),
+                    })
+                );
+            };
+        P.displayName = D;
+        var R = 'TooltipTrigger',
+            A = a.forwardRef((e, t) => {
+                let { __scopeTooltip: r, ...s } = e,
+                    i = k(R, r),
+                    l = w(R, r),
+                    c = b(r),
+                    u = a.useRef(null),
+                    m = (0, o.useComposedRefs)(t, u, i.onTriggerChange),
+                    f = a.useRef(!1),
+                    x = a.useRef(!1),
+                    g = a.useCallback(() => (f.current = !1), []);
+                return (
+                    a.useEffect(
+                        () => () =>
+                            document.removeEventListener('pointerup', g),
+                        [g]
+                    ),
+                    (0, h.jsx)(d.Anchor, {
+                        asChild: !0,
+                        ...c,
+                        children: (0, h.jsx)(p.Primitive.button, {
+                            'aria-describedby': i.open ? i.contentId : void 0,
+                            'data-state': i.stateAttribute,
+                            ...s,
+                            ref: m,
+                            onPointerMove: (0, n.composeEventHandlers)(
+                                e.onPointerMove,
+                                (e) => {
+                                    'touch' !== e.pointerType &&
+                                        (x.current ||
+                                            l.isPointerInTransitRef.current ||
+                                            (i.onTriggerEnter(),
+                                            (x.current = !0)));
+                                }
+                            ),
+                            onPointerLeave: (0, n.composeEventHandlers)(
+                                e.onPointerLeave,
+                                () => {
+                                    (i.onTriggerLeave(), (x.current = !1));
+                                }
+                            ),
+                            onPointerDown: (0, n.composeEventHandlers)(
+                                e.onPointerDown,
+                                () => {
+                                    (i.open && i.onClose(),
+                                        (f.current = !0),
+                                        document.addEventListener(
+                                            'pointerup',
+                                            g,
+                                            { once: !0 }
+                                        ));
+                                }
+                            ),
+                            onFocus: (0, n.composeEventHandlers)(
+                                e.onFocus,
+                                () => {
+                                    f.current || i.onOpen();
+                                }
+                            ),
+                            onBlur: (0, n.composeEventHandlers)(
+                                e.onBlur,
+                                i.onClose
+                            ),
+                            onClick: (0, n.composeEventHandlers)(
+                                e.onClick,
+                                i.onClose
+                            ),
+                        }),
+                    })
+                );
+            });
+        A.displayName = R;
+        var T = 'TooltipPortal',
+            [I, E] = g(T, { forceMount: void 0 }),
+            O = (e) => {
+                let {
+                        __scopeTooltip: t,
+                        forceMount: r,
+                        children: a,
+                        container: n,
+                    } = e,
+                    o = k(T, t);
+                return (0, h.jsx)(I, {
+                    scope: t,
+                    forceMount: r,
+                    children: (0, h.jsx)(u.Presence, {
+                        present: r || o.open,
+                        children: (0, h.jsx)(c.Portal, {
+                            asChild: !0,
+                            container: n,
+                            children: a,
+                        }),
+                    }),
+                });
+            };
+        O.displayName = T;
+        var M = 'TooltipContent',
+            F = a.forwardRef((e, t) => {
+                let r = E(M, e.__scopeTooltip),
+                    { forceMount: a = r.forceMount, side: n = 'top', ...o } = e,
+                    s = k(M, e.__scopeTooltip);
+                return (0, h.jsx)(u.Presence, {
+                    present: a || s.open,
+                    children: s.disableHoverableContent
+                        ? (0, h.jsx)(B, { side: n, ...o, ref: t })
+                        : (0, h.jsx)(z, { side: n, ...o, ref: t }),
+                });
+            }),
+            z = a.forwardRef((e, t) => {
+                let r = k(M, e.__scopeTooltip),
+                    n = w(M, e.__scopeTooltip),
+                    s = a.useRef(null),
+                    i = (0, o.useComposedRefs)(t, s),
+                    [l, d] = a.useState(null),
+                    { trigger: c, onClose: u } = r,
+                    p = s.current,
+                    { onPointerInTransitChange: m } = n,
+                    f = a.useCallback(() => {
+                        (d(null), m(!1));
+                    }, [m]),
+                    x = a.useCallback(
+                        (e, t) => {
+                            let r,
+                                a = e.currentTarget,
+                                n = { x: e.clientX, y: e.clientY },
+                                o = (function (e, t) {
+                                    let r = Math.abs(t.top - e.y),
+                                        a = Math.abs(t.bottom - e.y),
+                                        n = Math.abs(t.right - e.x),
+                                        o = Math.abs(t.left - e.x);
+                                    switch (Math.min(r, a, n, o)) {
+                                        case o:
+                                            return 'left';
+                                        case n:
+                                            return 'right';
+                                        case r:
+                                            return 'top';
+                                        case a:
+                                            return 'bottom';
+                                        default:
+                                            throw Error('unreachable');
+                                    }
+                                })(n, a.getBoundingClientRect());
+                            (d(
+                                ((r = [
+                                    ...(function (e, t, r = 5) {
+                                        let a = [];
+                                        switch (t) {
+                                            case 'top':
+                                                a.push(
+                                                    { x: e.x - r, y: e.y + r },
+                                                    { x: e.x + r, y: e.y + r }
+                                                );
+                                                break;
+                                            case 'bottom':
+                                                a.push(
+                                                    { x: e.x - r, y: e.y - r },
+                                                    { x: e.x + r, y: e.y - r }
+                                                );
+                                                break;
+                                            case 'left':
+                                                a.push(
+                                                    { x: e.x + r, y: e.y - r },
+                                                    { x: e.x + r, y: e.y + r }
+                                                );
+                                                break;
+                                            case 'right':
+                                                a.push(
+                                                    { x: e.x - r, y: e.y - r },
+                                                    { x: e.x - r, y: e.y + r }
+                                                );
+                                        }
+                                        return a;
+                                    })(n, o),
+                                    ...(function (e) {
+                                        let {
+                                            top: t,
+                                            right: r,
+                                            bottom: a,
+                                            left: n,
+                                        } = e;
+                                        return [
+                                            { x: n, y: t },
+                                            { x: r, y: t },
+                                            { x: r, y: a },
+                                            { x: n, y: a },
+                                        ];
+                                    })(t.getBoundingClientRect()),
+                                ].slice()).sort((e, t) =>
+                                    e.x < t.x
+                                        ? -1
+                                        : e.x > t.x
+                                          ? 1
+                                          : e.y < t.y
+                                            ? -1
+                                            : 1 * !!(e.y > t.y)
+                                ),
+                                (function (e) {
+                                    if (e.length <= 1) return e.slice();
+                                    let t = [];
+                                    for (let r = 0; r < e.length; r++) {
+                                        let a = e[r];
+                                        for (; t.length >= 2; ) {
+                                            let e = t[t.length - 1],
+                                                r = t[t.length - 2];
+                                            if (
+                                                (e.x - r.x) * (a.y - r.y) >=
+                                                (e.y - r.y) * (a.x - r.x)
+                                            )
+                                                t.pop();
+                                            else break;
+                                        }
+                                        t.push(a);
+                                    }
+                                    t.pop();
+                                    let r = [];
+                                    for (let t = e.length - 1; t >= 0; t--) {
+                                        let a = e[t];
+                                        for (; r.length >= 2; ) {
+                                            let e = r[r.length - 1],
+                                                t = r[r.length - 2];
+                                            if (
+                                                (e.x - t.x) * (a.y - t.y) >=
+                                                (e.y - t.y) * (a.x - t.x)
+                                            )
+                                                r.pop();
+                                            else break;
+                                        }
+                                        r.push(a);
+                                    }
+                                    return (r.pop(),
+                                    1 === t.length &&
+                                        1 === r.length &&
+                                        t[0].x === r[0].x &&
+                                        t[0].y === r[0].y)
+                                        ? t
+                                        : t.concat(r);
+                                })(r))
+                            ),
+                                m(!0));
+                        },
+                        [m]
+                    );
+                return (
+                    a.useEffect(() => () => f(), [f]),
+                    a.useEffect(() => {
+                        if (c && p) {
+                            let e = (e) => x(e, p),
+                                t = (e) => x(e, c);
+                            return (
+                                c.addEventListener('pointerleave', e),
+                                p.addEventListener('pointerleave', t),
+                                () => {
+                                    (c.removeEventListener('pointerleave', e),
+                                        p.removeEventListener(
+                                            'pointerleave',
+                                            t
+                                        ));
+                                }
+                            );
+                        }
+                    }, [c, p, x, f]),
+                    a.useEffect(() => {
+                        if (l) {
+                            let e = (e) => {
+                                let t = e.target,
+                                    r = { x: e.clientX, y: e.clientY },
+                                    a = c?.contains(t) || p?.contains(t),
+                                    n = !(function (e, t) {
+                                        let { x: r, y: a } = e,
+                                            n = !1;
+                                        for (
+                                            let e = 0, o = t.length - 1;
+                                            e < t.length;
+                                            o = e++
+                                        ) {
+                                            let s = t[e],
+                                                i = t[o],
+                                                l = s.x,
+                                                d = s.y,
+                                                c = i.x,
+                                                u = i.y;
+                                            d > a != u > a &&
+                                                r <
+                                                    ((c - l) * (a - d)) /
+                                                        (u - d) +
+                                                        l &&
+                                                (n = !n);
+                                        }
+                                        return n;
+                                    })(r, l);
+                                a ? f() : n && (f(), u());
+                            };
+                            return (
+                                document.addEventListener('pointermove', e),
+                                () =>
+                                    document.removeEventListener(
+                                        'pointermove',
+                                        e
+                                    )
+                            );
+                        }
+                    }, [c, p, l, u, f]),
+                    (0, h.jsx)(B, { ...e, ref: i })
+                );
+            }),
+            [H, L] = g(D, { isInside: !1 }),
+            _ = (0, m.createSlottable)('TooltipContent'),
+            B = a.forwardRef((e, t) => {
+                let {
+                        __scopeTooltip: r,
+                        children: n,
+                        'aria-label': o,
+                        onEscapeKeyDown: s,
+                        onPointerDownOutside: l,
+                        ...c
+                    } = e,
+                    u = k(M, r),
+                    p = b(r),
+                    { onClose: m } = u;
+                return (
+                    a.useEffect(
+                        () => (
+                            document.addEventListener(j, m),
+                            () => document.removeEventListener(j, m)
+                        ),
+                        [m]
+                    ),
+                    a.useEffect(() => {
+                        if (u.trigger) {
+                            let e = (e) => {
+                                let t = e.target;
+                                t?.contains(u.trigger) && m();
+                            };
+                            return (
+                                window.addEventListener('scroll', e, {
+                                    capture: !0,
+                                }),
+                                () =>
+                                    window.removeEventListener('scroll', e, {
+                                        capture: !0,
+                                    })
+                            );
+                        }
+                    }, [u.trigger, m]),
+                    (0, h.jsx)(i.DismissableLayer, {
+                        asChild: !0,
+                        disableOutsidePointerEvents: !1,
+                        onEscapeKeyDown: s,
+                        onPointerDownOutside: l,
+                        onFocusOutside: (e) => e.preventDefault(),
+                        onDismiss: m,
+                        children: (0, h.jsxs)(d.Content, {
+                            'data-state': u.stateAttribute,
+                            ...p,
+                            ...c,
+                            ref: t,
+                            style: {
+                                ...c.style,
+                                '--radix-tooltip-content-transform-origin':
+                                    'var(--radix-popper-transform-origin)',
+                                '--radix-tooltip-content-available-width':
+                                    'var(--radix-popper-available-width)',
+                                '--radix-tooltip-content-available-height':
+                                    'var(--radix-popper-available-height)',
+                                '--radix-tooltip-trigger-width':
+                                    'var(--radix-popper-anchor-width)',
+                                '--radix-tooltip-trigger-height':
+                                    'var(--radix-popper-anchor-height)',
+                            },
+                            children: [
+                                (0, h.jsx)(_, { children: n }),
+                                (0, h.jsx)(H, {
+                                    scope: r,
+                                    isInside: !0,
+                                    children: (0, h.jsx)(x.Root, {
+                                        id: u.contentId,
+                                        role: 'tooltip',
+                                        children: o || n,
+                                    }),
+                                }),
+                            ],
+                        }),
+                    })
+                );
+            });
+        F.displayName = M;
+        var $ = 'TooltipArrow',
+            V = a.forwardRef((e, t) => {
+                let { __scopeTooltip: r, ...a } = e,
+                    n = b(r);
+                return L($, r).isInside
+                    ? null
+                    : (0, h.jsx)(d.Arrow, { ...n, ...a, ref: t });
+            });
+        ((V.displayName = $),
+            e.s(
+                [
+                    'Arrow',
+                    () => V,
+                    'Content',
+                    () => F,
+                    'Portal',
+                    () => O,
+                    'Provider',
+                    () => C,
+                    'Root',
+                    () => P,
+                    'TooltipProvider',
+                    () => C,
+                    'Trigger',
+                    () => A,
+                ],
+                83972
+            ));
+        var U = e.i(975157);
+        function Y({ delayDuration: e = 0, ...t }) {
+            return (0, h.jsx)(C, {
+                'data-slot': 'tooltip-provider',
+                delayDuration: e,
+                ...t,
+            });
+        }
+        function G({ ...e }) {
+            return (0, h.jsx)(Y, {
+                children: (0, h.jsx)(P, { 'data-slot': 'tooltip', ...e }),
+            });
+        }
+        function W({ ...e }) {
+            return (0, h.jsx)(A, { 'data-slot': 'tooltip-trigger', ...e });
+        }
+        function q({ className: e, sideOffset: t = 0, children: r, ...a }) {
+            return (0, h.jsx)(O, {
+                children: (0, h.jsxs)(F, {
+                    'data-slot': 'tooltip-content',
+                    sideOffset: t,
+                    className: (0, U.cn)(
+                        'bg-foreground-primary text-background animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-fit origin-(--radix-tooltip-content-transform-origin) rounded-md px-3 py-1.5 text-xs text-balance',
+                        e
+                    ),
+                    ...a,
+                    children: [r, (0, h.jsx)(V, {})],
+                }),
+            });
+        }
+        e.s(
+            [
+                'Tooltip',
+                () => G,
+                'TooltipContent',
+                () => q,
+                'TooltipTrigger',
+                () => W,
+            ],
+            746798
+        );
+    },
+    825296,
+    (e) => {
+        'use strict';
+        var t = e.i(565750),
+            r = e.i(276389),
+            a = e.i(512710),
+            n = e.i(51866),
+            o = e.i(87912),
+            s = e.i(245586),
+            i = e.i(990341),
+            l = e.i(598279),
+            d = e.i(495794),
+            c = e.i(230902),
+            u = e.i(661977),
+            p = e.i(67356),
+            m = e.i(519455),
+            f = e.i(227766),
+            x = e.i(337822),
+            h = e.i(83972),
+            g = e.i(746798);
+        let v = ({ tooltipText: e, onClick: r, children: a }) =>
+            (0, t.jsx)(h.TooltipProvider, {
+                children: (0, t.jsxs)(g.Tooltip, {
+                    children: [
+                        (0, t.jsx)(g.TooltipTrigger, {
+                            asChild: !0,
+                            children: (0, t.jsx)(m.Button, {
+                                variant: 'outline',
+                                size: 'icon',
+                                onClick: r,
+                                className:
+                                    'h-12 w-9 bg-transparent border-border-primary text-content-primary hover:bg-background-tertiary hover:border-border-secondary hover:text-content-primary focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand focus:border-border-brand focus-visible:border-border-brand',
+                                children: a,
+                            }),
+                        }),
+                        (0, t.jsx)(g.TooltipContent, {
+                            className: 'bg-background-tertiary',
+                            children: (0, t.jsx)('p', { children: e }),
+                        }),
+                    ],
+                }),
+            });
+        e.s(
+            [
+                'DatePicker',
+                0,
+                ({ mode: e = 'date', hideNavigation: h }) => {
+                    let g = (0, s.useRouter)(),
+                        b = (0, s.usePathname)(),
+                        y = (0, s.useSearchParams)(),
+                        j = 'month' === e ? 'month' : 'date',
+                        N = y.get(j),
+                        w = (0, i.useCallback)(() => {
+                            if ('month' === e) {
+                                if (!N) return new Date();
+                                let [e, t] = N.split('-').map(Number),
+                                    r = new Date(e, (t ?? 1) - 1, 1);
+                                return (0, u.isValid)(r) ? r : new Date();
+                            }
+                            if (!N) return new Date();
+                            let [t, r, a] = N.split('-').map(Number),
+                                n = new Date(t, (r ?? 1) - 1, a ?? 1);
+                            return (0, u.isValid)(n) ? n : new Date();
+                        }, [e, N]),
+                        [C, D] = (0, i.useState)(() => w()),
+                        [S, k] = (0, i.useState)(!1),
+                        P = (0, i.useMemo)(
+                            () =>
+                                C
+                                    ? 'month' === e
+                                        ? (0, c.format)(C, 'MM/yyyy', {
+                                              locale: p.ptBR,
+                                          })
+                                        : (0, c.format)(C, 'dd/MM/yyyy', {
+                                              locale: p.ptBR,
+                                          })
+                                    : 'Selecione uma data',
+                            [C, e]
+                        ),
+                        R = (t) => {
+                            let r = new URLSearchParams(y.toString());
+                            if (
+                                ('month' === e
+                                    ? r.delete('date')
+                                    : r.delete('month'),
+                                'month' === e)
+                            ) {
+                                var a;
+                                let e = new Date(
+                                    t.getFullYear(),
+                                    t.getMonth(),
+                                    1
+                                );
+                                r.set(
+                                    'month',
+                                    ((a = e),
+                                    `${a.getFullYear()}-${String(a.getMonth() + 1).padStart(2, '0')}`)
+                                );
+                            } else
+                                r.set('date', (0, c.format)(t, 'yyyy-MM-dd'));
+                            let n = r.toString();
+                            g.push(n ? `${b}?${n}` : b);
+                        },
+                        A = (t) => {
+                            let r = C ?? new Date(),
+                                a =
+                                    'month' === e
+                                        ? (0, d.addMonths)(r, t)
+                                        : (0, l.addDays)(r, t),
+                                n =
+                                    'month' === e
+                                        ? new Date(
+                                              a.getFullYear(),
+                                              a.getMonth(),
+                                              1
+                                          )
+                                        : a;
+                            (D(n), R(n));
+                        };
+                    (0, i.useEffect)(() => {
+                        D(w());
+                    }, [w]);
+                    let T = 'month' === e ? 'Mês anterior' : 'Dia anterior',
+                        I = 'month' === e ? 'Próximo mês' : 'Próximo dia';
+                    return (0, t.jsxs)('div', {
+                        className: 'flex items-center gap-2',
+                        children: [
+                            !h &&
+                                (0, t.jsx)(v, {
+                                    tooltipText: T,
+                                    onClick: () => A(-1),
+                                    children: (0, t.jsx)(n.ChevronLeft, {
+                                        className: 'h-4 w-4',
+                                    }),
+                                }),
+                            (0, t.jsxs)(x.Popover, {
+                                open: S,
+                                onOpenChange: k,
+                                children: [
+                                    (0, t.jsx)(x.PopoverTrigger, {
+                                        asChild: !0,
+                                        children: (0, t.jsxs)(m.Button, {
+                                            variant: 'outline',
+                                            className:
+                                                'min-w-[180px] justify-between text-left font-normal bg-transparent border-border-primary text-content-primary hover:bg-background-tertiary hover:border-border-secondary hover:text-content-primary focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand focus:border-border-brand focus-visible:border-border-brand',
+                                            children: [
+                                                (0, t.jsxs)('div', {
+                                                    className:
+                                                        'flex items-center gap-2',
+                                                    children: [
+                                                        (0, t.jsx)(r.Calendar, {
+                                                            className:
+                                                                'h-4 w-4 text-content-brand',
+                                                        }),
+                                                        (0, t.jsx)('span', {
+                                                            children: P,
+                                                        }),
+                                                    ],
+                                                }),
+                                                (0, t.jsx)(a.ChevronDown, {
+                                                    className:
+                                                        'h-4 w-4 opacity-50',
+                                                }),
+                                            ],
+                                        }),
+                                    }),
+                                    (0, t.jsx)(x.PopoverContent, {
+                                        className: 'w-auto p-0',
+                                        children: (0, t.jsx)(f.Calendar, {
+                                            mode: 'single',
+                                            selected: C,
+                                            onSelect: (t) => {
+                                                if (t) {
+                                                    let r =
+                                                        'month' === e
+                                                            ? new Date(
+                                                                  t.getFullYear(),
+                                                                  t.getMonth(),
+                                                                  1
+                                                              )
+                                                            : t;
+                                                    (D(r), R(r));
+                                                }
+                                                k(!1);
+                                            },
+                                            autoFocus: !0,
+                                            locale: p.ptBR,
+                                        }),
+                                    }),
+                                ],
+                            }),
+                            !h &&
+                                (0, t.jsx)(v, {
+                                    tooltipText: I,
+                                    onClick: () => A(1),
+                                    children: (0, t.jsx)(o.ChevronRight, {
+                                        className: 'h-4 w-4',
+                                    }),
+                                }),
+                        ],
+                    });
+                },
+            ],
+            825296
+        );
+    },
+    793479,
+    (e) => {
+        'use strict';
+        var t = e.i(565750),
+            r = e.i(975157);
+        function a({ className: e, type: a, ...n }) {
+            return (0, t.jsx)('input', {
+                type: a,
+                'data-slot': 'input',
+                className: (0, r.cn)(
+                    'flex h-12 w-full rounded-md border border-border-primary bg-background-tertiary px-3 py-2 text-sm text-content-primary ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-content-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-border-brand disabled:cursor-not-allowed disabled:opacity-50',
+                    'hover:border-border-secondary',
+                    'focus:border-border-brand focus-visible:border-border-brand',
+                    'aria-invalid:ring-destructive/20 aria-invalid:border-destructive',
+                    e
+                ),
+                ...n,
+            });
+        }
+        e.s(['Input', () => a]);
+    },
+    342413,
+    (e) => {
+        'use strict';
+        var t = e.i(990341),
+            r = e.i(291967),
+            a = e.i(672687),
+            n = e.i(784711),
+            o = e.i(910529),
+            s = e.i(695145),
+            i = e.i(846357),
+            l = e.i(60126),
+            d = e.i(546354),
+            c = e.i(861181),
+            u = e.i(403078),
+            p = e.i(774621),
+            m = e.i(595357),
+            f = e.i(73772),
+            x = e.i(655875),
+            h = e.i(565750),
+            g = 'Dialog',
+            [v, b] = (0, n.createContextScope)(g),
+            [y, j] = v(g),
+            N = (e) => {
+                let {
+                        __scopeDialog: r,
+                        children: a,
+                        open: n,
+                        defaultOpen: i,
+                        onOpenChange: l,
+                        modal: d = !0,
+                    } = e,
+                    c = t.useRef(null),
+                    u = t.useRef(null),
+                    [p, m] = (0, s.useControllableState)({
+                        prop: n,
+                        defaultProp: i ?? !1,
+                        onChange: l,
+                        caller: g,
+                    });
+                return (0, h.jsx)(y, {
+                    scope: r,
+                    triggerRef: c,
+                    contentRef: u,
+                    contentId: (0, o.useId)(),
+                    titleId: (0, o.useId)(),
+                    descriptionId: (0, o.useId)(),
+                    open: p,
+                    onOpenChange: m,
+                    onOpenToggle: t.useCallback(() => m((e) => !e), [m]),
+                    modal: d,
+                    children: a,
+                });
+            };
+        N.displayName = g;
+        var w = 'DialogTrigger',
+            C = t.forwardRef((e, t) => {
+                let { __scopeDialog: n, ...o } = e,
+                    s = j(w, n),
+                    i = (0, a.useComposedRefs)(t, s.triggerRef);
+                return (0, h.jsx)(u.Primitive.button, {
+                    type: 'button',
+                    'aria-haspopup': 'dialog',
+                    'aria-expanded': s.open,
+                    'aria-controls': s.contentId,
+                    'data-state': U(s.open),
+                    ...o,
+                    ref: i,
+                    onClick: (0, r.composeEventHandlers)(
+                        e.onClick,
+                        s.onOpenToggle
+                    ),
+                });
+            });
+        C.displayName = w;
+        var D = 'DialogPortal',
+            [S, k] = v(D, { forceMount: void 0 }),
+            P = (e) => {
+                let {
+                        __scopeDialog: r,
+                        forceMount: a,
+                        children: n,
+                        container: o,
+                    } = e,
+                    s = j(D, r);
+                return (0, h.jsx)(S, {
+                    scope: r,
+                    forceMount: a,
+                    children: t.Children.map(n, (e) =>
+                        (0, h.jsx)(c.Presence, {
+                            present: a || s.open,
+                            children: (0, h.jsx)(d.Portal, {
+                                asChild: !0,
+                                container: o,
+                                children: e,
+                            }),
+                        })
+                    ),
+                });
+            };
+        P.displayName = D;
+        var R = 'DialogOverlay',
+            A = t.forwardRef((e, t) => {
+                let r = k(R, e.__scopeDialog),
+                    { forceMount: a = r.forceMount, ...n } = e,
+                    o = j(R, e.__scopeDialog);
+                return o.modal
+                    ? (0, h.jsx)(c.Presence, {
+                          present: a || o.open,
+                          children: (0, h.jsx)(I, { ...n, ref: t }),
+                      })
+                    : null;
+            });
+        A.displayName = R;
+        var T = (0, x.createSlot)('DialogOverlay.RemoveScroll'),
+            I = t.forwardRef((e, t) => {
+                let { __scopeDialog: r, ...a } = e,
+                    n = j(R, r);
+                return (0, h.jsx)(m.RemoveScroll, {
+                    as: T,
+                    allowPinchZoom: !0,
+                    shards: [n.contentRef],
+                    children: (0, h.jsx)(u.Primitive.div, {
+                        'data-state': U(n.open),
+                        ...a,
+                        ref: t,
+                        style: { pointerEvents: 'auto', ...a.style },
+                    }),
+                });
+            }),
+            E = 'DialogContent',
+            O = t.forwardRef((e, t) => {
+                let r = k(E, e.__scopeDialog),
+                    { forceMount: a = r.forceMount, ...n } = e,
+                    o = j(E, e.__scopeDialog);
+                return (0, h.jsx)(c.Presence, {
+                    present: a || o.open,
+                    children: o.modal
+                        ? (0, h.jsx)(M, { ...n, ref: t })
+                        : (0, h.jsx)(F, { ...n, ref: t }),
+                });
+            });
+        O.displayName = E;
+        var M = t.forwardRef((e, n) => {
+                let o = j(E, e.__scopeDialog),
+                    s = t.useRef(null),
+                    i = (0, a.useComposedRefs)(n, o.contentRef, s);
+                return (
+                    t.useEffect(() => {
+                        let e = s.current;
+                        if (e) return (0, f.hideOthers)(e);
+                    }, []),
+                    (0, h.jsx)(z, {
+                        ...e,
+                        ref: i,
+                        trapFocus: o.open,
+                        disableOutsidePointerEvents: !0,
+                        onCloseAutoFocus: (0, r.composeEventHandlers)(
+                            e.onCloseAutoFocus,
+                            (e) => {
+                                (e.preventDefault(),
+                                    o.triggerRef.current?.focus());
+                            }
+                        ),
+                        onPointerDownOutside: (0, r.composeEventHandlers)(
+                            e.onPointerDownOutside,
+                            (e) => {
+                                let t = e.detail.originalEvent,
+                                    r = 0 === t.button && !0 === t.ctrlKey;
+                                (2 === t.button || r) && e.preventDefault();
+                            }
+                        ),
+                        onFocusOutside: (0, r.composeEventHandlers)(
+                            e.onFocusOutside,
+                            (e) => e.preventDefault()
+                        ),
+                    })
+                );
+            }),
+            F = t.forwardRef((e, r) => {
+                let a = j(E, e.__scopeDialog),
+                    n = t.useRef(!1),
+                    o = t.useRef(!1);
+                return (0, h.jsx)(z, {
+                    ...e,
+                    ref: r,
+                    trapFocus: !1,
+                    disableOutsidePointerEvents: !1,
+                    onCloseAutoFocus: (t) => {
+                        (e.onCloseAutoFocus?.(t),
+                            t.defaultPrevented ||
+                                (n.current || a.triggerRef.current?.focus(),
+                                t.preventDefault()),
+                            (n.current = !1),
+                            (o.current = !1));
+                    },
+                    onInteractOutside: (t) => {
+                        (e.onInteractOutside?.(t),
+                            t.defaultPrevented ||
+                                ((n.current = !0),
+                                'pointerdown' === t.detail.originalEvent.type &&
+                                    (o.current = !0)));
+                        let r = t.target;
+                        (a.triggerRef.current?.contains(r) &&
+                            t.preventDefault(),
+                            'focusin' === t.detail.originalEvent.type &&
+                                o.current &&
+                                t.preventDefault());
+                    },
+                });
+            }),
+            z = t.forwardRef((e, r) => {
+                let {
+                        __scopeDialog: n,
+                        trapFocus: o,
+                        onOpenAutoFocus: s,
+                        onCloseAutoFocus: d,
+                        ...c
+                    } = e,
+                    u = j(E, n),
+                    m = t.useRef(null),
+                    f = (0, a.useComposedRefs)(r, m);
+                return (
+                    (0, p.useFocusGuards)(),
+                    (0, h.jsxs)(h.Fragment, {
+                        children: [
+                            (0, h.jsx)(l.FocusScope, {
+                                asChild: !0,
+                                loop: !0,
+                                trapped: o,
+                                onMountAutoFocus: s,
+                                onUnmountAutoFocus: d,
+                                children: (0, h.jsx)(i.DismissableLayer, {
+                                    role: 'dialog',
+                                    id: u.contentId,
+                                    'aria-describedby': u.descriptionId,
+                                    'aria-labelledby': u.titleId,
+                                    'data-state': U(u.open),
+                                    ...c,
+                                    ref: f,
+                                    onDismiss: () => u.onOpenChange(!1),
+                                }),
+                            }),
+                            (0, h.jsxs)(h.Fragment, {
+                                children: [
+                                    (0, h.jsx)(q, { titleId: u.titleId }),
+                                    (0, h.jsx)(K, {
+                                        contentRef: m,
+                                        descriptionId: u.descriptionId,
+                                    }),
+                                ],
+                            }),
+                        ],
+                    })
+                );
+            }),
+            H = 'DialogTitle',
+            L = t.forwardRef((e, t) => {
+                let { __scopeDialog: r, ...a } = e,
+                    n = j(H, r);
+                return (0, h.jsx)(u.Primitive.h2, {
+                    id: n.titleId,
+                    ...a,
+                    ref: t,
+                });
+            });
+        L.displayName = H;
+        var _ = 'DialogDescription',
+            B = t.forwardRef((e, t) => {
+                let { __scopeDialog: r, ...a } = e,
+                    n = j(_, r);
+                return (0, h.jsx)(u.Primitive.p, {
+                    id: n.descriptionId,
+                    ...a,
+                    ref: t,
+                });
+            });
+        B.displayName = _;
+        var $ = 'DialogClose',
+            V = t.forwardRef((e, t) => {
+                let { __scopeDialog: a, ...n } = e,
+                    o = j($, a);
+                return (0, h.jsx)(u.Primitive.button, {
+                    type: 'button',
+                    ...n,
+                    ref: t,
+                    onClick: (0, r.composeEventHandlers)(e.onClick, () =>
+                        o.onOpenChange(!1)
+                    ),
+                });
+            });
+        function U(e) {
+            return e ? 'open' : 'closed';
+        }
+        V.displayName = $;
+        var Y = 'DialogTitleWarning',
+            [G, W] = (0, n.createContext)(Y, {
+                contentName: E,
+                titleName: H,
+                docsSlug: 'dialog',
+            }),
+            q = ({ titleId: e }) => {
+                let r = W(Y),
+                    a = `\`${r.contentName}\` requires a \`${r.titleName}\` for the component to be accessible for screen reader users.
+
+If you want to hide the \`${r.titleName}\`, you can wrap it with our VisuallyHidden component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/${r.docsSlug}`;
+                return (
+                    t.useEffect(() => {
+                        e && (document.getElementById(e) || console.error(a));
+                    }, [a, e]),
+                    null
+                );
+            },
+            K = ({ contentRef: e, descriptionId: r }) => {
+                let a = W('DialogDescriptionWarning'),
+                    n = `Warning: Missing \`Description\` or \`aria-describedby={undefined}\` for {${a.contentName}}.`;
+                return (
+                    t.useEffect(() => {
+                        let t = e.current?.getAttribute('aria-describedby');
+                        r &&
+                            t &&
+                            (document.getElementById(r) || console.warn(n));
+                    }, [n, e, r]),
+                    null
+                );
+            };
+        e.s([
+            'Close',
+            () => V,
+            'Content',
+            () => O,
+            'Description',
+            () => B,
+            'Overlay',
+            () => A,
+            'Portal',
+            () => P,
+            'Root',
+            () => N,
+            'Title',
+            () => L,
+            'Trigger',
+            () => C,
+            'WarningProvider',
+            () => G,
+            'createDialogScope',
+            () => b,
+        ]);
+    },
+    776639,
+    660214,
+    (e) => {
+        'use strict';
+        var t = e.i(565750),
+            r = e.i(342413);
+        let a = (0, e.i(383206).default)('x', [
+            ['path', { d: 'M18 6 6 18', key: '1bl5f8' }],
+            ['path', { d: 'm6 6 12 12', key: 'd8bk6v' }],
+        ]);
+        e.s(['default', () => a], 660214);
+        var n = e.i(294237),
+            o = e.i(975157);
+        function s({ ...e }) {
+            return (0, t.jsx)(r.Root, { 'data-slot': 'dialog', ...e });
+        }
+        function i({ ...e }) {
+            return (0, t.jsx)(r.Trigger, {
+                'data-slot': 'dialog-trigger',
+                ...e,
+            });
+        }
+        function l({ ...e }) {
+            return (0, t.jsx)(r.Portal, { 'data-slot': 'dialog-portal', ...e });
+        }
+        let d = (0, n.cva)(
+            'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50',
+            {
+                variants: {
+                    variant: {
+                        default: 'bg-black/50',
+                        blurred: 'bg-black/40 backdrop-blur-[2px]',
+                        dark: 'bg-black/60',
+                        light: 'bg-black/30',
+                    },
+                },
+                defaultVariants: { variant: 'default' },
+            }
+        );
+        function c({ className: e, variant: a, ...n }) {
+            return (0, t.jsx)(r.Overlay, {
+                'data-slot': 'dialog-overlay',
+                className: (0, o.cn)(d({ variant: a }), e),
+                ...n,
+            });
+        }
+        let u = (0, n.cva)(
+            'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full translate-x-[-50%] translate-y-[-50%] gap-4 p-6 shadow-lg duration-200',
+            {
+                variants: {
+                    variant: {
+                        default:
+                            'bg-background border rounded-lg max-w-[calc(100%-2rem)] sm:max-w-lg',
+                        appointment:
+                            'bg-background-tertiary border-none rounded-lg max-w-[calc(100%-2rem)] sm:max-w-[477px] max-h-[90vh] overflow-y-auto',
+                        large: 'bg-background border rounded-lg max-w-[calc(100%-2rem)] sm:max-w-2xl',
+                        fullscreen:
+                            'bg-background border rounded-lg max-w-[calc(100%-1rem)] max-h-[calc(100%-1rem)] sm:max-w-4xl sm:max-h-[90vh] overflow-y-auto',
+                    },
+                },
+                defaultVariants: { variant: 'default' },
+            }
+        );
+        function p({
+            className: e,
+            children: n,
+            showCloseButton: s = !0,
+            variant: i,
+            overlayVariant: d,
+            ...p
+        }) {
+            return (0, t.jsxs)(l, {
+                'data-slot': 'dialog-portal',
+                children: [
+                    (0, t.jsx)(c, { variant: d }),
+                    (0, t.jsxs)(r.Content, {
+                        'data-slot': 'dialog-content',
+                        className: (0, o.cn)(u({ variant: i }), e),
+                        ...p,
+                        children: [
+                            n,
+                            s &&
+                                (0, t.jsxs)(r.Close, {
+                                    'data-slot': 'dialog-close',
+                                    className:
+                                        "ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+                                    children: [
+                                        (0, t.jsx)(a, {}),
+                                        (0, t.jsx)('span', {
+                                            className: 'sr-only',
+                                            children: 'Close',
+                                        }),
+                                    ],
+                                }),
+                        ],
+                    }),
+                ],
+            });
+        }
+        let m = (0, n.cva)('flex flex-col gap-2', {
+            variants: {
+                align: {
+                    left: 'text-left',
+                    center: 'text-center sm:text-left',
+                    right: 'text-right',
+                },
+            },
+            defaultVariants: { align: 'center' },
+        });
+        function f({ className: e, align: r, ...a }) {
+            return (0, t.jsx)('div', {
+                'data-slot': 'dialog-header',
+                className: (0, o.cn)(m({ align: r }), e),
+                ...a,
+            });
+        }
+        function x({ className: e, ...r }) {
+            return (0, t.jsx)('div', {
+                'data-slot': 'dialog-footer',
+                className: (0, o.cn)(
+                    'flex flex-col-reverse gap-2 sm:flex-row sm:justify-end',
+                    e
+                ),
+                ...r,
+            });
+        }
+        let h = (0, n.cva)('leading-none font-semibold', {
+            variants: {
+                size: {
+                    sm: 'text-base',
+                    default: 'text-lg',
+                    lg: 'text-xl',
+                    xl: 'text-2xl',
+                    modal: 'text-title-modal text-content-primary',
+                },
+            },
+            defaultVariants: { size: 'default' },
+        });
+        function g({ className: e, size: a, ...n }) {
+            return (0, t.jsx)(r.Title, {
+                'data-slot': 'dialog-title',
+                className: (0, o.cn)(h({ size: a }), e),
+                ...n,
+            });
+        }
+        let v = (0, n.cva)('text-muted-foreground', {
+            variants: {
+                size: {
+                    sm: 'text-xs',
+                    default: 'text-sm',
+                    lg: 'text-base',
+                    modal: 'text-paragraph-medium text-content-secondary',
+                },
+            },
+            defaultVariants: { size: 'default' },
+        });
+        function b({ className: e, size: a, ...n }) {
+            return (0, t.jsx)(r.Description, {
+                'data-slot': 'dialog-description',
+                className: (0, o.cn)(v({ size: a }), e),
+                ...n,
+            });
+        }
+        e.s(
+            [
+                'Dialog',
+                () => s,
+                'DialogContent',
+                () => p,
+                'DialogDescription',
+                () => b,
+                'DialogFooter',
+                () => x,
+                'DialogHeader',
+                () => f,
+                'DialogTitle',
+                () => g,
+                'DialogTrigger',
+                () => i,
+            ],
+            776639
+        );
+    },
+    641304,
+    (e) => {
+        'use strict';
+        let t = (0, e.i(383206).default)('loader-circle', [
+            ['path', { d: 'M21 12a9 9 0 1 1-6.219-8.56', key: '13zald' }],
+        ]);
+        e.s(['Loader2', () => t], 641304);
+    },
+    939397,
+    (e) => {
+        'use strict';
+        let t = (0, e.i(383206).default)('phone', [
+            [
+                'path',
+                {
+                    d: 'M13.832 16.568a1 1 0 0 0 1.213-.303l.355-.465A2 2 0 0 1 17 15h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2A18 18 0 0 1 2 4a2 2 0 0 1 2-2h3a2 2 0 0 1 2 2v3a2 2 0 0 1-.8 1.6l-.468.351a1 1 0 0 0-.292 1.233 14 14 0 0 0 6.392 6.384',
+                    key: '9njp5v',
+                },
+            ],
+        ]);
+        e.s(['Phone', () => t], 939397);
+    },
+    14435,
+    (e) => {
+        'use strict';
+        let t = (0, e.i(383206).default)('user', [
+            [
+                'path',
+                {
+                    d: 'M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2',
+                    key: '975kel',
+                },
+            ],
+            ['circle', { cx: '12', cy: '7', r: '4', key: '17ys0d' }],
+        ]);
+        e.s(['User', () => t], 14435);
+    },
+    212409,
+    (e) => {
+        'use strict';
+        var t = e.i(660214);
+        e.s(['X', () => t.default]);
+    },
+    79254,
+    (e) => {
+        'use strict';
+        var t = e.i(814549);
+        e.s(['Check', () => t.default]);
+    },
+    287268,
+    (e) => {
+        'use strict';
+        let t = (0, e.i(383206).default)('search', [
+            ['path', { d: 'm21 21-4.34-4.34', key: '14j7rj' }],
+            ['circle', { cx: '11', cy: '11', r: '8', key: '4ej97u' }],
+        ]);
+        e.s(['Search', () => t], 287268);
+    },
+    136764,
+    (e) => {
+        'use strict';
+        let t = (0, e.i(383206).default)('clock', [
+            ['path', { d: 'M12 6v6l4 2', key: 'mmk7yg' }],
+            ['circle', { cx: '12', cy: '12', r: '10', key: '1mglay' }],
+        ]);
+        e.s(['Clock', () => t], 136764);
+    },
+    351890,
+    (e) => {
+        'use strict';
+        var t = e.i(738416);
+        function r(e) {
+            return (0, t.startOfDay)(Date.now(), e);
+        }
+        e.s(['startOfToday', () => r]);
+    },
+    868499,
+    162069,
+    (e) => {
+        'use strict';
+        var t = e.i(565750),
+            r = e.i(990341),
+            a = e.i(784711),
+            n = e.i(672687),
+            o = e.i(342413),
+            s = e.i(291967),
+            i = e.i(655875),
+            l = 'AlertDialog',
+            [d, c] = (0, a.createContextScope)(l, [o.createDialogScope]),
+            u = (0, o.createDialogScope)(),
+            p = (e) => {
+                let { __scopeAlertDialog: r, ...a } = e,
+                    n = u(r);
+                return (0, t.jsx)(o.Root, { ...n, ...a, modal: !0 });
+            };
+        p.displayName = l;
+        var m = r.forwardRef((e, r) => {
+            let { __scopeAlertDialog: a, ...n } = e,
+                s = u(a);
+            return (0, t.jsx)(o.Trigger, { ...s, ...n, ref: r });
+        });
+        m.displayName = 'AlertDialogTrigger';
+        var f = (e) => {
+            let { __scopeAlertDialog: r, ...a } = e,
+                n = u(r);
+            return (0, t.jsx)(o.Portal, { ...n, ...a });
+        };
+        f.displayName = 'AlertDialogPortal';
+        var x = r.forwardRef((e, r) => {
+            let { __scopeAlertDialog: a, ...n } = e,
+                s = u(a);
+            return (0, t.jsx)(o.Overlay, { ...s, ...n, ref: r });
+        });
+        x.displayName = 'AlertDialogOverlay';
+        var h = 'AlertDialogContent',
+            [g, v] = d(h),
+            b = (0, i.createSlottable)('AlertDialogContent'),
+            y = r.forwardRef((e, a) => {
+                let { __scopeAlertDialog: i, children: l, ...d } = e,
+                    c = u(i),
+                    p = r.useRef(null),
+                    m = (0, n.useComposedRefs)(a, p),
+                    f = r.useRef(null);
+                return (0, t.jsx)(o.WarningProvider, {
+                    contentName: h,
+                    titleName: j,
+                    docsSlug: 'alert-dialog',
+                    children: (0, t.jsx)(g, {
+                        scope: i,
+                        cancelRef: f,
+                        children: (0, t.jsxs)(o.Content, {
+                            role: 'alertdialog',
+                            ...c,
+                            ...d,
+                            ref: m,
+                            onOpenAutoFocus: (0, s.composeEventHandlers)(
+                                d.onOpenAutoFocus,
+                                (e) => {
+                                    (e.preventDefault(),
+                                        f.current?.focus({
+                                            preventScroll: !0,
+                                        }));
+                                }
+                            ),
+                            onPointerDownOutside: (e) => e.preventDefault(),
+                            onInteractOutside: (e) => e.preventDefault(),
+                            children: [
+                                (0, t.jsx)(b, { children: l }),
+                                (0, t.jsx)(P, { contentRef: p }),
+                            ],
+                        }),
+                    }),
+                });
+            });
+        y.displayName = h;
+        var j = 'AlertDialogTitle',
+            N = r.forwardRef((e, r) => {
+                let { __scopeAlertDialog: a, ...n } = e,
+                    s = u(a);
+                return (0, t.jsx)(o.Title, { ...s, ...n, ref: r });
+            });
+        N.displayName = j;
+        var w = 'AlertDialogDescription',
+            C = r.forwardRef((e, r) => {
+                let { __scopeAlertDialog: a, ...n } = e,
+                    s = u(a);
+                return (0, t.jsx)(o.Description, { ...s, ...n, ref: r });
+            });
+        C.displayName = w;
+        var D = r.forwardRef((e, r) => {
+            let { __scopeAlertDialog: a, ...n } = e,
+                s = u(a);
+            return (0, t.jsx)(o.Close, { ...s, ...n, ref: r });
+        });
+        D.displayName = 'AlertDialogAction';
+        var S = 'AlertDialogCancel',
+            k = r.forwardRef((e, r) => {
+                let { __scopeAlertDialog: a, ...s } = e,
+                    { cancelRef: i } = v(S, a),
+                    l = u(a),
+                    d = (0, n.useComposedRefs)(r, i);
+                return (0, t.jsx)(o.Close, { ...l, ...s, ref: d });
+            });
+        k.displayName = S;
+        var P = ({ contentRef: e }) => {
+            let t = `\`${h}\` requires a description for the component to be accessible for screen reader users.
+
+You can add a description to the \`${h}\` by passing a \`${w}\` component as a child, which also benefits sighted users by adding visible context to the dialog.
+
+Alternatively, you can use your own component as a description by assigning it an \`id\` and passing the same value to the \`aria-describedby\` prop in \`${h}\`. If the description is confusing or duplicative for sighted users, you can use the \`@radix-ui/react-visually-hidden\` primitive as a wrapper around your description component.
+
+For more information, see https://radix-ui.com/primitives/docs/components/alert-dialog`;
+            return (
+                r.useEffect(() => {
+                    document.getElementById(
+                        e.current?.getAttribute('aria-describedby')
+                    ) || console.warn(t);
+                }, [t, e]),
+                null
+            );
+        };
+        e.s(
+            [
+                'Action',
+                () => D,
+                'Cancel',
+                () => k,
+                'Content',
+                () => y,
+                'Description',
+                () => C,
+                'Overlay',
+                () => x,
+                'Portal',
+                () => f,
+                'Root',
+                () => p,
+                'Title',
+                () => N,
+                'Trigger',
+                () => m,
+            ],
+            162069
+        );
+        var R = e.i(975157),
+            A = e.i(519455);
+        let T = r.forwardRef(({ className: e, ...r }, a) =>
+            (0, t.jsx)(x, {
+                className: (0, R.cn)(
+                    'fixed inset-0 z-50 bg-black/40 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+                    e
+                ),
+                ...r,
+                ref: a,
+            })
+        );
+        T.displayName = x.displayName;
+        let I = r.forwardRef(({ className: e, ...r }, a) =>
+            (0, t.jsxs)(f, {
+                children: [
+                    (0, t.jsx)(T, {}),
+                    (0, t.jsx)(y, {
+                        ref: a,
+                        className: (0, R.cn)(
+                            'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 bg-background-tertiary border-none p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-lg',
+                            e
+                        ),
+                        ...r,
+                    }),
+                ],
+            })
+        );
+        I.displayName = y.displayName;
+        let E = ({ className: e, ...r }) =>
+            (0, t.jsx)('div', {
+                className: (0, R.cn)(
+                    'flex flex-col space-y-2 text-center sm:text-left',
+                    e
+                ),
+                ...r,
+            });
+        E.displayName = 'AlertDialogHeader';
+        let O = ({ className: e, ...r }) =>
+            (0, t.jsx)('div', {
+                className: (0, R.cn)(
+                    'flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2',
+                    e
+                ),
+                ...r,
+            });
+        O.displayName = 'AlertDialogFooter';
+        let M = r.forwardRef(({ className: e, ...r }, a) =>
+            (0, t.jsx)(N, {
+                ref: a,
+                className: (0, R.cn)(
+                    'text-title-modal text-content-primary',
+                    e
+                ),
+                ...r,
+            })
+        );
+        M.displayName = N.displayName;
+        let F = r.forwardRef(({ className: e, ...r }, a) =>
+            (0, t.jsx)(C, {
+                ref: a,
+                className: (0, R.cn)(
+                    'text-paragraph-medium text-content-secondary',
+                    e
+                ),
+                ...r,
+            })
+        );
+        F.displayName = C.displayName;
+        let z = r.forwardRef(({ className: e, ...r }, a) =>
+            (0, t.jsx)(D, {
+                ref: a,
+                className: (0, R.cn)(
+                    (0, A.buttonVariants)({ variant: 'destructive' }),
+                    'text-label-medium h-10 px-6 rounded-lg',
+                    e
+                ),
+                ...r,
+            })
+        );
+        z.displayName = D.displayName;
+        let H = r.forwardRef(({ className: e, ...r }, a) =>
+            (0, t.jsx)(k, {
+                ref: a,
+                className: (0, R.cn)(
+                    (0, A.buttonVariants)({ variant: 'outline' }),
+                    'text-label-medium h-10 px-6 rounded-lg mt-2 sm:mt-0',
+                    e
+                ),
+                ...r,
+            })
+        );
+        ((H.displayName = k.displayName),
+            e.s(
+                [
+                    'AlertDialog',
+                    () => p,
+                    'AlertDialogAction',
+                    () => z,
+                    'AlertDialogCancel',
+                    () => H,
+                    'AlertDialogContent',
+                    () => I,
+                    'AlertDialogDescription',
+                    () => F,
+                    'AlertDialogFooter',
+                    () => O,
+                    'AlertDialogHeader',
+                    () => E,
+                    'AlertDialogTitle',
+                    () => M,
+                    'AlertDialogTrigger',
+                    () => m,
+                ],
+                868499
+            ));
+    },
+    867678,
+    (e) => {
+        'use strict';
+        var t = e.i(565750),
+            r = e.i(990341),
+            a = e.i(825296),
+            n = e.i(519455),
+            o = e.i(245586),
+            s = e.i(995403),
+            i = e.i(776639),
+            l = e.i(793479),
+            d = e.i(337822),
+            c = e.i(967489),
+            u = e.i(227766),
+            p = e.i(975157),
+            m = e.i(276389),
+            f = e.i(79254),
+            x = e.i(512710),
+            h = e.i(136764),
+            g = e.i(641304),
+            v = e.i(939397),
+            b = e.i(287268),
+            y = e.i(555739),
+            j = e.i(14435),
+            N = e.i(222653),
+            w = e.i(171312),
+            C = e.i(212409),
+            D = e.i(230902),
+            S = e.i(351890);
+        e.i(806303);
+        var k = e.i(635037);
+        function P({
+            children: e,
+            forcedUnitId: a = null,
+            units: P = [],
+            clients: R = [],
+            professionals: A = [],
+            services: T = [],
+            appointments: I = [],
+        }) {
+            let E = (0, o.useRouter)(),
+                [O, M] = (0, r.useState)(!1),
+                [F, z] = (0, r.useState)(!1),
+                [H, L] = (0, r.useState)(!1),
+                [_, B] = (0, r.useState)(''),
+                [$, V] = (0, r.useState)(''),
+                [U, Y] = (0, r.useState)([]),
+                [G, W] = (0, r.useState)(!1),
+                [q, K] = (0, r.useState)(''),
+                [X, J] = (0, r.useState)(''),
+                [Z, Q] = (0, r.useState)(a ?? ''),
+                [ee, et] = (0, r.useState)(''),
+                [er, ea] = (0, r.useState)(''),
+                [en, eo] = (0, r.useState)(void 0),
+                [es, ei] = (0, r.useState)(''),
+                [el, ed] = (0, r.useState)([]),
+                [ec, eu] = (0, r.useState)(!1),
+                [ep, em] = (0, r.useState)(null),
+                ef = (0, r.useRef)(null),
+                [ex, eh] = (0, r.useState)(!1),
+                eg = (0, r.useMemo)(() => P, [P]),
+                ev = (0, r.useMemo)(
+                    () =>
+                        a ? (eg.find((e) => e.id === a)?.name ?? null) : null,
+                    [a, eg]
+                ),
+                eb = (0, r.useMemo)(
+                    () => ($ ? (R.find((e) => e.id === $) ?? null) : null),
+                    [$, R]
+                ),
+                ey = (0, r.useMemo)(
+                    () =>
+                        Z
+                            ? T.filter((e) => !1 !== e.isActive).filter(
+                                  (e) => !e.unitId || e.unitId === Z
+                              )
+                            : T.filter((e) => !1 !== e.isActive),
+                    [T, Z]
+                ),
+                ej = !!$,
+                eN = (0, r.useRef)(null),
+                ew = (e) => {
+                    (et(''),
+                        ea(''),
+                        eo(void 0),
+                        ei(''),
+                        ed([]),
+                        em(null),
+                        eu(!1),
+                        e || Q(a ?? ''));
+                },
+                eC = () => {
+                    (V(''), B(''), Y([]), L(!1), K(''), J(''), ew(!1));
+                };
+            (r.useEffect(() => {
+                if (!O) return;
+                let e = _.trim();
+                if (!e) return void Y([]);
+                if (
+                    $ &&
+                    eb &&
+                    e === `${eb.name}${eb.phone ? ` • ${eb.phone}` : ''}`
+                )
+                    return;
+                if (e.length < 2)
+                    return void Y(
+                        R.filter((t) => {
+                            let r = (t.name ?? '').toLowerCase(),
+                                a = (t.phone ?? '').toLowerCase(),
+                                n = e.toLowerCase();
+                            return r.includes(n) || a.includes(n);
+                        }).slice(0, 20)
+                    );
+                let t = setTimeout(async () => {
+                    if (R.length > 0 && R.length <= 250)
+                        return void Y(
+                            R.filter((t) => {
+                                let r = (t.name ?? '').toLowerCase(),
+                                    a = (t.phone ?? '').toLowerCase(),
+                                    n = e.toLowerCase();
+                                return r.includes(n) || a.includes(n);
+                            }).slice(0, 20)
+                        );
+                    try {
+                        (W(!0), eN.current && eN.current.abort());
+                        let t = new AbortController();
+                        eN.current = t;
+                        let r = new URLSearchParams();
+                        (r.set('q', e), r.set('take', '20'));
+                        let a = await fetch(
+                            `/api/admin/clients/search?${r.toString()}`,
+                            {
+                                method: 'GET',
+                                signal: t.signal,
+                                headers: { 'Content-Type': 'application/json' },
+                            }
+                        );
+                        if (!a.ok) return void Y([]);
+                        let n = await a.json();
+                        Y(Array.isArray(n?.clients) ? n.clients : []);
+                    } catch (e) {
+                        if (e?.name === 'AbortError') return;
+                        Y([]);
+                    } finally {
+                        W(!1);
+                    }
+                }, 280);
+                return () => clearTimeout(t);
+            }, [_, O]),
+                r.useEffect(() => {
+                    O && a && Q(a);
+                }, [O, a]),
+                r.useEffect(() => {
+                    let e, t, r;
+                    if (!O) return;
+                    if (!ej || !Z || !ee || !er || !en) {
+                        (ed([]), em(null), eu(!1));
+                        return;
+                    }
+                    let a =
+                        ((e = en.getFullYear()),
+                        (t = String(en.getMonth() + 1).padStart(2, '0')),
+                        (r = String(en.getDate()).padStart(2, '0')),
+                        `${e}-${t}-${r}`);
+                    (async () => {
+                        try {
+                            (eu(!0),
+                                em(null),
+                                ef.current && ef.current.abort());
+                            let e = new AbortController();
+                            ef.current = e;
+                            let t = new URLSearchParams();
+                            (t.set('unitId', Z),
+                                t.set('professionalId', ee),
+                                t.set('serviceId', er),
+                                t.set('date', a));
+                            let r = await fetch(
+                                    `/api/admin/availability/times?${t.toString()}`,
+                                    {
+                                        method: 'GET',
+                                        signal: e.signal,
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                        },
+                                    }
+                                ),
+                                n = await r.json().catch(() => null);
+                            if (!r.ok || !n?.ok) {
+                                let e =
+                                    n?.error ??
+                                    'Não foi possível carregar os horários do profissional.';
+                                (ed([]), em(e));
+                                return;
+                            }
+                            let o = Array.isArray(n?.data?.times)
+                                ? n.data.times
+                                : [];
+                            (ed(o), es && !o.includes(es) && ei(''));
+                        } catch (e) {
+                            if (e?.name === 'AbortError') return;
+                            (ed([]),
+                                em(
+                                    'Erro ao carregar os horários do profissional.'
+                                ));
+                        } finally {
+                            eu(!1);
+                        }
+                    })();
+                }, [O, ej, Z, ee, er, en]));
+            let eD = async () => {
+                    if (!$)
+                        return void s.toast.error(
+                            'Selecione um cliente para continuar.'
+                        );
+                    if (!q.trim())
+                        return void s.toast.error('Informe o nome do cliente.');
+                    if (!X.trim())
+                        return void s.toast.error('Informe o telefone.');
+                    if (!Z) return void s.toast.error('Selecione a unidade.');
+                    if (!ee)
+                        return void s.toast.error('Selecione o profissional.');
+                    if (!er) return void s.toast.error('Selecione o serviço.');
+                    if (!en) return void s.toast.error('Selecione o dia.');
+                    if (!es) return void s.toast.error('Selecione o horário.');
+                    if (el.length > 0 && !el.includes(es)) {
+                        (s.toast.error(
+                            'Este horário não está mais disponível. Selecione outro.'
+                        ),
+                            ei(''));
+                        return;
+                    }
+                    let [e, t] = es.split(':').map(Number),
+                        r = new Date(en);
+                    r.setHours(e, t, 0, 0);
+                    let n = T.find((e) => e.id === er),
+                        o = n?.name ?? 'Atendimento';
+                    try {
+                        eh(!0);
+                        let e = await fetch('/api/admin/appointments', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    clientId: $,
+                                    clientName: q.trim(),
+                                    phone: X.trim(),
+                                    unitId: Z,
+                                    professionalId: ee,
+                                    serviceId: er,
+                                    description: o,
+                                    scheduleAt: r.toISOString(),
+                                }),
+                            }),
+                            t = await e.json().catch(() => ({}));
+                        if (!e.ok)
+                            return void s.toast.error(
+                                t?.error ??
+                                    'Não foi possível criar o agendamento.'
+                            );
+                        (s.toast.success('Agendamento criado com sucesso!'),
+                            M(!1),
+                            eC(),
+                            Q(a ?? ''),
+                            et(''),
+                            ea(''),
+                            eo(void 0),
+                            ei(''),
+                            ed([]),
+                            em(null),
+                            eu(!1),
+                            E.refresh());
+                    } catch (e) {
+                        s.toast.error('Erro ao criar agendamento.');
+                    } finally {
+                        eh(!1);
+                    }
+                },
+                eS = !ej || !Z || !ee || !er || !en || ec;
+            return (0, t.jsxs)(i.Dialog, {
+                open: O,
+                onOpenChange: M,
+                children: [
+                    (0, t.jsx)(i.DialogTrigger, {
+                        asChild: !0,
+                        children: (0, t.jsx)('span', {
+                            className: 'inline-flex',
+                            children: e,
+                        }),
+                    }),
+                    (0, t.jsxs)(i.DialogContent, {
+                        variant: 'appointment',
+                        overlayVariant: 'blurred',
+                        showCloseButton: !0,
+                        children: [
+                            (0, t.jsxs)(i.DialogHeader, {
+                                children: [
+                                    (0, t.jsx)(i.DialogTitle, {
+                                        size: 'modal',
+                                        children: 'Novo agendamento',
+                                    }),
+                                    (0, t.jsx)(i.DialogDescription, {
+                                        size: 'modal',
+                                        children:
+                                            'Selecione um cliente e preencha os dados para realizar o agendamento:',
+                                    }),
+                                ],
+                            }),
+                            (0, t.jsxs)('div', {
+                                className: 'space-y-4',
+                                children: [
+                                    (0, t.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, t.jsx)('p', {
+                                                className:
+                                                    'text-label-medium-size text-content-primary',
+                                                children: 'Cliente',
+                                            }),
+                                            (0, t.jsxs)(d.Popover, {
+                                                open: H,
+                                                onOpenChange: L,
+                                                children: [
+                                                    (0, t.jsx)(
+                                                        d.PopoverTrigger,
+                                                        {
+                                                            asChild: !0,
+                                                            children: (0,
+                                                            t.jsxs)('div', {
+                                                                className:
+                                                                    'relative',
+                                                                children: [
+                                                                    (0, t.jsx)(
+                                                                        b.Search,
+                                                                        {
+                                                                            className:
+                                                                                'absolute left-3 top-1/2 -translate-y-1/2 transform text-content-brand',
+                                                                            size: 18,
+                                                                        }
+                                                                    ),
+                                                                    (0, t.jsx)(
+                                                                        l.Input,
+                                                                        {
+                                                                            value: _,
+                                                                            onFocus:
+                                                                                () =>
+                                                                                    L(
+                                                                                        !0
+                                                                                    ),
+                                                                            onChange:
+                                                                                (
+                                                                                    e
+                                                                                ) => {
+                                                                                    (B(
+                                                                                        e
+                                                                                            .target
+                                                                                            .value
+                                                                                    ),
+                                                                                        $ &&
+                                                                                            V(
+                                                                                                ''
+                                                                                            ));
+                                                                                },
+                                                                            placeholder:
+                                                                                'Digite para buscar um cliente',
+                                                                            className:
+                                                                                'pl-10 pr-10',
+                                                                        }
+                                                                    ),
+                                                                    $ || _
+                                                                        ? (0,
+                                                                          t.jsx)(
+                                                                              'button',
+                                                                              {
+                                                                                  type: 'button',
+                                                                                  className:
+                                                                                      'absolute right-2 top-1/2 -translate-y-1/2 transform rounded-md p-1 text-content-secondary hover:text-content-primary',
+                                                                                  onClick:
+                                                                                      eC,
+                                                                                  'aria-label':
+                                                                                      'Limpar cliente',
+                                                                                  children:
+                                                                                      (0,
+                                                                                      t.jsx)(
+                                                                                          C.X,
+                                                                                          {
+                                                                                              className:
+                                                                                                  'h-4 w-4',
+                                                                                          }
+                                                                                      ),
+                                                                              }
+                                                                          )
+                                                                        : null,
+                                                                ],
+                                                            }),
+                                                        }
+                                                    ),
+                                                    (0, t.jsx)(
+                                                        d.PopoverContent,
+                                                        {
+                                                            className:
+                                                                'w-[--radix-popover-trigger-width] p-2',
+                                                            align: 'start',
+                                                            onOpenAutoFocus: (
+                                                                e
+                                                            ) =>
+                                                                e.preventDefault(),
+                                                            onCloseAutoFocus: (
+                                                                e
+                                                            ) =>
+                                                                e.preventDefault(),
+                                                            children: (0,
+                                                            t.jsx)('div', {
+                                                                className:
+                                                                    'max-h-64 overflow-auto rounded-md border border-border-primary bg-background-secondary',
+                                                                children:
+                                                                    _.trim()
+                                                                        ? G
+                                                                            ? (0,
+                                                                              t.jsxs)(
+                                                                                  'div',
+                                                                                  {
+                                                                                      className:
+                                                                                          'flex items-center gap-2 px-3 py-3 text-sm text-content-secondary',
+                                                                                      children:
+                                                                                          [
+                                                                                              (0,
+                                                                                              t.jsx)(
+                                                                                                  g.Loader2,
+                                                                                                  {
+                                                                                                      className:
+                                                                                                          'h-4 w-4 animate-spin',
+                                                                                                  }
+                                                                                              ),
+                                                                                              'Buscando clientes...',
+                                                                                          ],
+                                                                                  }
+                                                                              )
+                                                                            : _.trim()
+                                                                                    .length <
+                                                                                2
+                                                                              ? (0,
+                                                                                t.jsxs)(
+                                                                                    'div',
+                                                                                    {
+                                                                                        className:
+                                                                                            'px-3 py-3 text-sm text-content-secondary',
+                                                                                        children:
+                                                                                            [
+                                                                                                'Dica: digite pelo menos',
+                                                                                                ' ',
+                                                                                                (0,
+                                                                                                t.jsx)(
+                                                                                                    'b',
+                                                                                                    {
+                                                                                                        children:
+                                                                                                            '2 letras',
+                                                                                                    }
+                                                                                                ),
+                                                                                                ' para buscar melhor.',
+                                                                                            ],
+                                                                                    }
+                                                                                )
+                                                                              : 0 ===
+                                                                                  U.length
+                                                                                ? (0,
+                                                                                  t.jsx)(
+                                                                                      'div',
+                                                                                      {
+                                                                                          className:
+                                                                                              'px-3 py-3 text-sm text-content-secondary',
+                                                                                          children:
+                                                                                              'Nenhum cliente encontrado',
+                                                                                      }
+                                                                                  )
+                                                                                : (0,
+                                                                                  t.jsx)(
+                                                                                      'div',
+                                                                                      {
+                                                                                          className:
+                                                                                              'divide-y divide-border-primary',
+                                                                                          children:
+                                                                                              U.map(
+                                                                                                  (
+                                                                                                      e
+                                                                                                  ) => {
+                                                                                                      let r =
+                                                                                                          $ ===
+                                                                                                          e.id;
+                                                                                                      return (0,
+                                                                                                      t.jsxs)(
+                                                                                                          'button',
+                                                                                                          {
+                                                                                                              type: 'button',
+                                                                                                              className:
+                                                                                                                  (0,
+                                                                                                                  p.cn)(
+                                                                                                                      'w-full px-3 py-2 text-left text-sm hover:bg-background-tertiary',
+                                                                                                                      'flex items-center justify-between gap-3',
+                                                                                                                      r &&
+                                                                                                                          'bg-background-tertiary'
+                                                                                                                  ),
+                                                                                                              onClick:
+                                                                                                                  () => {
+                                                                                                                      (V(
+                                                                                                                          e.id
+                                                                                                                      ),
+                                                                                                                          K(
+                                                                                                                              e.name ??
+                                                                                                                                  ''
+                                                                                                                          ),
+                                                                                                                          J(
+                                                                                                                              e.phone ??
+                                                                                                                                  ''
+                                                                                                                          ),
+                                                                                                                          B(
+                                                                                                                              `${e.name}${e.phone ? ` • ${e.phone}` : ''}`
+                                                                                                                          ),
+                                                                                                                          L(
+                                                                                                                              !1
+                                                                                                                          ),
+                                                                                                                          ew(
+                                                                                                                              !0
+                                                                                                                          ));
+                                                                                                                  },
+                                                                                                              children:
+                                                                                                                  [
+                                                                                                                      (0,
+                                                                                                                      t.jsxs)(
+                                                                                                                          'div',
+                                                                                                                          {
+                                                                                                                              className:
+                                                                                                                                  'min-w-0',
+                                                                                                                              children:
+                                                                                                                                  [
+                                                                                                                                      (0,
+                                                                                                                                      t.jsx)(
+                                                                                                                                          'p',
+                                                                                                                                          {
+                                                                                                                                              className:
+                                                                                                                                                  'truncate font-medium text-content-primary',
+                                                                                                                                              children:
+                                                                                                                                                  e.name,
+                                                                                                                                          }
+                                                                                                                                      ),
+                                                                                                                                      e.phone
+                                                                                                                                          ? (0,
+                                                                                                                                            t.jsx)(
+                                                                                                                                                'p',
+                                                                                                                                                {
+                                                                                                                                                    className:
+                                                                                                                                                        'truncate text-xs text-content-secondary',
+                                                                                                                                                    children:
+                                                                                                                                                        e.phone,
+                                                                                                                                                }
+                                                                                                                                            )
+                                                                                                                                          : null,
+                                                                                                                                  ],
+                                                                                                                          }
+                                                                                                                      ),
+                                                                                                                      r
+                                                                                                                          ? (0,
+                                                                                                                            t.jsx)(
+                                                                                                                                f.Check,
+                                                                                                                                {
+                                                                                                                                    className:
+                                                                                                                                        'h-4 w-4 text-content-brand shrink-0',
+                                                                                                                                }
+                                                                                                                            )
+                                                                                                                          : null,
+                                                                                                                  ],
+                                                                                                          },
+                                                                                                          e.id
+                                                                                                      );
+                                                                                                  }
+                                                                                              ),
+                                                                                      }
+                                                                                  )
+                                                                        : null,
+                                                            }),
+                                                        }
+                                                    ),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    (0, t.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, t.jsx)('p', {
+                                                className:
+                                                    'text-label-medium-size text-content-primary',
+                                                children: 'Nome do cliente',
+                                            }),
+                                            (0, t.jsxs)('div', {
+                                                className: 'relative',
+                                                children: [
+                                                    (0, t.jsx)(j.User, {
+                                                        className:
+                                                            'absolute left-3 top-1/2 -translate-y-1/2 transform text-content-brand',
+                                                        size: 20,
+                                                    }),
+                                                    (0, t.jsx)(l.Input, {
+                                                        value: q,
+                                                        onChange: (e) =>
+                                                            K(e.target.value),
+                                                        placeholder:
+                                                            'Nome do cliente',
+                                                        className: 'pl-10',
+                                                        disabled: !ej,
+                                                    }),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    (0, t.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, t.jsx)('p', {
+                                                className:
+                                                    'text-label-medium-size text-content-primary',
+                                                children: 'Telefone',
+                                            }),
+                                            (0, t.jsxs)('div', {
+                                                className: 'relative',
+                                                children: [
+                                                    (0, t.jsx)(v.Phone, {
+                                                        className:
+                                                            'absolute left-3 top-1/2 -translate-y-1/2 transform text-content-brand',
+                                                        size: 20,
+                                                    }),
+                                                    (0, t.jsx)(k.IMaskInput, {
+                                                        value: X ?? '',
+                                                        onAccept: (e) =>
+                                                            J(String(e)),
+                                                        placeholder:
+                                                            '(99) 99999-9999',
+                                                        mask: '(00) 00000-0000',
+                                                        className:
+                                                            'pl-10 flex h-12 w-full rounded-md border border-border-primary bg-background-tertiary px-3 py-2 text-sm text-content-primary ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-content-secondary focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-0 focus-visible:ring-border-brand disabled:cursor-not-allowed disabled:opacity-50 hover:border-border-secondary focus:border-border-brand focus-visible:border-border-brand aria-invalid:ring-destructive/20 aria-invalid:border-destructive',
+                                                        disabled: !ej,
+                                                    }),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    (0, t.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, t.jsx)('p', {
+                                                className:
+                                                    'text-label-medium-size text-content-primary',
+                                                children: 'Unidade',
+                                            }),
+                                            a
+                                                ? (0, t.jsxs)('div', {
+                                                      className: 'relative',
+                                                      children: [
+                                                          (0, t.jsx)(y.Store, {
+                                                              className:
+                                                                  'absolute left-3 top-1/2 -translate-y-1/2 transform text-content-brand',
+                                                              size: 18,
+                                                          }),
+                                                          (0, t.jsx)(l.Input, {
+                                                              value:
+                                                                  ev ??
+                                                                  'Unidade selecionada',
+                                                              readOnly: !0,
+                                                              className:
+                                                                  'pl-10',
+                                                              disabled: !0,
+                                                          }),
+                                                      ],
+                                                  })
+                                                : (0, t.jsxs)(c.Select, {
+                                                      value: Z,
+                                                      onValueChange: (e) => {
+                                                          (Q(e), ew(!0));
+                                                      },
+                                                      disabled: !ej,
+                                                      children: [
+                                                          (0, t.jsx)(
+                                                              c.SelectTrigger,
+                                                              {
+                                                                  children: (0,
+                                                                  t.jsxs)(
+                                                                      'div',
+                                                                      {
+                                                                          className:
+                                                                              'flex items-center gap-2',
+                                                                          children:
+                                                                              [
+                                                                                  (0,
+                                                                                  t.jsx)(
+                                                                                      y.Store,
+                                                                                      {
+                                                                                          className:
+                                                                                              'h-4 w-4 text-content-brand',
+                                                                                      }
+                                                                                  ),
+                                                                                  (0,
+                                                                                  t.jsx)(
+                                                                                      c.SelectValue,
+                                                                                      {
+                                                                                          placeholder:
+                                                                                              0 ===
+                                                                                              eg.length
+                                                                                                  ? 'Nenhuma unidade disponível'
+                                                                                                  : 'Selecione a unidade',
+                                                                                      }
+                                                                                  ),
+                                                                              ],
+                                                                      }
+                                                                  ),
+                                                              }
+                                                          ),
+                                                          (0, t.jsx)(
+                                                              c.SelectContent,
+                                                              {
+                                                                  children:
+                                                                      0 ===
+                                                                      eg.length
+                                                                          ? (0,
+                                                                            t.jsx)(
+                                                                                c.SelectItem,
+                                                                                {
+                                                                                    disabled:
+                                                                                        !0,
+                                                                                    value: 'no-units',
+                                                                                    children:
+                                                                                        'Nenhuma unidade cadastrada/ativa',
+                                                                                }
+                                                                            )
+                                                                          : eg.map(
+                                                                                (
+                                                                                    e
+                                                                                ) =>
+                                                                                    (0,
+                                                                                    t.jsx)(
+                                                                                        c.SelectItem,
+                                                                                        {
+                                                                                            value: e.id,
+                                                                                            children:
+                                                                                                e.name,
+                                                                                        },
+                                                                                        e.id
+                                                                                    )
+                                                                            ),
+                                                              }
+                                                          ),
+                                                      ],
+                                                  }),
+                                        ],
+                                    }),
+                                    (0, t.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, t.jsx)('p', {
+                                                className:
+                                                    'text-label-medium-size text-content-primary',
+                                                children: 'Profissional',
+                                            }),
+                                            (0, t.jsxs)(c.Select, {
+                                                value: ee,
+                                                onValueChange: (e) => {
+                                                    (et(e),
+                                                        eo(void 0),
+                                                        ei(''),
+                                                        ed([]),
+                                                        em(null));
+                                                },
+                                                disabled: !ej || !Z,
+                                                children: [
+                                                    (0, t.jsx)(
+                                                        c.SelectTrigger,
+                                                        {
+                                                            className:
+                                                                ' w-full justify-between text-left font-normal bg-background-tertiary border-border-primary text-content-primary focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand focus:border-border-brand focus-visible:border-border-brand disabled:opacity-60 disabled:cursor-not-allowed ',
+                                                            children: (0,
+                                                            t.jsxs)('div', {
+                                                                className:
+                                                                    'flex items-center gap-2',
+                                                                children: [
+                                                                    (0, t.jsx)(
+                                                                        N.UserCircle,
+                                                                        {
+                                                                            className:
+                                                                                'h-4 w-4 text-content-brand',
+                                                                        }
+                                                                    ),
+                                                                    (0, t.jsx)(
+                                                                        c.SelectValue,
+                                                                        {
+                                                                            placeholder:
+                                                                                ej
+                                                                                    ? Z
+                                                                                        ? 'Selecione o profissional'
+                                                                                        : 'Selecione a unidade'
+                                                                                    : 'Selecione um cliente',
+                                                                        }
+                                                                    ),
+                                                                ],
+                                                            }),
+                                                        }
+                                                    ),
+                                                    (0, t.jsx)(
+                                                        c.SelectContent,
+                                                        {
+                                                            children:
+                                                                0 === A.length
+                                                                    ? (0,
+                                                                      t.jsx)(
+                                                                          c.SelectItem,
+                                                                          {
+                                                                              disabled:
+                                                                                  !0,
+                                                                              value: 'no-professionals',
+                                                                              children:
+                                                                                  'Nenhum profissional disponível',
+                                                                          }
+                                                                      )
+                                                                    : A.filter(
+                                                                          (e) =>
+                                                                              !1 !==
+                                                                              e.isActive
+                                                                      ).map(
+                                                                          (e) =>
+                                                                              (0,
+                                                                              t.jsx)(
+                                                                                  c.SelectItem,
+                                                                                  {
+                                                                                      value: e.id,
+                                                                                      children:
+                                                                                          e.name,
+                                                                                  },
+                                                                                  e.id
+                                                                              )
+                                                                      ),
+                                                        }
+                                                    ),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    (0, t.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, t.jsx)('p', {
+                                                className:
+                                                    'text-label-medium-size text-content-primary',
+                                                children: 'Serviço',
+                                            }),
+                                            (0, t.jsxs)(c.Select, {
+                                                value: er,
+                                                onValueChange: (e) => {
+                                                    (ea(e),
+                                                        eo(void 0),
+                                                        ei(''),
+                                                        ed([]),
+                                                        em(null));
+                                                },
+                                                disabled: !ej || !Z || !ee,
+                                                children: [
+                                                    (0, t.jsx)(
+                                                        c.SelectTrigger,
+                                                        {
+                                                            children: (0,
+                                                            t.jsxs)('div', {
+                                                                className:
+                                                                    'flex items-center gap-2',
+                                                                children: [
+                                                                    (0, t.jsx)(
+                                                                        w.Scissors,
+                                                                        {
+                                                                            className:
+                                                                                'h-4 w-4 text-content-brand',
+                                                                        }
+                                                                    ),
+                                                                    (0, t.jsx)(
+                                                                        c.SelectValue,
+                                                                        {
+                                                                            placeholder:
+                                                                                ej
+                                                                                    ? Z
+                                                                                        ? ee
+                                                                                            ? 'Selecione o serviço'
+                                                                                            : 'Selecione o profissional'
+                                                                                        : 'Selecione a unidade'
+                                                                                    : 'Selecione um cliente',
+                                                                        }
+                                                                    ),
+                                                                ],
+                                                            }),
+                                                        }
+                                                    ),
+                                                    (0, t.jsx)(
+                                                        c.SelectContent,
+                                                        {
+                                                            children:
+                                                                0 === ey.length
+                                                                    ? (0,
+                                                                      t.jsx)(
+                                                                          c.SelectItem,
+                                                                          {
+                                                                              disabled:
+                                                                                  !0,
+                                                                              value: 'no-services',
+                                                                              children:
+                                                                                  'Nenhum serviço disponível',
+                                                                          }
+                                                                      )
+                                                                    : ey.map(
+                                                                          (e) =>
+                                                                              (0,
+                                                                              t.jsx)(
+                                                                                  c.SelectItem,
+                                                                                  {
+                                                                                      value: e.id,
+                                                                                      children:
+                                                                                          e.name,
+                                                                                  },
+                                                                                  e.id
+                                                                              )
+                                                                      ),
+                                                        }
+                                                    ),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    (0, t.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, t.jsx)('p', {
+                                                className:
+                                                    'text-label-medium-size text-content-primary',
+                                                children: 'Dia',
+                                            }),
+                                            (0, t.jsxs)(d.Popover, {
+                                                open: F,
+                                                onOpenChange: z,
+                                                children: [
+                                                    (0, t.jsx)(
+                                                        d.PopoverTrigger,
+                                                        {
+                                                            asChild: !0,
+                                                            children: (0,
+                                                            t.jsxs)(n.Button, {
+                                                                variant:
+                                                                    'outline',
+                                                                disabled:
+                                                                    !ej ||
+                                                                    !Z ||
+                                                                    !ee ||
+                                                                    !er,
+                                                                className: (0,
+                                                                p.cn)(
+                                                                    'w-full justify-between text-left font-normal bg-background-tertiary border-border-primary text-content-primary hover:bg-background-tertiary hover:border-border-secondary hover:text-content-primary focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand focus:border-border-brand focus-visible:border-border-brand disabled:opacity-60 disabled:cursor-not-allowed',
+                                                                    !en &&
+                                                                        'text-content-secondary'
+                                                                ),
+                                                                children: [
+                                                                    (0, t.jsxs)(
+                                                                        'div',
+                                                                        {
+                                                                            className:
+                                                                                'flex items-center gap-2',
+                                                                            children:
+                                                                                [
+                                                                                    (0,
+                                                                                    t.jsx)(
+                                                                                        m.Calendar,
+                                                                                        {
+                                                                                            className:
+                                                                                                'text-content-brand',
+                                                                                            size: 20,
+                                                                                        }
+                                                                                    ),
+                                                                                    en
+                                                                                        ? (0,
+                                                                                          D.format)(
+                                                                                              en,
+                                                                                              'dd/MM/yyyy'
+                                                                                          )
+                                                                                        : (0,
+                                                                                          t.jsx)(
+                                                                                              'span',
+                                                                                              {
+                                                                                                  children:
+                                                                                                      ej
+                                                                                                          ? Z
+                                                                                                              ? ee
+                                                                                                                  ? er
+                                                                                                                      ? 'Selecione um dia'
+                                                                                                                      : 'Selecione o serviço'
+                                                                                                                  : 'Selecione o profissional'
+                                                                                                              : 'Selecione a unidade'
+                                                                                                          : 'Selecione um cliente',
+                                                                                              }
+                                                                                          ),
+                                                                                ],
+                                                                        }
+                                                                    ),
+                                                                    (0, t.jsx)(
+                                                                        x.ChevronDown,
+                                                                        {
+                                                                            className:
+                                                                                'opacity-50 h-4 w-4',
+                                                                        }
+                                                                    ),
+                                                                ],
+                                                            }),
+                                                        }
+                                                    ),
+                                                    (0, t.jsx)(
+                                                        d.PopoverContent,
+                                                        {
+                                                            className:
+                                                                'w-auto p-0',
+                                                            align: 'start',
+                                                            children: (0,
+                                                            t.jsx)(u.Calendar, {
+                                                                mode: 'single',
+                                                                selected: en,
+                                                                onSelect: (
+                                                                    e
+                                                                ) => {
+                                                                    (eo(
+                                                                        e ??
+                                                                            void 0
+                                                                    ),
+                                                                        ei(''),
+                                                                        ed([]),
+                                                                        em(
+                                                                            null
+                                                                        ),
+                                                                        e &&
+                                                                            z(
+                                                                                !1
+                                                                            ));
+                                                                },
+                                                                disabled: (e) =>
+                                                                    e <
+                                                                    (0,
+                                                                    S.startOfToday)(),
+                                                            }),
+                                                        }
+                                                    ),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    (0, t.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, t.jsxs)('div', {
+                                                className:
+                                                    'flex items-center justify-between gap-3',
+                                                children: [
+                                                    (0, t.jsx)('p', {
+                                                        className:
+                                                            'text-label-medium-size text-content-primary',
+                                                        children: 'Horário',
+                                                    }),
+                                                    ec
+                                                        ? (0, t.jsxs)('span', {
+                                                              className:
+                                                                  'inline-flex items-center gap-2 text-xs text-content-secondary',
+                                                              children: [
+                                                                  (0, t.jsx)(
+                                                                      g.Loader2,
+                                                                      {
+                                                                          className:
+                                                                              'h-3.5 w-3.5 animate-spin',
+                                                                      }
+                                                                  ),
+                                                                  'Carregando horários...',
+                                                              ],
+                                                          })
+                                                        : null,
+                                                ],
+                                            }),
+                                            (0, t.jsxs)(c.Select, {
+                                                value: es,
+                                                onValueChange: (e) => ei(e),
+                                                disabled: eS,
+                                                children: [
+                                                    (0, t.jsx)(
+                                                        c.SelectTrigger,
+                                                        {
+                                                            className:
+                                                                ' w-full justify-between text-left font-normal bg-background-tertiary border-border-primary text-content-primary focus-visible:ring-offset-0 focus-visible:ring-1 focus-visible:ring-border-brand focus:border-border-brand focus-visible:border-border-brand disabled:opacity-60 disabled:cursor-not-allowed ',
+                                                            children: (0,
+                                                            t.jsxs)('div', {
+                                                                className:
+                                                                    'flex items-center gap-2',
+                                                                children: [
+                                                                    (0, t.jsx)(
+                                                                        h.Clock,
+                                                                        {
+                                                                            className:
+                                                                                'h-4 w-4 text-content-brand',
+                                                                        }
+                                                                    ),
+                                                                    (0, t.jsx)(
+                                                                        c.SelectValue,
+                                                                        {
+                                                                            placeholder:
+                                                                                ej
+                                                                                    ? Z
+                                                                                        ? ee
+                                                                                            ? er
+                                                                                                ? en
+                                                                                                    ? ec
+                                                                                                        ? 'Carregando horários...'
+                                                                                                        : ep
+                                                                                                          ? 'Erro ao carregar horários'
+                                                                                                          : 0 ===
+                                                                                                              el.length
+                                                                                                            ? 'Sem horários disponíveis'
+                                                                                                            : 'Selecione um horário'
+                                                                                                    : 'Selecione o dia'
+                                                                                                : 'Selecione o serviço'
+                                                                                            : 'Selecione o profissional'
+                                                                                        : 'Selecione a unidade'
+                                                                                    : 'Selecione um cliente',
+                                                                        }
+                                                                    ),
+                                                                ],
+                                                            }),
+                                                        }
+                                                    ),
+                                                    (0, t.jsx)(
+                                                        c.SelectContent,
+                                                        {
+                                                            children: ep
+                                                                ? (0, t.jsx)(
+                                                                      c.SelectItem,
+                                                                      {
+                                                                          disabled:
+                                                                              !0,
+                                                                          value: 'times-error',
+                                                                          children:
+                                                                              ep,
+                                                                      }
+                                                                  )
+                                                                : ec
+                                                                  ? (0, t.jsx)(
+                                                                        c.SelectItem,
+                                                                        {
+                                                                            disabled:
+                                                                                !0,
+                                                                            value: 'times-loading',
+                                                                            children:
+                                                                                'Carregando...',
+                                                                        }
+                                                                    )
+                                                                  : 0 ===
+                                                                      el.length
+                                                                    ? (0,
+                                                                      t.jsx)(
+                                                                          c.SelectItem,
+                                                                          {
+                                                                              disabled:
+                                                                                  !0,
+                                                                              value: 'no-times',
+                                                                              children:
+                                                                                  'Nenhum horário disponível',
+                                                                          }
+                                                                      )
+                                                                    : el.map(
+                                                                          (e) =>
+                                                                              (0,
+                                                                              t.jsx)(
+                                                                                  c.SelectItem,
+                                                                                  {
+                                                                                      value: e,
+                                                                                      children:
+                                                                                          e,
+                                                                                  },
+                                                                                  e
+                                                                              )
+                                                                      ),
+                                                        }
+                                                    ),
+                                                ],
+                                            }),
+                                            ep
+                                                ? (0, t.jsx)('p', {
+                                                      className:
+                                                          'text-xs text-destructive',
+                                                      children: ep,
+                                                  })
+                                                : null,
+                                        ],
+                                    }),
+                                    (0, t.jsx)('div', {
+                                        className: 'flex justify-end pt-2',
+                                        children: (0, t.jsxs)(n.Button, {
+                                            type: 'button',
+                                            variant: 'brand',
+                                            onClick: eD,
+                                            disabled:
+                                                ex ||
+                                                !$ ||
+                                                !Z ||
+                                                !ee ||
+                                                !er ||
+                                                !en ||
+                                                !es ||
+                                                ec,
+                                            children: [
+                                                ex
+                                                    ? (0, t.jsx)(g.Loader2, {
+                                                          className:
+                                                              'mr-2 h-4 w-4 animate-spin',
+                                                      })
+                                                    : null,
+                                                'Agendar',
+                                            ],
+                                        }),
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            });
+        }
+        var R = e.i(868499),
+            A = e.i(162069),
+            T = e.i(892864);
+        function I({ status: e }) {
+            return (0, t.jsx)('span', {
+                className: (0, p.cn)(
+                    'inline-flex items-center rounded-md border px-2 py-0.5 text-xs',
+                    'DONE' === e
+                        ? 'bg-green-500/15 text-green-600 border-green-500/30'
+                        : 'PENDING' === e
+                          ? 'bg-amber-500/15 text-amber-700 border-amber-500/30'
+                          : 'bg-red-500/15 text-red-600 border-red-500/30'
+                ),
+                children:
+                    'PENDING' === e
+                        ? 'Pendente'
+                        : 'DONE' === e
+                          ? 'Concluído'
+                          : 'Cancelado',
+            });
+        }
+        function E({
+            appt: e,
+            forcedUnitId: a = null,
+            units: i,
+            clients: l,
+            professionals: d,
+            services: c,
+        }) {
+            var u;
+            let p,
+                m,
+                f,
+                x = (0, o.useRouter)(),
+                [h, g] = r.useState(null),
+                v = 'PENDING' === e.status,
+                b = null !== h,
+                y = async () => {
+                    try {
+                        g('done');
+                        let t = await fetch(`/api/admin/appointments/${e.id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ action: 'done' }),
+                            }),
+                            r = await t.json().catch(() => ({}));
+                        if (!t.ok)
+                            return void s.toast.error(
+                                r?.error ??
+                                    'Não foi possível concluir o agendamento.'
+                            );
+                        (s.toast.success('Agendamento concluído!'),
+                            x.refresh());
+                    } catch {
+                        s.toast.error('Erro ao concluir o agendamento.');
+                    } finally {
+                        g(null);
+                    }
+                },
+                j = async () => {
+                    try {
+                        g('cancel');
+                        let t = await fetch(`/api/admin/appointments/${e.id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ action: 'cancel' }),
+                            }),
+                            r = await t.json().catch(() => ({}));
+                        if (!t.ok)
+                            return void s.toast.error(
+                                r?.error ??
+                                    'Não foi possível cancelar o agendamento.'
+                            );
+                        (s.toast.success('Agendamento cancelado.'),
+                            x.refresh());
+                    } catch {
+                        s.toast.error('Erro ao cancelar o agendamento.');
+                    } finally {
+                        g(null);
+                    }
+                },
+                N = {
+                    id: e.id,
+                    unitId: e.unitId,
+                    clientId: e.clientId,
+                    clientName: e.clientName,
+                    phone: e.phone,
+                    description: e.description,
+                    scheduleAt: e.scheduleAt,
+                    status: e.status,
+                    professionalId: e.professionalId,
+                    serviceId: e.serviceId,
+                },
+                w =
+                    ((m = String(
+                        (p =
+                            (u = e.scheduleAt) instanceof Date
+                                ? u
+                                : new Date(u)).getHours()
+                    ).padStart(2, '0')),
+                    (f = String(p.getMinutes()).padStart(2, '0')),
+                    `${m}:${f}`);
+            return (0, t.jsxs)('tr', {
+                className: 'border-b border-border-primary hover:bg-muted/30',
+                children: [
+                    (0, t.jsx)('td', {
+                        className: 'px-4 py-3 font-medium text-content-primary',
+                        children: w,
+                    }),
+                    (0, t.jsx)('td', {
+                        className: 'px-4 py-3 text-content-primary',
+                        children: e.clientName,
+                    }),
+                    (0, t.jsx)('td', {
+                        className: 'px-4 py-3 text-content-secondary',
+                        children: e.phone,
+                    }),
+                    (0, t.jsx)('td', {
+                        className: 'px-4 py-3 text-content-secondary',
+                        children: e.description,
+                    }),
+                    (0, t.jsx)('td', {
+                        className: 'px-4 py-3',
+                        children: (0, t.jsx)(I, { status: e.status }),
+                    }),
+                    (0, t.jsx)('td', {
+                        className: 'px-4 py-3 text-right',
+                        children: v
+                            ? (0, t.jsxs)('div', {
+                                  className:
+                                      'flex items-center justify-end gap-2',
+                                  children: [
+                                      (0, t.jsx)(T.default, {
+                                          appt: N,
+                                          forcedUnitId: a,
+                                          units: i,
+                                          clients: l,
+                                          professionals: d,
+                                          services: c,
+                                          children: (0, t.jsx)(n.Button, {
+                                              type: 'button',
+                                              variant: 'edit2',
+                                              size: 'sm',
+                                              disabled: b,
+                                              children: 'Editar',
+                                          }),
+                                      }),
+                                      (0, t.jsxs)(R.AlertDialog, {
+                                          children: [
+                                              (0, t.jsx)(R.AlertDialogTrigger, {
+                                                  asChild: !0,
+                                                  children: (0, t.jsx)(
+                                                      n.Button,
+                                                      {
+                                                          type: 'button',
+                                                          variant: 'active',
+                                                          size: 'sm',
+                                                          disabled: b,
+                                                          children: 'Concluir',
+                                                      }
+                                                  ),
+                                              }),
+                                              (0, t.jsxs)(
+                                                  R.AlertDialogContent,
+                                                  {
+                                                      children: [
+                                                          (0, t.jsxs)(
+                                                              R.AlertDialogHeader,
+                                                              {
+                                                                  children: [
+                                                                      (0,
+                                                                      t.jsx)(
+                                                                          R.AlertDialogTitle,
+                                                                          {
+                                                                              children:
+                                                                                  'Concluir este agendamento?',
+                                                                          }
+                                                                      ),
+                                                                      (0,
+                                                                      t.jsxs)(
+                                                                          R.AlertDialogDescription,
+                                                                          {
+                                                                              children:
+                                                                                  [
+                                                                                      'Você vai marcar como concluído o agendamento de ',
+                                                                                      (0,
+                                                                                      t.jsx)(
+                                                                                          'b',
+                                                                                          {
+                                                                                              children:
+                                                                                                  e.clientName,
+                                                                                          }
+                                                                                      ),
+                                                                                      ' ',
+                                                                                      'às ',
+                                                                                      (0,
+                                                                                      t.jsx)(
+                                                                                          'b',
+                                                                                          {
+                                                                                              children:
+                                                                                                  w,
+                                                                                          }
+                                                                                      ),
+                                                                                      ' (',
+                                                                                      e.description,
+                                                                                      ').',
+                                                                                  ],
+                                                                          }
+                                                                      ),
+                                                                  ],
+                                                              }
+                                                          ),
+                                                          (0, t.jsxs)(
+                                                              R.AlertDialogFooter,
+                                                              {
+                                                                  children: [
+                                                                      (0,
+                                                                      t.jsx)(
+                                                                          A.Cancel,
+                                                                          {
+                                                                              asChild:
+                                                                                  !0,
+                                                                              children:
+                                                                                  (0,
+                                                                                  t.jsx)(
+                                                                                      n.Button,
+                                                                                      {
+                                                                                          type: 'button',
+                                                                                          variant:
+                                                                                              'outline',
+                                                                                          size: 'sm',
+                                                                                          disabled:
+                                                                                              'done' ===
+                                                                                              h,
+                                                                                          children:
+                                                                                              'Voltar',
+                                                                                      }
+                                                                                  ),
+                                                                          }
+                                                                      ),
+                                                                      (0,
+                                                                      t.jsx)(
+                                                                          A.Action,
+                                                                          {
+                                                                              asChild:
+                                                                                  !0,
+                                                                              children:
+                                                                                  (0,
+                                                                                  t.jsx)(
+                                                                                      n.Button,
+                                                                                      {
+                                                                                          type: 'button',
+                                                                                          variant:
+                                                                                              'active',
+                                                                                          size: 'sm',
+                                                                                          onClick:
+                                                                                              y,
+                                                                                          disabled:
+                                                                                              'done' ===
+                                                                                              h,
+                                                                                          children:
+                                                                                              'done' ===
+                                                                                              h
+                                                                                                  ? 'Concluindo...'
+                                                                                                  : 'Concluir agendamento',
+                                                                                      }
+                                                                                  ),
+                                                                          }
+                                                                      ),
+                                                                  ],
+                                                              }
+                                                          ),
+                                                      ],
+                                                  }
+                                              ),
+                                          ],
+                                      }),
+                                      (0, t.jsxs)(R.AlertDialog, {
+                                          children: [
+                                              (0, t.jsx)(R.AlertDialogTrigger, {
+                                                  asChild: !0,
+                                                  children: (0, t.jsx)(
+                                                      n.Button,
+                                                      {
+                                                          type: 'button',
+                                                          variant:
+                                                              'destructive',
+                                                          size: 'sm',
+                                                          disabled: b,
+                                                          children: 'Cancelar',
+                                                      }
+                                                  ),
+                                              }),
+                                              (0, t.jsxs)(
+                                                  R.AlertDialogContent,
+                                                  {
+                                                      children: [
+                                                          (0, t.jsxs)(
+                                                              R.AlertDialogHeader,
+                                                              {
+                                                                  children: [
+                                                                      (0,
+                                                                      t.jsx)(
+                                                                          R.AlertDialogTitle,
+                                                                          {
+                                                                              children:
+                                                                                  'Cancelar este agendamento?',
+                                                                          }
+                                                                      ),
+                                                                      (0,
+                                                                      t.jsxs)(
+                                                                          R.AlertDialogDescription,
+                                                                          {
+                                                                              children:
+                                                                                  [
+                                                                                      'O agendamento de',
+                                                                                      ' ',
+                                                                                      (0,
+                                                                                      t.jsx)(
+                                                                                          'b',
+                                                                                          {
+                                                                                              children:
+                                                                                                  e.clientName,
+                                                                                          }
+                                                                                      ),
+                                                                                      ' às',
+                                                                                      ' ',
+                                                                                      (0,
+                                                                                      t.jsx)(
+                                                                                          'b',
+                                                                                          {
+                                                                                              children:
+                                                                                                  w,
+                                                                                          }
+                                                                                      ),
+                                                                                      ' será cancelado.',
+                                                                                  ],
+                                                                          }
+                                                                      ),
+                                                                  ],
+                                                              }
+                                                          ),
+                                                          (0, t.jsxs)(
+                                                              R.AlertDialogFooter,
+                                                              {
+                                                                  children: [
+                                                                      (0,
+                                                                      t.jsx)(
+                                                                          A.Cancel,
+                                                                          {
+                                                                              asChild:
+                                                                                  !0,
+                                                                              children:
+                                                                                  (0,
+                                                                                  t.jsx)(
+                                                                                      n.Button,
+                                                                                      {
+                                                                                          type: 'button',
+                                                                                          variant:
+                                                                                              'outline',
+                                                                                          size: 'sm',
+                                                                                          disabled:
+                                                                                              'cancel' ===
+                                                                                              h,
+                                                                                          children:
+                                                                                              'Voltar',
+                                                                                      }
+                                                                                  ),
+                                                                          }
+                                                                      ),
+                                                                      (0,
+                                                                      t.jsx)(
+                                                                          A.Action,
+                                                                          {
+                                                                              asChild:
+                                                                                  !0,
+                                                                              children:
+                                                                                  (0,
+                                                                                  t.jsx)(
+                                                                                      n.Button,
+                                                                                      {
+                                                                                          type: 'button',
+                                                                                          variant:
+                                                                                              'destructive',
+                                                                                          size: 'sm',
+                                                                                          onClick:
+                                                                                              j,
+                                                                                          disabled:
+                                                                                              'cancel' ===
+                                                                                              h,
+                                                                                          children:
+                                                                                              'cancel' ===
+                                                                                              h
+                                                                                                  ? 'Cancelando...'
+                                                                                                  : 'Cancelar agendamento',
+                                                                                      }
+                                                                                  ),
+                                                                          }
+                                                                      ),
+                                                                  ],
+                                                              }
+                                                          ),
+                                                      ],
+                                                  }
+                                              ),
+                                          ],
+                                      }),
+                                  ],
+                              })
+                            : (0, t.jsx)('span', {
+                                  className:
+                                      'text-paragraph-small text-content-tertiary',
+                                  children: '—',
+                              }),
+                    }),
+                ],
+            });
+        }
+        function O({
+            scopeLabel: e,
+            date: o,
+            activeUnitId: s,
+            units: i = [],
+            appointments: l = [],
+            professionals: d = [],
+            services: c = [],
+            clients: u = [],
+        }) {
+            let p = r.useMemo(() => {
+                let e = new Map();
+                for (let t of l) {
+                    let r = t.professionalId ?? 'no-professional',
+                        a = t.professional?.name ?? 'Sem profissional',
+                        n = t.professional?.imageUrl ?? null;
+                    (e.has(r) ||
+                        e.set(r, {
+                            key: r,
+                            professionalId: t.professionalId ?? null,
+                            professionalName: a,
+                            professionalImageUrl: n,
+                            appointments: [],
+                        }),
+                        e.get(r).appointments.push(t));
+                }
+                if (0 === l.length && d.length > 0)
+                    for (let t of d) {
+                        let r = t.id;
+                        e.has(r) ||
+                            e.set(r, {
+                                key: r,
+                                professionalId: t.id,
+                                professionalName: t.name,
+                                professionalImageUrl: t.imageUrl ?? null,
+                                appointments: [],
+                            });
+                    }
+                let t = Array.from(e.values());
+                for (let e of (t.sort((e, t) => {
+                    if ('no-professional' === e.key) return 1;
+                    if ('no-professional' === t.key) return -1;
+                    var r = e.professionalName,
+                        a = t.professionalName;
+                    try {
+                        return r.localeCompare(a, 'pt-BR', {
+                            sensitivity: 'base',
+                        });
+                    } catch {
+                        return r.localeCompare(a);
+                    }
+                }),
+                t))
+                    e.appointments.sort(
+                        (e, t) =>
+                            new Date(e.scheduleAt).getTime() -
+                            new Date(t.scheduleAt).getTime()
+                    );
+                return t;
+            }, [l, d]);
+            return (
+                r.useMemo(() => {
+                    if (!s) return null;
+                    let e = i.find((e) => e.id === s);
+                    return e?.name ?? null;
+                }, [s, i]),
+                (0, t.jsxs)('div', {
+                    className: 'space-y-6 max-w-7xl',
+                    children: [
+                        (0, t.jsxs)('div', {
+                            className:
+                                'flex flex-col gap-4 md:flex-row md:items-center md:justify-between',
+                            children: [
+                                (0, t.jsxs)('div', {
+                                    children: [
+                                        (0, t.jsx)('h1', {
+                                            className:
+                                                'text-title text-content-primary',
+                                            children: 'Agendamentos',
+                                        }),
+                                        (0, t.jsx)('p', {
+                                            className:
+                                                'text-paragraph-medium-size text-content-secondary',
+                                            children:
+                                                'Gerencie os agendamentos do dia, organizados por profissional.',
+                                        }),
+                                    ],
+                                }),
+                                (0, t.jsxs)('div', {
+                                    className:
+                                        'flex flex-wrap items-center justify-end gap-2',
+                                    children: [
+                                        (0, t.jsx)(P, {
+                                            forcedUnitId: s ?? null,
+                                            units: i,
+                                            clients: u,
+                                            professionals: d,
+                                            services: c,
+                                            appointments: l,
+                                            children: (0, t.jsx)(n.Button, {
+                                                variant: 'brand',
+                                                children: 'Agendar',
+                                            }),
+                                        }),
+                                        (0, t.jsx)(a.DatePicker, {}),
+                                    ],
+                                }),
+                            ],
+                        }),
+                        0 === p.length
+                            ? (0, t.jsxs)('section', {
+                                  className:
+                                      'border border-border-primary rounded-xl overflow-hidden bg-background-tertiary',
+                                  children: [
+                                      (0, t.jsx)('div', {
+                                          className:
+                                              'border-b border-border-primary px-4 py-3 bg-muted/40 flex justify-between items-center',
+                                          children: (0, t.jsx)('p', {
+                                              className:
+                                                  'font-medium text-content-primary',
+                                              children: 'Agendamentos',
+                                          }),
+                                      }),
+                                      (0, t.jsx)('div', {
+                                          className:
+                                              'p-6 text-paragraph-small text-content-secondary text-center',
+                                          children:
+                                              'Nenhum agendamento encontrado para esta data.',
+                                      }),
+                                  ],
+                              })
+                            : (0, t.jsx)('section', {
+                                  className: 'space-y-4',
+                                  children: p.map((e) => {
+                                      let r = String(e.professionalName ?? '')
+                                          .trim()
+                                          .split(/\s+/)
+                                          .filter(Boolean)
+                                          .map((e) => e[0])
+                                          .join('')
+                                          .slice(0, 2)
+                                          .toUpperCase();
+                                      return (0, t.jsxs)(
+                                          'div',
+                                          {
+                                              className:
+                                                  'border border-border-primary rounded-xl overflow-hidden bg-background-tertiary',
+                                              children: [
+                                                  (0, t.jsx)('div', {
+                                                      className:
+                                                          'border-b border-border-primary px-4 py-3 bg-muted/40 flex flex-col gap-1 md:flex-row md:items-center md:justify-between',
+                                                      children: (0, t.jsxs)(
+                                                          'div',
+                                                          {
+                                                              className:
+                                                                  'flex items-center gap-3',
+                                                              children: [
+                                                                  (0, t.jsx)(
+                                                                      'div',
+                                                                      {
+                                                                          className:
+                                                                              'h-9 w-9 rounded-full bg-background-secondary border border-border-primary overflow-hidden flex items-center justify-center text-[11px] font-medium text-content-secondary shrink-0',
+                                                                          children:
+                                                                              e.professionalImageUrl
+                                                                                  ? (0,
+                                                                                    t.jsx)(
+                                                                                        'img',
+                                                                                        {
+                                                                                            src: e.professionalImageUrl,
+                                                                                            alt: e.professionalName,
+                                                                                            className:
+                                                                                                'h-full w-full object-cover',
+                                                                                        }
+                                                                                    )
+                                                                                  : (0,
+                                                                                    t.jsx)(
+                                                                                        'span',
+                                                                                        {
+                                                                                            children:
+                                                                                                r ||
+                                                                                                '?',
+                                                                                        }
+                                                                                    ),
+                                                                      }
+                                                                  ),
+                                                                  (0, t.jsxs)(
+                                                                      'div',
+                                                                      {
+                                                                          className:
+                                                                              'flex flex-col',
+                                                                          children:
+                                                                              [
+                                                                                  (0,
+                                                                                  t.jsx)(
+                                                                                      'h2',
+                                                                                      {
+                                                                                          className:
+                                                                                              'text-label-large text-content-primary',
+                                                                                          children:
+                                                                                              e.professionalName,
+                                                                                      }
+                                                                                  ),
+                                                                                  (0,
+                                                                                  t.jsxs)(
+                                                                                      'p',
+                                                                                      {
+                                                                                          className:
+                                                                                              'text-paragraph-small text-content-secondary',
+                                                                                          children:
+                                                                                              [
+                                                                                                  'Agendamento(s):',
+                                                                                                  ' ',
+                                                                                                  e
+                                                                                                      .appointments
+                                                                                                      .length,
+                                                                                              ],
+                                                                                      }
+                                                                                  ),
+                                                                              ],
+                                                                      }
+                                                                  ),
+                                                              ],
+                                                          }
+                                                      ),
+                                                  }),
+                                                  0 === e.appointments.length
+                                                      ? (0, t.jsx)('div', {
+                                                            className:
+                                                                'p-6 text-paragraph-small text-content-secondary text-center',
+                                                            children:
+                                                                'Nenhum agendamento para este profissional.',
+                                                        })
+                                                      : (0, t.jsx)('div', {
+                                                            className:
+                                                                'overflow-x-auto',
+                                                            children: (0,
+                                                            t.jsxs)('table', {
+                                                                className:
+                                                                    'min-w-full text-sm',
+                                                                children: [
+                                                                    (0, t.jsx)(
+                                                                        'thead',
+                                                                        {
+                                                                            children:
+                                                                                (0,
+                                                                                t.jsxs)(
+                                                                                    'tr',
+                                                                                    {
+                                                                                        className:
+                                                                                            'border-b border-border-primary text-content-secondary',
+                                                                                        children:
+                                                                                            [
+                                                                                                (0,
+                                                                                                t.jsx)(
+                                                                                                    'th',
+                                                                                                    {
+                                                                                                        className:
+                                                                                                            'px-4 py-3 text-left font-medium',
+                                                                                                        children:
+                                                                                                            'Hora',
+                                                                                                    }
+                                                                                                ),
+                                                                                                (0,
+                                                                                                t.jsx)(
+                                                                                                    'th',
+                                                                                                    {
+                                                                                                        className:
+                                                                                                            'px-4 py-3 text-left font-medium',
+                                                                                                        children:
+                                                                                                            'Cliente',
+                                                                                                    }
+                                                                                                ),
+                                                                                                (0,
+                                                                                                t.jsx)(
+                                                                                                    'th',
+                                                                                                    {
+                                                                                                        className:
+                                                                                                            'px-4 py-3 text-left font-medium',
+                                                                                                        children:
+                                                                                                            'Telefone',
+                                                                                                    }
+                                                                                                ),
+                                                                                                (0,
+                                                                                                t.jsx)(
+                                                                                                    'th',
+                                                                                                    {
+                                                                                                        className:
+                                                                                                            'px-4 py-3 text-left font-medium',
+                                                                                                        children:
+                                                                                                            'Serviço',
+                                                                                                    }
+                                                                                                ),
+                                                                                                (0,
+                                                                                                t.jsx)(
+                                                                                                    'th',
+                                                                                                    {
+                                                                                                        className:
+                                                                                                            'px-4 py-3 text-left font-medium',
+                                                                                                        children:
+                                                                                                            'Status',
+                                                                                                    }
+                                                                                                ),
+                                                                                                (0,
+                                                                                                t.jsx)(
+                                                                                                    'th',
+                                                                                                    {
+                                                                                                        className:
+                                                                                                            'px-4 py-3 text-right font-medium',
+                                                                                                        children:
+                                                                                                            'Ações',
+                                                                                                    }
+                                                                                                ),
+                                                                                            ],
+                                                                                    }
+                                                                                ),
+                                                                        }
+                                                                    ),
+                                                                    (0, t.jsx)(
+                                                                        'tbody',
+                                                                        {
+                                                                            children:
+                                                                                e.appointments.map(
+                                                                                    (
+                                                                                        e
+                                                                                    ) =>
+                                                                                        (0,
+                                                                                        t.jsx)(
+                                                                                            E,
+                                                                                            {
+                                                                                                appt: e,
+                                                                                                forcedUnitId:
+                                                                                                    s ??
+                                                                                                    null,
+                                                                                                units: i,
+                                                                                                clients:
+                                                                                                    u,
+                                                                                                professionals:
+                                                                                                    d,
+                                                                                                services:
+                                                                                                    c,
+                                                                                            },
+                                                                                            e.id
+                                                                                        )
+                                                                                ),
+                                                                        }
+                                                                    ),
+                                                                ],
+                                                            }),
+                                                        }),
+                                              ],
+                                          },
+                                          e.key
+                                      );
+                                  }),
+                              }),
+                    ],
+                })
+            );
+        }
+        e.s(['default', () => O], 867678);
+    },
+]);

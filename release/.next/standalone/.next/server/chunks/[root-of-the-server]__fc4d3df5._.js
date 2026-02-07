@@ -1,0 +1,1068 @@
+module.exports = [
+    698043,
+    (e) => {
+        'use strict';
+        var t = e.i(29173);
+        let r = globalThis.prisma ?? new t.PrismaClient({ log: ['error'] });
+        e.s(['prisma', 0, r]);
+    },
+    29173,
+    (e, t, r) => {
+        t.exports = e.x('@prisma/client', () => require('@prisma/client'));
+    },
+    918622,
+    (e, t, r) => {
+        t.exports = e.x(
+            'next/dist/compiled/next-server/app-page-turbo.runtime.prod.js',
+            () =>
+                require('next/dist/compiled/next-server/app-page-turbo.runtime.prod.js')
+        );
+    },
+    556704,
+    (e, t, r) => {
+        t.exports = e.x(
+            'next/dist/server/app-render/work-async-storage.external.js',
+            () =>
+                require('next/dist/server/app-render/work-async-storage.external.js')
+        );
+    },
+    832319,
+    (e, t, r) => {
+        t.exports = e.x(
+            'next/dist/server/app-render/work-unit-async-storage.external.js',
+            () =>
+                require('next/dist/server/app-render/work-unit-async-storage.external.js')
+        );
+    },
+    324725,
+    (e, t, r) => {
+        t.exports = e.x(
+            'next/dist/server/app-render/after-task-async-storage.external.js',
+            () =>
+                require('next/dist/server/app-render/after-task-async-storage.external.js')
+        );
+    },
+    270406,
+    (e, t, r) => {
+        t.exports = e.x('next/dist/compiled/@opentelemetry/api', () =>
+            require('next/dist/compiled/@opentelemetry/api')
+        );
+    },
+    193695,
+    (e, t, r) => {
+        t.exports = e.x(
+            'next/dist/shared/lib/no-fallback-error.external.js',
+            () => require('next/dist/shared/lib/no-fallback-error.external.js')
+        );
+    },
+    595504,
+    (e) => {
+        'use strict';
+        var t = e.i(716880),
+            r = e.i(996646),
+            a = e.i(590996),
+            n = e.i(704176);
+        async function i(e, t, i, o) {
+            let s = await (0, n.getSigKey)(e, t, 'verify');
+            (0, a.checkKeyLength)(e, s);
+            let d = (0, r.subtleAlgorithm)(e, s.algorithm);
+            try {
+                return await crypto.subtle.verify(d, s, i, o);
+            } catch {
+                return !1;
+            }
+        }
+        var o = e.i(747064),
+            s = e.i(468746),
+            d = e.i(166278),
+            l = e.i(129590),
+            c = e.i(30670),
+            p = e.i(48414),
+            u = e.i(663681);
+        async function h(e, r, a) {
+            let n, h;
+            if (!(0, l.isObject)(e))
+                throw new o.JWSInvalid('Flattened JWS must be an object');
+            if (void 0 === e.protected && void 0 === e.header)
+                throw new o.JWSInvalid(
+                    'Flattened JWS must have either of the "protected" or "header" members'
+                );
+            if (void 0 !== e.protected && 'string' != typeof e.protected)
+                throw new o.JWSInvalid('JWS Protected Header incorrect type');
+            if (void 0 === e.payload)
+                throw new o.JWSInvalid('JWS Payload missing');
+            if ('string' != typeof e.signature)
+                throw new o.JWSInvalid(
+                    'JWS Signature missing or incorrect type'
+                );
+            if (void 0 !== e.header && !(0, l.isObject)(e.header))
+                throw new o.JWSInvalid('JWS Unprotected Header incorrect type');
+            let m = {};
+            if (e.protected)
+                try {
+                    let r = (0, t.decode)(e.protected);
+                    m = JSON.parse(s.decoder.decode(r));
+                } catch {
+                    throw new o.JWSInvalid('JWS Protected Header is invalid');
+                }
+            if (!(0, d.isDisjoint)(m, e.header))
+                throw new o.JWSInvalid(
+                    'JWS Protected and JWS Unprotected Header Parameter names must be disjoint'
+                );
+            let f = { ...m, ...e.header },
+                y = (0, p.validateCrit)(
+                    o.JWSInvalid,
+                    new Map([['b64', !0]]),
+                    a?.crit,
+                    m,
+                    f
+                ),
+                w = !0;
+            if (y.has('b64') && 'boolean' != typeof (w = m.b64))
+                throw new o.JWSInvalid(
+                    'The "b64" (base64url-encode payload) Header Parameter must be a boolean'
+                );
+            let { alg: g } = f;
+            if ('string' != typeof g || !g)
+                throw new o.JWSInvalid(
+                    'JWS "alg" (Algorithm) Header Parameter missing or invalid'
+                );
+            let v =
+                a &&
+                (function (e, t) {
+                    if (
+                        void 0 !== t &&
+                        (!Array.isArray(t) ||
+                            t.some((e) => 'string' != typeof e))
+                    )
+                        throw TypeError(
+                            `"${e}" option must be an array of strings`
+                        );
+                    if (t) return new Set(t);
+                })('algorithms', a.algorithms);
+            if (v && !v.has(g))
+                throw new o.JOSEAlgNotAllowed(
+                    '"alg" (Algorithm) Header Parameter value not allowed'
+                );
+            if (w) {
+                if ('string' != typeof e.payload)
+                    throw new o.JWSInvalid('JWS Payload must be a string');
+            } else if (
+                'string' != typeof e.payload &&
+                !(e.payload instanceof Uint8Array)
+            )
+                throw new o.JWSInvalid(
+                    'JWS Payload must be a string or an Uint8Array instance'
+                );
+            let b = !1;
+            ('function' == typeof r && ((r = await r(m, e)), (b = !0)),
+                (0, c.checkKeyType)(g, r, 'verify'));
+            let S = (0, s.concat)(
+                void 0 !== e.protected
+                    ? (0, s.encode)(e.protected)
+                    : new Uint8Array(),
+                (0, s.encode)('.'),
+                'string' == typeof e.payload
+                    ? w
+                        ? (0, s.encode)(e.payload)
+                        : s.encoder.encode(e.payload)
+                    : e.payload
+            );
+            try {
+                n = (0, t.decode)(e.signature);
+            } catch {
+                throw new o.JWSInvalid(
+                    'Failed to base64url decode the signature'
+                );
+            }
+            let x = await (0, u.normalizeKey)(r, g);
+            if (!(await i(g, x, n, S)))
+                throw new o.JWSSignatureVerificationFailed();
+            if (w)
+                try {
+                    h = (0, t.decode)(e.payload);
+                } catch {
+                    throw new o.JWSInvalid(
+                        'Failed to base64url decode the payload'
+                    );
+                }
+            else
+                h =
+                    'string' == typeof e.payload
+                        ? s.encoder.encode(e.payload)
+                        : e.payload;
+            let A = { payload: h };
+            return (void 0 !== e.protected && (A.protectedHeader = m),
+            void 0 !== e.header && (A.unprotectedHeader = e.header),
+            b)
+                ? { ...A, key: x }
+                : A;
+        }
+        async function m(e, t, r) {
+            if (
+                (e instanceof Uint8Array && (e = s.decoder.decode(e)),
+                'string' != typeof e)
+            )
+                throw new o.JWSInvalid(
+                    'Compact JWS must be a string or Uint8Array'
+                );
+            let { 0: a, 1: n, 2: i, length: d } = e.split('.');
+            if (3 !== d) throw new o.JWSInvalid('Invalid Compact JWS');
+            let l = await h({ payload: n, protected: a, signature: i }, t, r),
+                c = { payload: l.payload, protectedHeader: l.protectedHeader };
+            return 'function' == typeof t ? { ...c, key: l.key } : c;
+        }
+        var f = e.i(948880);
+        async function y(e, t, r) {
+            let a = await m(e, t, r);
+            if (
+                a.protectedHeader.crit?.includes('b64') &&
+                !1 === a.protectedHeader.b64
+            )
+                throw new o.JWTInvalid('JWTs MUST NOT use unencoded payload');
+            let n = {
+                payload: (0, f.validateClaimsSet)(
+                    a.protectedHeader,
+                    a.payload,
+                    r
+                ),
+                protectedHeader: a.protectedHeader,
+            };
+            return 'function' == typeof t ? { ...n, key: a.key } : n;
+        }
+        e.s(['jwtVerify', () => y], 595504);
+    },
+    45334,
+    (e) => {
+        'use strict';
+        var t = e.i(716880),
+            r = e.i(996646),
+            a = e.i(590996),
+            n = e.i(704176);
+        async function i(e, t, i) {
+            let o = await (0, n.getSigKey)(e, t, 'sign');
+            return (
+                (0, a.checkKeyLength)(e, o),
+                new Uint8Array(
+                    await crypto.subtle.sign(
+                        (0, r.subtleAlgorithm)(e, o.algorithm),
+                        o,
+                        i
+                    )
+                )
+            );
+        }
+        var o = e.i(166278),
+            s = e.i(747064),
+            d = e.i(468746),
+            l = e.i(30670),
+            c = e.i(48414),
+            p = e.i(663681);
+        class u {
+            #e;
+            #t;
+            #r;
+            constructor(e) {
+                if (!(e instanceof Uint8Array))
+                    throw TypeError(
+                        'payload must be an instance of Uint8Array'
+                    );
+                this.#e = e;
+            }
+            setProtectedHeader(e) {
+                if (this.#t)
+                    throw TypeError(
+                        'setProtectedHeader can only be called once'
+                    );
+                return ((this.#t = e), this);
+            }
+            setUnprotectedHeader(e) {
+                if (this.#r)
+                    throw TypeError(
+                        'setUnprotectedHeader can only be called once'
+                    );
+                return ((this.#r = e), this);
+            }
+            async sign(e, r) {
+                let a, n, u, h;
+                if (!this.#t && !this.#r)
+                    throw new s.JWSInvalid(
+                        'either setProtectedHeader or setUnprotectedHeader must be called before #sign()'
+                    );
+                if (!(0, o.isDisjoint)(this.#t, this.#r))
+                    throw new s.JWSInvalid(
+                        'JWS Protected and JWS Unprotected Header Parameter names must be disjoint'
+                    );
+                let m = { ...this.#t, ...this.#r },
+                    f = (0, c.validateCrit)(
+                        s.JWSInvalid,
+                        new Map([['b64', !0]]),
+                        r?.crit,
+                        this.#t,
+                        m
+                    ),
+                    y = !0;
+                if (f.has('b64') && 'boolean' != typeof (y = this.#t.b64))
+                    throw new s.JWSInvalid(
+                        'The "b64" (base64url-encode payload) Header Parameter must be a boolean'
+                    );
+                let { alg: w } = m;
+                if ('string' != typeof w || !w)
+                    throw new s.JWSInvalid(
+                        'JWS "alg" (Algorithm) Header Parameter missing or invalid'
+                    );
+                ((0, l.checkKeyType)(w, e, 'sign'),
+                    y
+                        ? ((a = (0, t.encode)(this.#e)), (n = (0, d.encode)(a)))
+                        : ((n = this.#e), (a = '')),
+                    this.#t
+                        ? ((u = (0, t.encode)(JSON.stringify(this.#t))),
+                          (h = (0, d.encode)(u)))
+                        : ((u = ''), (h = new Uint8Array())));
+                let g = (0, d.concat)(h, (0, d.encode)('.'), n),
+                    v = await (0, p.normalizeKey)(e, w),
+                    b = await i(w, v, g),
+                    S = { signature: (0, t.encode)(b), payload: a };
+                return (
+                    this.#r && (S.header = this.#r),
+                    this.#t && (S.protected = u),
+                    S
+                );
+            }
+        }
+        class h {
+            #a;
+            constructor(e) {
+                this.#a = new u(e);
+            }
+            setProtectedHeader(e) {
+                return (this.#a.setProtectedHeader(e), this);
+            }
+            async sign(e, t) {
+                let r = await this.#a.sign(e, t);
+                if (void 0 === r.payload)
+                    throw TypeError(
+                        'use the flattened module for creating JWS with b64: false'
+                    );
+                return `${r.protected}.${r.payload}.${r.signature}`;
+            }
+        }
+        var m = e.i(948880);
+        class f {
+            #t;
+            #n;
+            constructor(e = {}) {
+                this.#n = new m.JWTClaimsBuilder(e);
+            }
+            setIssuer(e) {
+                return ((this.#n.iss = e), this);
+            }
+            setSubject(e) {
+                return ((this.#n.sub = e), this);
+            }
+            setAudience(e) {
+                return ((this.#n.aud = e), this);
+            }
+            setJti(e) {
+                return ((this.#n.jti = e), this);
+            }
+            setNotBefore(e) {
+                return ((this.#n.nbf = e), this);
+            }
+            setExpirationTime(e) {
+                return ((this.#n.exp = e), this);
+            }
+            setIssuedAt(e) {
+                return ((this.#n.iat = e), this);
+            }
+            setProtectedHeader(e) {
+                return ((this.#t = e), this);
+            }
+            async sign(e, t) {
+                let r = new h(this.#n.data());
+                if (
+                    (r.setProtectedHeader(this.#t),
+                    Array.isArray(this.#t?.crit) &&
+                        this.#t.crit.includes('b64') &&
+                        !1 === this.#t.b64)
+                )
+                    throw new s.JWTInvalid(
+                        'JWTs MUST NOT use unencoded payload'
+                    );
+                return r.sign(e, t);
+            }
+        }
+        e.s(['SignJWT', () => f], 45334);
+    },
+    453852,
+    (e) => {
+        'use strict';
+        var t = e.i(595504),
+            r = e.i(45334);
+        function a() {
+            let e = process.env.APP_JWT_SECRET;
+            if (!e) throw Error('APP_JWT_SECRET não definido no .env');
+            return new TextEncoder().encode(e);
+        }
+        async function n(e) {
+            let { payload: r } = await (0, t.jwtVerify)(e, a());
+            return r;
+        }
+        async function i(e, t) {
+            let n = t?.expiresIn ?? '30d',
+                i = {
+                    ...e,
+                    sub: e?.sub ? String(e.sub) : e?.sub,
+                    role: e?.role,
+                    companyId: e?.companyId
+                        ? String(e.companyId)
+                        : e?.companyId,
+                    email: e?.email ? String(e.email) : e?.email,
+                    name:
+                        e?.name === null || e?.name === void 0
+                            ? e?.name
+                            : String(e.name),
+                    profile_complete:
+                        'boolean' == typeof e?.profile_complete
+                            ? e.profile_complete
+                            : void 0,
+                };
+            return await new r.SignJWT(i)
+                .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+                .setIssuedAt()
+                .setExpirationTime(n)
+                .sign(a());
+        }
+        e.s(['signAppJwt', () => i, 'verifyAppJwt', () => n]);
+    },
+    11886,
+    (e) => {
+        'use strict';
+        var t = e.i(154154),
+            r = e.i(140407),
+            a = e.i(493068),
+            n = e.i(821498),
+            i = e.i(161599),
+            o = e.i(182716),
+            s = e.i(857635),
+            d = e.i(337047),
+            l = e.i(528171),
+            c = e.i(367300),
+            p = e.i(102610),
+            u = e.i(670893),
+            h = e.i(902769),
+            m = e.i(46094),
+            f = e.i(622730),
+            y = e.i(811178),
+            w = e.i(193695);
+        e.i(629399);
+        var g = e.i(377404),
+            v = e.i(738342),
+            b = e.i(698043),
+            S = e.i(453852);
+        function x() {
+            return {
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'POST,OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+            };
+        }
+        async function A(e) {
+            let t = e.headers.get('authorization') || '',
+                r = t.startsWith('Bearer ') ? t.slice(7).trim() : '';
+            if (!r) throw Error('missing_token');
+            let a = await (0, S.verifyAppJwt)(r),
+                n =
+                    'string' == typeof a?.companyId
+                        ? String(a.companyId).trim()
+                        : '';
+            if (!n) throw Error('missing_company_id');
+            return { ...a, companyId: n };
+        }
+        async function H() {
+            return new v.NextResponse(null, { status: 204, headers: x() });
+        }
+        async function I(e, t) {
+            try {
+                let r = await A(e),
+                    a = r.companyId;
+                if (r.role && 'CLIENT' !== r.role)
+                    return v.NextResponse.json(
+                        { error: 'Sem permissão' },
+                        { status: 403, headers: x() }
+                    );
+                let { id: n } = await t.params,
+                    i = String(n ?? '').trim();
+                if (!i)
+                    return v.NextResponse.json(
+                        { error: 'Id ausente' },
+                        { status: 400, headers: x() }
+                    );
+                let o = await b.prisma.appointment.findFirst({
+                    where: { id: i, companyId: a, clientId: r.sub },
+                    select: {
+                        id: !0,
+                        status: !0,
+                        scheduleAt: !0,
+                        unitId: !0,
+                        professionalId: !0,
+                        servicePriceAtTheTime: !0,
+                        service: {
+                            select: {
+                                price: !0,
+                                cancelLimitHours: !0,
+                                cancelFeePercentage: !0,
+                            },
+                        },
+                    },
+                });
+                if (!o)
+                    return v.NextResponse.json(
+                        { error: 'Agendamento não encontrado' },
+                        { status: 404, headers: x() }
+                    );
+                let s = String(o.status).toUpperCase();
+                if ('DONE' === s)
+                    return v.NextResponse.json(
+                        { error: 'Este agendamento já foi concluído' },
+                        { status: 400, headers: x() }
+                    );
+                if ('CANCELED' === s)
+                    return v.NextResponse.json(
+                        { error: 'Este agendamento já foi cancelado' },
+                        { status: 400, headers: x() }
+                    );
+                let d = new Date();
+                if (d.getTime() >= o.scheduleAt.getTime())
+                    return v.NextResponse.json(
+                        {
+                            error: 'Não é possível cancelar no horário do atendimento',
+                        },
+                        { status: 400, headers: x() }
+                    );
+                let l = o.service?.cancelFeePercentage
+                        ? Number(o.service.cancelFeePercentage)
+                        : null,
+                    c = (function (e) {
+                        let {
+                            now: t,
+                            scheduleAt: r,
+                            cancelLimitHours: a,
+                            cancelFeePercentage: n,
+                        } = e;
+                        if (t.getTime() >= r.getTime()) return { eligible: !1 };
+                        let i = 'number' == typeof n && Number(n) > 0;
+                        return 'number' == typeof a && a > 0 && i
+                            ? {
+                                  eligible:
+                                      (r.getTime() - t.getTime()) / 36e5 < a,
+                              }
+                            : { eligible: !1 };
+                    })({
+                        now: d,
+                        scheduleAt: o.scheduleAt,
+                        cancelLimitHours: o.service?.cancelLimitHours ?? null,
+                        cancelFeePercentage: l,
+                    }),
+                    p =
+                        o.servicePriceAtTheTime ??
+                        (o.service?.price ? o.service.price : null),
+                    u = (function (e) {
+                        if (null == e) return null;
+                        if (
+                            'object' == typeof e &&
+                            'function' == typeof e.toNumber
+                        )
+                            try {
+                                let t = e.toNumber();
+                                return Number.isFinite(t) ? t : null;
+                            } catch {
+                                return null;
+                            }
+                        let t = Number(e);
+                        return Number.isFinite(t) ? t : null;
+                    })(p),
+                    h = c.eligible && u && l ? u * (Number(l) / 100) : 0,
+                    m = c.eligible && h > 0 && !!o.professionalId && !!o.unitId;
+                return (
+                    await b.prisma.$transaction(async (e) => {
+                        let t = await e.appointment.updateMany({
+                            where: {
+                                id: o.id,
+                                companyId: a,
+                                clientId: r.sub,
+                                status: { notIn: ['DONE', 'CANCELED'] },
+                            },
+                            data: {
+                                status: 'CANCELED',
+                                cancelledByRole: 'CLIENT',
+                                cancelFeeApplied: c.eligible && h > 0,
+                                cancelFeeValue: c.eligible && h > 0 ? h : null,
+                            },
+                        });
+                        if (!t?.count) throw Error('appointment_not_updatable');
+                        if (m) {
+                            let t = {
+                                    companyId: a,
+                                    appointmentId: o.id,
+                                    professionalId: o.professionalId,
+                                    unitId: o.unitId,
+                                    amount: h,
+                                },
+                                r = {
+                                    appointmentId: o.id,
+                                    professionalId: o.professionalId,
+                                    unitId: o.unitId,
+                                    amount: h,
+                                };
+                            try {
+                                await e.professionalCancellationFee.upsert({
+                                    where: { appointmentId: o.id },
+                                    create: t,
+                                    update: { companyId: a, amount: h },
+                                });
+                            } catch (a) {
+                                let t;
+                                if (
+                                    !(
+                                        (t = String(a?.message || '')).includes(
+                                            'Unknown arg'
+                                        ) ||
+                                        t.includes('Unknown argument') ||
+                                        (t.includes('Argument') &&
+                                            t.includes('is missing'))
+                                    )
+                                )
+                                    throw a;
+                                await e.professionalCancellationFee.upsert({
+                                    where: { appointmentId: o.id },
+                                    create: r,
+                                    update: { amount: h },
+                                });
+                            }
+                        }
+                    }),
+                    v.NextResponse.json(
+                        { ok: !0 },
+                        { status: 200, headers: x() }
+                    )
+                );
+            } catch (t) {
+                let e = String(t?.message ?? 'Erro');
+                if (
+                    'missing_token' === e ||
+                    'missing_company_id' === e ||
+                    e.includes('Invalid token payload') ||
+                    e.toLowerCase().includes('jwt') ||
+                    e.toLowerCase().includes('token') ||
+                    e.toLowerCase().includes('signature')
+                )
+                    return v.NextResponse.json(
+                        { error: 'Não autorizado' },
+                        { status: 401, headers: x() }
+                    );
+                if ('appointment_not_updatable' === e)
+                    return v.NextResponse.json(
+                        { error: 'Agendamento não pode ser cancelado' },
+                        { status: 409, headers: x() }
+                    );
+                return (
+                    console.error(
+                        '[mobile/me/appointments/:id/cancel] error:',
+                        t
+                    ),
+                    v.NextResponse.json(
+                        { error: 'Erro ao cancelar agendamento' },
+                        { status: 500, headers: x() }
+                    )
+                );
+            }
+        }
+        e.s(['OPTIONS', () => H, 'POST', () => I], 188680);
+        var E = e.i(188680);
+        let R = new t.AppRouteRouteModule({
+                definition: {
+                    kind: r.RouteKind.APP_ROUTE,
+                    page: '/api/mobile/me/appointments/[id]/cancel/route',
+                    pathname: '/api/mobile/me/appointments/[id]/cancel',
+                    filename: 'route',
+                    bundlePath: '',
+                },
+                distDir: '.next',
+                relativeProjectDir: '',
+                resolvedPagePath:
+                    '[project]/src/app/api/mobile/me/appointments/[id]/cancel/route.ts',
+                nextConfigOutput: 'standalone',
+                userland: E,
+            }),
+            {
+                workAsyncStorage: T,
+                workUnitAsyncStorage: C,
+                serverHooks: N,
+            } = R;
+        function P() {
+            return (0, a.patchFetch)({
+                workAsyncStorage: T,
+                workUnitAsyncStorage: C,
+            });
+        }
+        async function J(e, t, a) {
+            R.isDev &&
+                (0, n.addRequestMeta)(
+                    e,
+                    'devRequestTimingInternalsEnd',
+                    process.hrtime.bigint()
+                );
+            let v = '/api/mobile/me/appointments/[id]/cancel/route';
+            v = v.replace(/\/index$/, '') || '/';
+            let b = await R.prepare(e, t, {
+                srcPage: v,
+                multiZoneDraftMode: !1,
+            });
+            if (!b)
+                return (
+                    (t.statusCode = 400),
+                    t.end('Bad Request'),
+                    null == a.waitUntil ||
+                        a.waitUntil.call(a, Promise.resolve()),
+                    null
+                );
+            let {
+                    buildId: S,
+                    params: x,
+                    nextConfig: A,
+                    parsedUrl: H,
+                    isDraftMode: I,
+                    prerenderManifest: E,
+                    routerServerContext: T,
+                    isOnDemandRevalidate: C,
+                    revalidateOnlyGenerated: N,
+                    resolvedPathname: P,
+                    clientReferenceManifest: J,
+                    serverActionsManifest: W,
+                } = b,
+                j = (0, d.normalizeAppPath)(v),
+                k = !!(E.dynamicRoutes[j] || E.routes[P]),
+                O = async () => (
+                    (null == T ? void 0 : T.render404)
+                        ? await T.render404(e, t, H, !1)
+                        : t.end('This page could not be found'),
+                    null
+                );
+            if (k && !I) {
+                let e = !!E.routes[P],
+                    t = E.dynamicRoutes[j];
+                if (t && !1 === t.fallback && !e) {
+                    if (A.experimental.adapterPath) return await O();
+                    throw new w.NoFallbackError();
+                }
+            }
+            let _ = null;
+            !k || R.isDev || I || (_ = '/index' === (_ = P) ? '/' : _);
+            let U = !0 === R.isDev || !k,
+                F = k && !U;
+            W &&
+                J &&
+                (0, o.setReferenceManifestsSingleton)({
+                    page: v,
+                    clientReferenceManifest: J,
+                    serverActionsManifest: W,
+                    serverModuleMap: (0, s.createServerModuleMap)({
+                        serverActionsManifest: W,
+                    }),
+                });
+            let M = e.method || 'GET',
+                q = (0, i.getTracer)(),
+                D = q.getActiveScopeSpan(),
+                L = {
+                    params: x,
+                    prerenderManifest: E,
+                    renderOpts: {
+                        experimental: {
+                            authInterrupts: !!A.experimental.authInterrupts,
+                        },
+                        cacheComponents: !!A.cacheComponents,
+                        supportsDynamicResponse: U,
+                        incrementalCache: (0, n.getRequestMeta)(
+                            e,
+                            'incrementalCache'
+                        ),
+                        cacheLifeProfiles: A.cacheLife,
+                        waitUntil: a.waitUntil,
+                        onClose: (e) => {
+                            t.on('close', e);
+                        },
+                        onAfterTaskError: void 0,
+                        onInstrumentationRequestError: (t, r, a) =>
+                            R.onRequestError(e, t, a, T),
+                    },
+                    sharedContext: { buildId: S },
+                },
+                K = new l.NodeNextRequest(e),
+                $ = new l.NodeNextResponse(t),
+                B = c.NextRequestAdapter.fromNodeNextRequest(
+                    K,
+                    (0, c.signalFromNodeResponse)(t)
+                );
+            try {
+                let o = async (e) =>
+                        R.handle(B, L).finally(() => {
+                            if (!e) return;
+                            e.setAttributes({
+                                'http.status_code': t.statusCode,
+                                'next.rsc': !1,
+                            });
+                            let r = q.getRootSpanAttributes();
+                            if (!r) return;
+                            if (
+                                r.get('next.span_type') !==
+                                p.BaseServerSpan.handleRequest
+                            )
+                                return void console.warn(
+                                    `Unexpected root span type '${r.get('next.span_type')}'. Please report this Next.js issue https://github.com/vercel/next.js`
+                                );
+                            let a = r.get('next.route');
+                            if (a) {
+                                let t = `${M} ${a}`;
+                                (e.setAttributes({
+                                    'next.route': a,
+                                    'http.route': a,
+                                    'next.span_name': t,
+                                }),
+                                    e.updateName(t));
+                            } else e.updateName(`${M} ${v}`);
+                        }),
+                    s = !!(0, n.getRequestMeta)(e, 'minimalMode'),
+                    d = async (n) => {
+                        var i, d;
+                        let l = async ({ previousCacheEntry: r }) => {
+                                try {
+                                    if (!s && C && N && !r)
+                                        return (
+                                            (t.statusCode = 404),
+                                            t.setHeader(
+                                                'x-nextjs-cache',
+                                                'REVALIDATED'
+                                            ),
+                                            t.end(
+                                                'This page could not be found'
+                                            ),
+                                            null
+                                        );
+                                    let i = await o(n);
+                                    e.fetchMetrics = L.renderOpts.fetchMetrics;
+                                    let d = L.renderOpts.pendingWaitUntil;
+                                    d &&
+                                        a.waitUntil &&
+                                        (a.waitUntil(d), (d = void 0));
+                                    let l = L.renderOpts.collectedTags;
+                                    if (!k)
+                                        return (
+                                            await (0, h.sendResponse)(
+                                                K,
+                                                $,
+                                                i,
+                                                L.renderOpts.pendingWaitUntil
+                                            ),
+                                            null
+                                        );
+                                    {
+                                        let e = await i.blob(),
+                                            t = (0,
+                                            m.toNodeOutgoingHttpHeaders)(
+                                                i.headers
+                                            );
+                                        (l && (t[y.NEXT_CACHE_TAGS_HEADER] = l),
+                                            !t['content-type'] &&
+                                                e.type &&
+                                                (t['content-type'] = e.type));
+                                        let r =
+                                                void 0 !==
+                                                    L.renderOpts
+                                                        .collectedRevalidate &&
+                                                !(
+                                                    L.renderOpts
+                                                        .collectedRevalidate >=
+                                                    y.INFINITE_CACHE
+                                                ) &&
+                                                L.renderOpts
+                                                    .collectedRevalidate,
+                                            a =
+                                                void 0 ===
+                                                    L.renderOpts
+                                                        .collectedExpire ||
+                                                L.renderOpts.collectedExpire >=
+                                                    y.INFINITE_CACHE
+                                                    ? void 0
+                                                    : L.renderOpts
+                                                          .collectedExpire;
+                                        return {
+                                            value: {
+                                                kind: g.CachedRouteKind
+                                                    .APP_ROUTE,
+                                                status: i.status,
+                                                body: Buffer.from(
+                                                    await e.arrayBuffer()
+                                                ),
+                                                headers: t,
+                                            },
+                                            cacheControl: {
+                                                revalidate: r,
+                                                expire: a,
+                                            },
+                                        };
+                                    }
+                                } catch (t) {
+                                    throw (
+                                        (null == r ? void 0 : r.isStale) &&
+                                            (await R.onRequestError(
+                                                e,
+                                                t,
+                                                {
+                                                    routerKind: 'App Router',
+                                                    routePath: v,
+                                                    routeType: 'route',
+                                                    revalidateReason: (0,
+                                                    u.getRevalidateReason)({
+                                                        isStaticGeneration: F,
+                                                        isOnDemandRevalidate: C,
+                                                    }),
+                                                },
+                                                T
+                                            )),
+                                        t
+                                    );
+                                }
+                            },
+                            c = await R.handleResponse({
+                                req: e,
+                                nextConfig: A,
+                                cacheKey: _,
+                                routeKind: r.RouteKind.APP_ROUTE,
+                                isFallback: !1,
+                                prerenderManifest: E,
+                                isRoutePPREnabled: !1,
+                                isOnDemandRevalidate: C,
+                                revalidateOnlyGenerated: N,
+                                responseGenerator: l,
+                                waitUntil: a.waitUntil,
+                                isMinimalMode: s,
+                            });
+                        if (!k) return null;
+                        if (
+                            (null == c || null == (i = c.value)
+                                ? void 0
+                                : i.kind) !== g.CachedRouteKind.APP_ROUTE
+                        )
+                            throw Object.defineProperty(
+                                Error(
+                                    `Invariant: app-route received invalid cache entry ${null == c || null == (d = c.value) ? void 0 : d.kind}`
+                                ),
+                                '__NEXT_ERROR_CODE',
+                                {
+                                    value: 'E701',
+                                    enumerable: !1,
+                                    configurable: !0,
+                                }
+                            );
+                        (s ||
+                            t.setHeader(
+                                'x-nextjs-cache',
+                                C
+                                    ? 'REVALIDATED'
+                                    : c.isMiss
+                                      ? 'MISS'
+                                      : c.isStale
+                                        ? 'STALE'
+                                        : 'HIT'
+                            ),
+                            I &&
+                                t.setHeader(
+                                    'Cache-Control',
+                                    'private, no-cache, no-store, max-age=0, must-revalidate'
+                                ));
+                        let p = (0, m.fromNodeOutgoingHttpHeaders)(
+                            c.value.headers
+                        );
+                        return (
+                            (s && k) || p.delete(y.NEXT_CACHE_TAGS_HEADER),
+                            !c.cacheControl ||
+                                t.getHeader('Cache-Control') ||
+                                p.get('Cache-Control') ||
+                                p.set(
+                                    'Cache-Control',
+                                    (0, f.getCacheControlHeader)(c.cacheControl)
+                                ),
+                            await (0, h.sendResponse)(
+                                K,
+                                $,
+                                new Response(c.value.body, {
+                                    headers: p,
+                                    status: c.value.status || 200,
+                                })
+                            ),
+                            null
+                        );
+                    };
+                D
+                    ? await d(D)
+                    : await q.withPropagatedContext(e.headers, () =>
+                          q.trace(
+                              p.BaseServerSpan.handleRequest,
+                              {
+                                  spanName: `${M} ${v}`,
+                                  kind: i.SpanKind.SERVER,
+                                  attributes: {
+                                      'http.method': M,
+                                      'http.target': e.url,
+                                  },
+                              },
+                              d
+                          )
+                      );
+            } catch (t) {
+                if (
+                    (t instanceof w.NoFallbackError ||
+                        (await R.onRequestError(e, t, {
+                            routerKind: 'App Router',
+                            routePath: j,
+                            routeType: 'route',
+                            revalidateReason: (0, u.getRevalidateReason)({
+                                isStaticGeneration: F,
+                                isOnDemandRevalidate: C,
+                            }),
+                        })),
+                    k)
+                )
+                    throw t;
+                return (
+                    await (0, h.sendResponse)(
+                        K,
+                        $,
+                        new Response(null, { status: 500 })
+                    ),
+                    null
+                );
+            }
+        }
+        e.s(
+            [
+                'handler',
+                () => J,
+                'patchFetch',
+                () => P,
+                'routeModule',
+                () => R,
+                'serverHooks',
+                () => N,
+                'workAsyncStorage',
+                () => T,
+                'workUnitAsyncStorage',
+                () => C,
+            ],
+            11886
+        );
+    },
+];
+
+//# sourceMappingURL=%5Broot-of-the-server%5D__fc4d3df5._.js.map

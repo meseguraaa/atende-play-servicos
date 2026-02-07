@@ -1,0 +1,1580 @@
+module.exports = [
+    788301,
+    (a) => {
+        'use strict';
+        let b = (0, a.i(976286).registerClientReference)(
+            function () {
+                throw Error(
+                    "Attempted to call RetentionWindowFilter() from the server but RetentionWindowFilter is on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component."
+                );
+            },
+            '[project]/src/components/admin/reports/retention-window-filter/retention-window-filter.tsx <module evaluation>',
+            'RetentionWindowFilter'
+        );
+        a.s(['RetentionWindowFilter', 0, b]);
+    },
+    73718,
+    (a) => {
+        'use strict';
+        let b = (0, a.i(976286).registerClientReference)(
+            function () {
+                throw Error(
+                    "Attempted to call RetentionWindowFilter() from the server but RetentionWindowFilter is on the client. It's not possible to invoke a client function from the server, it can only be rendered as a Component or passed to props of a Client Component."
+                );
+            },
+            '[project]/src/components/admin/reports/retention-window-filter/retention-window-filter.tsx',
+            'RetentionWindowFilter'
+        );
+        a.s(['RetentionWindowFilter', 0, b]);
+    },
+    562134,
+    (a) => {
+        'use strict';
+        a.i(788301);
+        var b = a.i(73718);
+        a.n(b);
+    },
+    829837,
+    (a) => {
+        'use strict';
+        var b = a.i(623127),
+            c = a.i(468695),
+            d = a.i(766518),
+            e = a.i(169513),
+            f = a.i(28792);
+        a.i(56672);
+        var g = a.i(868313),
+            h = a.i(491308);
+        a.i(23677);
+        var i = a.i(790993);
+        a.i(887143);
+        var j = a.i(13296),
+            k = a.i(562134),
+            l = a.i(638904),
+            m = a.i(139138),
+            n = a.i(303223),
+            o = a.i(288731),
+            p = a.i(415811),
+            q = a.i(151748),
+            r = a.i(984330),
+            s = a.i(254413),
+            t = a.i(816443);
+        a.i(106878);
+        var u = a.i(154840);
+        let v = 'admin_unit_context',
+            w = 'admin_company_context';
+        async function x(a) {
+            let b = await (0, e.cookies)(),
+                c = b.get(w)?.value;
+            if (c) return c;
+            let f =
+                ('string' == typeof a?.companyId && a.companyId) ||
+                ('string' == typeof a?.company?.id && a.company.id);
+            if (f) return f;
+            let g =
+                ('string' == typeof a?.userId && a.userId) ||
+                ('string' == typeof a?.id && a.id) ||
+                ('string' == typeof a?.sub && a.sub);
+            if (!g)
+                throw Error(
+                    'Não consegui resolver o userId do admin para achar a company.'
+                );
+            let h = await d.prisma.companyMember.findFirst({
+                where: { userId: g, isActive: !0 },
+                select: { companyId: !0 },
+                orderBy: { createdAt: 'asc' },
+            });
+            if (!h?.companyId)
+                throw Error(
+                    `Company n\xe3o definida para este admin. (cookie "${w}" ausente e sem membership ativa).`
+                );
+            return h.companyId;
+        }
+        function y(a) {
+            let b = new Intl.DateTimeFormat('pt-BR', {
+                    timeZone: 'America/Sao_Paulo',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                }).formatToParts(a),
+                c = Number(b.find((a) => 'day' === a.type)?.value ?? '1'),
+                d = Number(b.find((a) => 'month' === a.type)?.value ?? '1');
+            return {
+                y: Number(b.find((a) => 'year' === a.type)?.value ?? '1970'),
+                m: d,
+                d: c,
+            };
+        }
+        function z(a) {
+            let { y: b, m: c } = y(a);
+            return new Date(Date.UTC(b, c - 1, 1, 3, 0, 0));
+        }
+        function A(a) {
+            let { y: b, m: c } = y(a);
+            return new Date(new Date(Date.UTC(b, c, 1, 3, 0, 0)).getTime() - 1);
+        }
+        async function B(a) {
+            if (!a.canSeeAllUnits) return a.unitId;
+            let b = await (0, e.cookies)(),
+                c = b.get(v)?.value ?? 'all';
+            return c && 'all' !== c ? c : null;
+        }
+        function C(a) {
+            return a ? { unitId: a } : {};
+        }
+        function D(a) {
+            return 'prev_year' === a ? 'ano anterior' : 'mês anterior';
+        }
+        function E(a) {
+            return Number.isFinite(a) ? `${Math.round(a)}%` : '—';
+        }
+        function F(a) {
+            return `${a > 0 ? '+' : ''}${a}`;
+        }
+        async function G(a) {
+            let b = a.cohort.map((a) => a.clientId);
+            if (0 === b.length)
+                return {
+                    cohortSize: 0,
+                    retainedCount: 0,
+                    lostCount: 0,
+                    retentionPct: NaN,
+                    avgReturnDays: NaN,
+                    dayCounts: Array.from(
+                        { length: a.windowDays + 1 },
+                        () => 0
+                    ),
+                };
+            let c = a.cohort.map((a) => a.firstAt.getTime()),
+                e = new Date(Math.min(...c) + 1),
+                f = new Date(Math.max(...c)),
+                g = (0, o.addDays)(f, a.windowDays),
+                h = await d.prisma.appointment.findMany({
+                    where: {
+                        companyId: a.companyId,
+                        clientId: { in: b },
+                        status: { in: ['DONE'] },
+                        scheduleAt: { gt: e, lte: g },
+                        ...C(a.unitId),
+                        ...(a.professionalId
+                            ? { professionalId: a.professionalId }
+                            : {}),
+                    },
+                    select: { clientId: !0, scheduleAt: !0 },
+                    orderBy: { scheduleAt: 'asc' },
+                }),
+                i = new Map();
+            for (let a of h) {
+                if (!a.clientId) continue;
+                let b = i.get(a.clientId) ?? [];
+                (b.push(a.scheduleAt), i.set(a.clientId, b));
+            }
+            let j = 0,
+                k = [],
+                l = Array.from({ length: a.windowDays + 1 }, () => 0);
+            for (let b of a.cohort) {
+                let c = (0, o.addDays)(b.firstAt, a.windowDays),
+                    d = (i.get(b.clientId) ?? []).find(
+                        (a) =>
+                            a.getTime() > b.firstAt.getTime() &&
+                            a.getTime() <= c.getTime()
+                    );
+                if (d) {
+                    j += 1;
+                    let c = (0, p.differenceInCalendarDays)(d, b.firstAt);
+                    k.push(c);
+                    let e = Math.max(0, Math.min(a.windowDays, c));
+                    l[e] = (l[e] ?? 0) + 1;
+                }
+            }
+            let m = a.cohort.length,
+                n = m - j,
+                q = m > 0 ? (j / m) * 100 : NaN;
+            return {
+                cohortSize: m,
+                retainedCount: j,
+                lostCount: n,
+                retentionPct: q,
+                avgReturnDays:
+                    k.length > 0
+                        ? k.reduce((a, b) => a + b, 0) / k.length
+                        : NaN,
+                dayCounts: l,
+            };
+        }
+        async function H({ searchParams: a }) {
+            let w,
+                y = await (0, f.requireAdminForModule)('REPORTS'),
+                H = await x(y),
+                I = await (0, e.cookies)();
+            if (!y?.canSeeAllUnits && !y?.unitId)
+                throw Error(
+                    'Admin de unidade sem unitId definido. Vincule este admin a uma unidade.'
+                );
+            let J = I.get(v)?.value ?? 'all',
+                K = y?.canSeeAllUnits ? J : (y?.unitId ?? ''),
+                L = await B({
+                    unitId: y?.unitId ?? null,
+                    canSeeAllUnits: !!y?.canSeeAllUnits,
+                });
+            L &&
+                ((await d.prisma.unit.findFirst({
+                    where: { id: L, companyId: H, isActive: !0 },
+                    select: { id: !0 },
+                })) ||
+                    (0, u.redirect)('/admin/reports'));
+            let {
+                    month: M,
+                    professionalId: N,
+                    compare: O,
+                    window: P,
+                } = await a,
+                Q = 'prev_year' === O ? 'prev_year' : 'prev_month',
+                R = 60 === (w = Number(P)) ? 60 : 90 === w ? 90 : 30,
+                S = M ? (0, n.parse)(M, 'yyyy-MM', new Date()) : new Date(),
+                T =
+                    'prev_year' === Q
+                        ? (0, r.subYears)(S, 1)
+                        : (0, q.subMonths)(S, 1),
+                U = z(S),
+                V = A(S),
+                W = z(T),
+                X = A(T),
+                Y = (0, s.format)(S, "MMMM 'de' yyyy", { locale: t.ptBR }),
+                Z = [],
+                $ = null;
+            if (y?.canSeeAllUnits)
+                Z = await d.prisma.unit.findMany({
+                    where: { companyId: H, isActive: !0 },
+                    select: { id: !0, name: !0 },
+                    orderBy: { name: 'asc' },
+                });
+            else if (y?.unitId) {
+                let a = await d.prisma.unit.findFirst({
+                    where: { id: y.unitId, companyId: H },
+                    select: { name: !0 },
+                });
+                $ = a?.name ?? null;
+            }
+            let _ = !!y?.canSeeAllUnits && Z.length > 1,
+                aa = y?.canSeeAllUnits && 1 === Z.length ? Z[0]?.name : null,
+                ab = y?.canSeeAllUnits
+                    ? (aa ?? 'Todas as unidades')
+                    : ($ ?? ''),
+                ac = L
+                    ? await d.prisma.professional.findMany({
+                          where: {
+                              companyId: H,
+                              isActive: !0,
+                              units: { some: { unitId: L, isActive: !0 } },
+                          },
+                          select: { id: !0, name: !0 },
+                          orderBy: { name: 'asc' },
+                      })
+                    : await d.prisma.professional.findMany({
+                          where: { companyId: H, isActive: !0 },
+                          select: { id: !0, name: !0 },
+                          orderBy: { name: 'asc' },
+                      }),
+                ad = N && ac.some((a) => a.id === N) ? N : null,
+                ae = ad ? ac.find((a) => a.id === ad)?.name : null,
+                af = ['DONE'],
+                ag = (
+                    await d.prisma.appointment.groupBy({
+                        by: ['clientId'],
+                        where: {
+                            companyId: H,
+                            status: { in: af },
+                            ...C(L),
+                            ...(ad ? { professionalId: ad } : {}),
+                        },
+                        _min: { scheduleAt: !0 },
+                    })
+                )
+                    .filter((a) => a.clientId && a._min.scheduleAt)
+                    .map((a) => ({
+                        clientId: a.clientId,
+                        firstAt: a._min.scheduleAt,
+                    })),
+                ah = ag.filter((a) => a.firstAt >= U && a.firstAt <= V),
+                ai = ag.filter((a) => a.firstAt >= W && a.firstAt <= X),
+                [aj, ak] = await Promise.all([
+                    G({
+                        companyId: H,
+                        cohort: ah,
+                        unitId: L,
+                        professionalId: ad,
+                        windowDays: R,
+                    }),
+                    G({
+                        companyId: H,
+                        cohort: ai,
+                        unitId: L,
+                        professionalId: ad,
+                        windowDays: R,
+                    }),
+                ]),
+                al = E(aj.retentionPct),
+                am = aj.retainedCount,
+                an = aj.lostCount,
+                ao = Number.isFinite(aj.avgReturnDays)
+                    ? `${Math.round(aj.avgReturnDays)} dias`
+                    : '—',
+                ap =
+                    Number.isFinite(aj.retentionPct) &&
+                    Number.isFinite(ak.retentionPct)
+                        ? aj.retentionPct - ak.retentionPct
+                        : NaN,
+                aq = am - (ak.retainedCount ?? 0),
+                ar = an - (ak.lostCount ?? 0),
+                as =
+                    Number.isFinite(aj.avgReturnDays) &&
+                    Number.isFinite(ak.avgReturnDays)
+                        ? aj.avgReturnDays - ak.avgReturnDays
+                        : NaN,
+                at = (function (a) {
+                    let b = [],
+                        c = 0;
+                    for (let d = 0; d <= a.maxDay; d++) {
+                        let e = a.dayCounts[d] ?? 0;
+                        c += e;
+                        let f = a.cohortSize > 0 ? (c / a.cohortSize) * 100 : 0;
+                        b.push({
+                            day: d,
+                            count: e,
+                            cumulativeCount: c,
+                            cumulativePct: f,
+                        });
+                    }
+                    return b;
+                })({
+                    dayCounts: aj.dayCounts,
+                    cohortSize: aj.cohortSize,
+                    maxDay: R,
+                }),
+                au = Math.max(...aj.dayCounts, 0),
+                av = new Date(),
+                aw = ah.map((a) => a.clientId),
+                ax = [];
+            if (aw.length > 0) {
+                let a = ah.map((a) => a.firstAt.getTime()),
+                    b = new Date(Math.min(...a) + 1),
+                    c = new Date(Math.max(...a)),
+                    e = (0, o.addDays)(c, R),
+                    f = await d.prisma.appointment.findMany({
+                        where: {
+                            companyId: H,
+                            clientId: { in: aw },
+                            status: { in: af },
+                            scheduleAt: { gt: b, lte: e },
+                            ...C(L),
+                            ...(ad ? { professionalId: ad } : {}),
+                        },
+                        select: { clientId: !0, scheduleAt: !0 },
+                        orderBy: { scheduleAt: 'asc' },
+                    }),
+                    g = new Map();
+                for (let a of f)
+                    a.clientId &&
+                        (g.has(a.clientId) || g.set(a.clientId, a.scheduleAt));
+                let h = ah.filter((a) => {
+                        let b = g.get(a.clientId);
+                        if (!b) return !0;
+                        let c = (0, o.addDays)(a.firstAt, R);
+                        return b.getTime() > c.getTime();
+                    }),
+                    i = h.map((a) => a.clientId).filter(Boolean),
+                    j = new Map(
+                        (i.length > 0
+                            ? await d.prisma.user.findMany({
+                                  where: {
+                                      id: { in: i },
+                                      companyMemberships: {
+                                          some: { companyId: H, isActive: !0 },
+                                      },
+                                  },
+                                  select: { id: !0, name: !0, phone: !0 },
+                              })
+                            : []
+                        ).map((a) => [a.id, a])
+                    );
+                ax = h
+                    .map((a) => {
+                        let b = j.get(a.clientId),
+                            c = (0, o.addDays)(a.firstAt, R),
+                            d = (0, p.differenceInCalendarDays)(av, a.firstAt),
+                            e = (0, p.differenceInCalendarDays)(c, av),
+                            f = av.getTime() > c.getTime();
+                        return {
+                            clientId: a.clientId,
+                            name: b?.name ?? null,
+                            phone: b?.phone ?? null,
+                            firstAt: a.firstAt,
+                            daysSinceFirst: d,
+                            daysLeftToWindow: e,
+                            isOverdue: f,
+                        };
+                    })
+                    .sort((a, b) =>
+                        a.isOverdue !== b.isOverdue
+                            ? a.isOverdue
+                                ? -1
+                                : 1
+                            : a.daysLeftToWindow - b.daysLeftToWindow
+                    )
+                    .slice(0, 20);
+            }
+            let ay = (
+                    await d.prisma.appointment.groupBy({
+                        by: ['clientId'],
+                        where: { companyId: H, status: { in: af }, ...C(L) },
+                        _min: { scheduleAt: !0 },
+                    })
+                )
+                    .filter((a) => a.clientId && a._min.scheduleAt)
+                    .map((a) => ({
+                        clientId: a.clientId,
+                        firstAt: a._min.scheduleAt,
+                    }))
+                    .filter((a) => a.firstAt >= U && a.firstAt <= V),
+                az = ay.map((a) => a.clientId),
+                aA = az.length
+                    ? await d.prisma.appointment.findMany({
+                          where: {
+                              companyId: H,
+                              clientId: { in: az },
+                              status: { in: af },
+                              scheduleAt: { gte: U, lte: V },
+                              ...C(L),
+                          },
+                          orderBy: { scheduleAt: 'asc' },
+                          distinct: ['clientId'],
+                          select: {
+                              clientId: !0,
+                              scheduleAt: !0,
+                              professionalId: !0,
+                          },
+                      })
+                    : [],
+                aB = new Map();
+            for (let a of aA)
+                a.clientId && aB.set(a.clientId, a.professionalId ?? null);
+            let aC = new Map();
+            for (let a of ay) {
+                let b = aB.get(a.clientId);
+                if (!b) continue;
+                let c = aC.get(b) ?? [];
+                (c.push(a), aC.set(b, c));
+            }
+            let aD = await G({
+                    companyId: H,
+                    cohort: ay,
+                    unitId: L,
+                    professionalId: null,
+                    windowDays: R,
+                }),
+                aE = {
+                    label: 'Média da unidade',
+                    cohortSize: aD.cohortSize,
+                    retainedCount: aD.retainedCount,
+                    lostCount: aD.lostCount,
+                    retentionPct: aD.retentionPct,
+                    avgReturnDays: aD.avgReturnDays,
+                },
+                aF = [];
+            if (ad) {
+                let a = aC.get(ad) ?? [],
+                    b = await G({
+                        companyId: H,
+                        cohort: a,
+                        unitId: L,
+                        professionalId: ad,
+                        windowDays: R,
+                    }),
+                    c = ac.find((a) => a.id === ad)?.name ?? '—';
+                aF = [
+                    {
+                        professionalId: ad,
+                        professionalName: c,
+                        cohortSize: b.cohortSize,
+                        retainedCount: b.retainedCount,
+                        lostCount: b.lostCount,
+                        retentionPct: b.retentionPct,
+                        avgReturnDays: b.avgReturnDays,
+                    },
+                ];
+            } else {
+                let a = ac.map(async (a) => {
+                    let b = aC.get(a.id) ?? [],
+                        c = await G({
+                            companyId: H,
+                            cohort: b,
+                            unitId: L,
+                            professionalId: a.id,
+                            windowDays: R,
+                        });
+                    return {
+                        professionalId: a.id,
+                        professionalName: a.name,
+                        cohortSize: c.cohortSize,
+                        retainedCount: c.retainedCount,
+                        lostCount: c.lostCount,
+                        retentionPct: c.retentionPct,
+                        avgReturnDays: c.avgReturnDays,
+                    };
+                });
+                (aF = await Promise.all(a)).sort((a, b) => {
+                    let c = a.cohortSize > 0;
+                    if (c !== b.cohortSize > 0) return c ? -1 : 1;
+                    let d = Number.isFinite(a.retentionPct)
+                            ? a.retentionPct
+                            : 999999,
+                        e = Number.isFinite(b.retentionPct)
+                            ? b.retentionPct
+                            : 999999;
+                    return d !== e
+                        ? d - e
+                        : (b.cohortSize ?? 0) - (a.cohortSize ?? 0);
+                });
+            }
+            return (0, b.jsxs)('div', {
+                className: 'space-y-6 max-w-7xl',
+                children: [
+                    (0, b.jsxs)('header', {
+                        className: 'space-y-3',
+                        children: [
+                            (0, b.jsxs)('div', {
+                                className:
+                                    'flex items-center justify-between gap-3',
+                                children: [
+                                    (0, b.jsx)('h1', {
+                                        className:
+                                            'text-title text-content-primary',
+                                        children: 'Retenção de clientes',
+                                    }),
+                                    (0, b.jsx)(l.Button, {
+                                        variant: 'outline',
+                                        asChild: !0,
+                                        children: (0, b.jsx)(c.default, {
+                                            href: '/admin/report',
+                                            children: 'Voltar',
+                                        }),
+                                    }),
+                                ],
+                            }),
+                            (0, b.jsx)('div', {
+                                className: (0, m.cn)(
+                                    'rounded-xl border border-border-primary bg-background-tertiary p-3'
+                                ),
+                                children: (0, b.jsxs)('div', {
+                                    className:
+                                        'grid gap-3 md:grid-cols-[1fr_1fr_1fr_1fr_auto] md:items-end',
+                                    children: [
+                                        (0, b.jsx)('div', {
+                                            className:
+                                                'w-full [&_select]:h-12 [&_select]:min-h-12 [&_select]:py-2',
+                                            children: _
+                                                ? (0, b.jsx)(i.UnitFilter, {
+                                                      units: Z,
+                                                      value: K,
+                                                  })
+                                                : (0, b.jsxs)('div', {
+                                                      className: 'space-y-2',
+                                                      children: [
+                                                          (0, b.jsx)('p', {
+                                                              className:
+                                                                  'text-label-small text-content-secondary',
+                                                              children:
+                                                                  'Unidade',
+                                                          }),
+                                                          (0, b.jsx)('div', {
+                                                              className: (0,
+                                                              m.cn)(
+                                                                  'h-12 w-full rounded-md border border-border-primary',
+                                                                  'bg-background-secondary px-3',
+                                                                  'flex items-center',
+                                                                  'text-content-primary text-sm'
+                                                              ),
+                                                              title: ab,
+                                                              children: (0,
+                                                              b.jsx)('span', {
+                                                                  className:
+                                                                      'truncate',
+                                                                  children: ab,
+                                                              }),
+                                                          }),
+                                                      ],
+                                                  }),
+                                        }),
+                                        (0, b.jsx)('div', {
+                                            className:
+                                                'w-full [&_select]:h-12 [&_select]:min-h-12 [&_select]:py-2',
+                                            children: (0, b.jsx)(
+                                                h.ProfessionalFilter,
+                                                { professionals: ac, value: ad }
+                                            ),
+                                        }),
+                                        (0, b.jsx)('div', {
+                                            className:
+                                                'w-full [&_select]:h-12 [&_select]:min-h-12 [&_select]:py-2',
+                                            children: (0, b.jsx)(
+                                                j.CompareWithFilter,
+                                                { value: Q }
+                                            ),
+                                        }),
+                                        (0, b.jsx)('div', {
+                                            className:
+                                                'w-full [&_select]:h-12 [&_select]:min-h-12 [&_select]:py-2',
+                                            children: (0, b.jsx)(
+                                                k.RetentionWindowFilter,
+                                                { value: R }
+                                            ),
+                                        }),
+                                        (0, b.jsx)('div', {
+                                            className: 'justify-self-end',
+                                            children: (0, b.jsx)(
+                                                g.MonthPicker,
+                                                {}
+                                            ),
+                                        }),
+                                    ],
+                                }),
+                            }),
+                        ],
+                    }),
+                    (0, b.jsxs)('section', {
+                        className: 'grid gap-4 md:grid-cols-4',
+                        children: [
+                            (0, b.jsxs)('div', {
+                                className:
+                                    'rounded-xl border border-border-primary bg-background-tertiary px-4 py-3',
+                                children: [
+                                    (0, b.jsxs)('p', {
+                                        className:
+                                            'text-label-small text-content-secondary',
+                                        children: ['Retenção (', R, ' dias)'],
+                                    }),
+                                    (0, b.jsx)('p', {
+                                        className:
+                                            'text-title text-content-primary',
+                                        children: al,
+                                    }),
+                                    (0, b.jsxs)('p', {
+                                        className:
+                                            'mt-2 text-[12px] text-content-primary',
+                                        children: [
+                                            'De',
+                                            ' ',
+                                            (0, b.jsx)('span', {
+                                                className:
+                                                    'font-semibold tabular-nums',
+                                                children: aj.cohortSize,
+                                            }),
+                                            ' ',
+                                            'clientes novos,',
+                                            ' ',
+                                            (0, b.jsx)('span', {
+                                                className:
+                                                    'font-semibold tabular-nums',
+                                                children: am,
+                                            }),
+                                            ' ',
+                                            'voltaram em até',
+                                            ' ',
+                                            (0, b.jsx)('span', {
+                                                className:
+                                                    'font-semibold tabular-nums',
+                                                children: R,
+                                            }),
+                                            ' ',
+                                            'dias.',
+                                        ],
+                                    }),
+                                    (0, b.jsxs)('p', {
+                                        className:
+                                            'mt-1 text-[11px] text-content-tertiary',
+                                        children: [
+                                            ae ? `Filtro: ${ae}` : 'Todos',
+                                            ' ',
+                                            '• Mês: ',
+                                            Y,
+                                        ],
+                                    }),
+                                    (0, b.jsxs)('p', {
+                                        className:
+                                            'mt-1 text-[11px] text-content-tertiary',
+                                        children: [
+                                            'vs ',
+                                            D(Q),
+                                            ':',
+                                            ' ',
+                                            Number.isFinite(ap)
+                                                ? `${ap > 0 ? '+' : ''}${Math.round(ap)} p.p.`
+                                                : '—',
+                                        ],
+                                    }),
+                                ],
+                            }),
+                            (0, b.jsxs)('div', {
+                                className:
+                                    'rounded-xl border border-border-primary bg-background-tertiary px-4 py-3',
+                                children: [
+                                    (0, b.jsxs)('p', {
+                                        className:
+                                            'text-label-small text-content-secondary',
+                                        children: ['Voltaram (', R, ' dias)'],
+                                    }),
+                                    (0, b.jsx)('p', {
+                                        className:
+                                            'text-title text-content-primary',
+                                        children: am,
+                                    }),
+                                    (0, b.jsxs)('p', {
+                                        className:
+                                            'mt-1 text-[11px] text-content-tertiary',
+                                        children: [
+                                            'vs ',
+                                            D(Q),
+                                            ':',
+                                            ' ',
+                                            F(aq),
+                                        ],
+                                    }),
+                                ],
+                            }),
+                            (0, b.jsxs)('div', {
+                                className:
+                                    'rounded-xl border border-border-primary bg-background-tertiary px-4 py-3',
+                                children: [
+                                    (0, b.jsxs)('p', {
+                                        className:
+                                            'text-label-small text-content-secondary',
+                                        children: [
+                                            'Não voltaram (',
+                                            R,
+                                            ' dias)',
+                                        ],
+                                    }),
+                                    (0, b.jsx)('p', {
+                                        className:
+                                            'text-title text-content-primary',
+                                        children: an,
+                                    }),
+                                    (0, b.jsxs)('p', {
+                                        className:
+                                            'mt-1 text-[11px] text-content-tertiary',
+                                        children: [
+                                            'vs ',
+                                            D(Q),
+                                            ':',
+                                            ' ',
+                                            F(ar),
+                                        ],
+                                    }),
+                                ],
+                            }),
+                            (0, b.jsxs)('div', {
+                                className:
+                                    'rounded-xl border border-border-primary bg-background-tertiary px-4 py-3',
+                                children: [
+                                    (0, b.jsx)('p', {
+                                        className:
+                                            'text-label-small text-content-secondary',
+                                        children: 'Tempo médio para voltar',
+                                    }),
+                                    (0, b.jsx)('p', {
+                                        className:
+                                            'text-title text-content-primary',
+                                        children: ao,
+                                    }),
+                                    (0, b.jsx)('p', {
+                                        className:
+                                            'mt-1 text-[11px] text-content-tertiary',
+                                        children: 'Conta só quem voltou',
+                                    }),
+                                    (0, b.jsxs)('p', {
+                                        className:
+                                            'mt-1 text-[11px] text-content-tertiary',
+                                        children: [
+                                            'vs ',
+                                            D(Q),
+                                            ':',
+                                            ' ',
+                                            Number.isFinite(as)
+                                                ? `${as > 0 ? '+' : ''}${Math.round(as)} dias`
+                                                : '—',
+                                        ],
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                    (0, b.jsxs)('section', {
+                        className:
+                            'rounded-xl border border-border-primary bg-background-tertiary p-4',
+                        children: [
+                            (0, b.jsxs)('div', {
+                                className:
+                                    'flex items-start justify-between gap-3',
+                                children: [
+                                    (0, b.jsxs)('div', {
+                                        children: [
+                                            (0, b.jsxs)('p', {
+                                                className:
+                                                    'text-label-large text-content-primary',
+                                                children: [
+                                                    'Retorno ao longo de ',
+                                                    R,
+                                                    ' dias',
+                                                ],
+                                            }),
+                                            (0, b.jsx)('p', {
+                                                className:
+                                                    'text-paragraph-small text-content-tertiary',
+                                                children:
+                                                    'Mostra em qual dia os clientes novos voltam após a 1ª visita (e o acumulado até aquele dia).',
+                                            }),
+                                        ],
+                                    }),
+                                    (0, b.jsxs)('div', {
+                                        className:
+                                            'text-[11px] text-content-tertiary text-right',
+                                        children: [
+                                            (0, b.jsxs)('div', {
+                                                children: [
+                                                    'Novos clientes: ',
+                                                    aj.cohortSize,
+                                                ],
+                                            }),
+                                            (0, b.jsxs)('div', {
+                                                children: [
+                                                    'Voltaram: ',
+                                                    aj.retainedCount,
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                ],
+                            }),
+                            0 === aj.cohortSize
+                                ? (0, b.jsx)('div', {
+                                      className: (0, m.cn)(
+                                          'mt-4 h-24 w-full rounded-lg border border-border-primary',
+                                          'bg-background-secondary',
+                                          'flex items-center justify-center',
+                                          'text-content-tertiary text-sm'
+                                      ),
+                                      children:
+                                          'Sem novos clientes no mês selecionado.',
+                                  })
+                                : (0, b.jsx)('div', {
+                                      className: 'mt-4 overflow-x-auto',
+                                      children: (0, b.jsxs)('table', {
+                                          className:
+                                              'min-w-full text-left text-[12px]',
+                                          children: [
+                                              (0, b.jsx)('thead', {
+                                                  children: (0, b.jsxs)('tr', {
+                                                      className:
+                                                          'border-b border-border-primary text-content-secondary',
+                                                      children: [
+                                                          (0, b.jsx)('th', {
+                                                              className:
+                                                                  'py-2 pr-3',
+                                                              children: 'Dia',
+                                                          }),
+                                                          (0, b.jsx)('th', {
+                                                              className:
+                                                                  'py-2 pr-3',
+                                                              children:
+                                                                  'Voltas',
+                                                          }),
+                                                          (0, b.jsx)('th', {
+                                                              className:
+                                                                  'py-2 pr-3',
+                                                              children:
+                                                                  'Visual',
+                                                          }),
+                                                          (0, b.jsx)('th', {
+                                                              className:
+                                                                  'py-2 pr-3',
+                                                              children:
+                                                                  'Acumulado',
+                                                          }),
+                                                      ],
+                                                  }),
+                                              }),
+                                              (0, b.jsx)('tbody', {
+                                                  children: at.map((a) => {
+                                                      let c =
+                                                          au > 0
+                                                              ? Math.round(
+                                                                    (a.count /
+                                                                        au) *
+                                                                        100
+                                                                )
+                                                              : 0;
+                                                      return (0, b.jsxs)(
+                                                          'tr',
+                                                          {
+                                                              className:
+                                                                  'border-b border-border-primary/60 last:border-0',
+                                                              children: [
+                                                                  (0, b.jsx)(
+                                                                      'td',
+                                                                      {
+                                                                          className:
+                                                                              'py-2 pr-3 text-content-primary font-medium tabular-nums',
+                                                                          children:
+                                                                              a.day,
+                                                                      }
+                                                                  ),
+                                                                  (0, b.jsx)(
+                                                                      'td',
+                                                                      {
+                                                                          className:
+                                                                              'py-2 pr-3 text-content-primary tabular-nums',
+                                                                          children:
+                                                                              a.count,
+                                                                      }
+                                                                  ),
+                                                                  (0, b.jsx)(
+                                                                      'td',
+                                                                      {
+                                                                          className:
+                                                                              'py-2 pr-3',
+                                                                          children:
+                                                                              (0,
+                                                                              b.jsx)(
+                                                                                  'div',
+                                                                                  {
+                                                                                      className:
+                                                                                          (0,
+                                                                                          m.cn)(
+                                                                                              'h-3 w-40 rounded bg-background-secondary border border-border-primary overflow-hidden'
+                                                                                          ),
+                                                                                      title: `${a.count} voltas no dia ${a.day}`,
+                                                                                      children:
+                                                                                          (0,
+                                                                                          b.jsx)(
+                                                                                              'div',
+                                                                                              {
+                                                                                                  className:
+                                                                                                      'h-full bg-emerald-500/30',
+                                                                                                  style: {
+                                                                                                      width: `${c}%`,
+                                                                                                  },
+                                                                                              }
+                                                                                          ),
+                                                                                  }
+                                                                              ),
+                                                                      }
+                                                                  ),
+                                                                  (0, b.jsxs)(
+                                                                      'td',
+                                                                      {
+                                                                          className:
+                                                                              'py-2 pr-3 text-content-primary tabular-nums',
+                                                                          children:
+                                                                              [
+                                                                                  a.cumulativeCount,
+                                                                                  ' ',
+                                                                                  (0,
+                                                                                  b.jsxs)(
+                                                                                      'span',
+                                                                                      {
+                                                                                          className:
+                                                                                              'text-content-tertiary',
+                                                                                          children:
+                                                                                              [
+                                                                                                  '(',
+                                                                                                  Math.round(
+                                                                                                      a.cumulativePct
+                                                                                                  ),
+                                                                                                  '%)',
+                                                                                              ],
+                                                                                      }
+                                                                                  ),
+                                                                              ],
+                                                                      }
+                                                                  ),
+                                                              ],
+                                                          },
+                                                          a.day
+                                                      );
+                                                  }),
+                                              }),
+                                          ],
+                                      }),
+                                  }),
+                        ],
+                    }),
+                    (0, b.jsxs)('section', {
+                        className: 'grid gap-4 lg:grid-cols-2',
+                        children: [
+                            (0, b.jsxs)('div', {
+                                className:
+                                    'rounded-xl border border-border-primary bg-background-tertiary p-4',
+                                children: [
+                                    (0, b.jsxs)('div', {
+                                        className:
+                                            'flex items-start justify-between gap-3',
+                                        children: [
+                                            (0, b.jsxs)('div', {
+                                                children: [
+                                                    (0, b.jsx)('p', {
+                                                        className:
+                                                            'text-label-large text-content-primary',
+                                                        children:
+                                                            'Retenção por profissional',
+                                                    }),
+                                                    (0, b.jsx)('p', {
+                                                        className:
+                                                            'text-paragraph-small text-content-tertiary',
+                                                        children:
+                                                            'Do menor para o maior (considerando clientes novos do mês).',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, b.jsxs)('div', {
+                                                className:
+                                                    'text-[11px] text-content-tertiary text-right',
+                                                children: [
+                                                    (0, b.jsxs)('div', {
+                                                        children: [
+                                                            'Novos clientes na unidade:',
+                                                            ' ',
+                                                            aE.cohortSize,
+                                                        ],
+                                                    }),
+                                                    (0, b.jsxs)('div', {
+                                                        children: [
+                                                            'Retenção da unidade:',
+                                                            ' ',
+                                                            E(aE.retentionPct),
+                                                        ],
+                                                    }),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    0 === aE.cohortSize
+                                        ? (0, b.jsx)('div', {
+                                              className: (0, m.cn)(
+                                                  'mt-4 h-48 w-full rounded-lg border border-border-primary',
+                                                  'bg-background-secondary',
+                                                  'flex items-center justify-center',
+                                                  'text-content-tertiary text-sm'
+                                              ),
+                                              children:
+                                                  'Sem clientes novos na unidade no mês selecionado.',
+                                          })
+                                        : (0, b.jsx)('div', {
+                                              className: 'mt-4 overflow-x-auto',
+                                              children: (0, b.jsxs)('table', {
+                                                  className:
+                                                      'min-w-full text-left text-[12px]',
+                                                  children: [
+                                                      (0, b.jsx)('thead', {
+                                                          children: (0, b.jsxs)(
+                                                              'tr',
+                                                              {
+                                                                  className:
+                                                                      'border-b border-border-primary text-content-secondary',
+                                                                  children: [
+                                                                      (0,
+                                                                      b.jsx)(
+                                                                          'th',
+                                                                          {
+                                                                              className:
+                                                                                  'py-2 pr-3',
+                                                                              children:
+                                                                                  'Profissional',
+                                                                          }
+                                                                      ),
+                                                                      (0,
+                                                                      b.jsx)(
+                                                                          'th',
+                                                                          {
+                                                                              className:
+                                                                                  'py-2 pr-3 text-right',
+                                                                              children:
+                                                                                  'Clientes novos',
+                                                                          }
+                                                                      ),
+                                                                      (0,
+                                                                      b.jsx)(
+                                                                          'th',
+                                                                          {
+                                                                              className:
+                                                                                  'py-2 pr-3 text-right',
+                                                                              children:
+                                                                                  'Voltaram',
+                                                                          }
+                                                                      ),
+                                                                      (0,
+                                                                      b.jsx)(
+                                                                          'th',
+                                                                          {
+                                                                              className:
+                                                                                  'py-2 pr-3 text-right',
+                                                                              children:
+                                                                                  'Não voltaram',
+                                                                          }
+                                                                      ),
+                                                                      (0,
+                                                                      b.jsx)(
+                                                                          'th',
+                                                                          {
+                                                                              className:
+                                                                                  'py-2 pr-3 text-right',
+                                                                              children:
+                                                                                  'Retenção',
+                                                                          }
+                                                                      ),
+                                                                      (0,
+                                                                      b.jsx)(
+                                                                          'th',
+                                                                          {
+                                                                              className:
+                                                                                  'py-2 pr-3 text-right',
+                                                                              children:
+                                                                                  'Tempo médio',
+                                                                          }
+                                                                      ),
+                                                                  ],
+                                                              }
+                                                          ),
+                                                      }),
+                                                      (0, b.jsxs)('tbody', {
+                                                          children: [
+                                                              aF.map((a) => {
+                                                                  let c = E(
+                                                                          a.retentionPct
+                                                                      ),
+                                                                      d =
+                                                                          Number.isFinite(
+                                                                              a.avgReturnDays
+                                                                          )
+                                                                              ? `${Math.round(a.avgReturnDays)}d`
+                                                                              : '—';
+                                                                  return (0,
+                                                                  b.jsxs)(
+                                                                      'tr',
+                                                                      {
+                                                                          className:
+                                                                              'border-b border-border-primary/60 last:border-0',
+                                                                          children:
+                                                                              [
+                                                                                  (0,
+                                                                                  b.jsxs)(
+                                                                                      'td',
+                                                                                      {
+                                                                                          className:
+                                                                                              'py-2 pr-3 text-content-primary font-medium whitespace-nowrap',
+                                                                                          children:
+                                                                                              [
+                                                                                                  a.professionalName,
+                                                                                                  ad &&
+                                                                                                  a.professionalId ===
+                                                                                                      ad
+                                                                                                      ? (0,
+                                                                                                        b.jsx)(
+                                                                                                            'span',
+                                                                                                            {
+                                                                                                                className:
+                                                                                                                    'ml-2 text-[11px] text-content-tertiary',
+                                                                                                                children:
+                                                                                                                    '(selecionado)',
+                                                                                                            }
+                                                                                                        )
+                                                                                                      : null,
+                                                                                              ],
+                                                                                      }
+                                                                                  ),
+                                                                                  (0,
+                                                                                  b.jsx)(
+                                                                                      'td',
+                                                                                      {
+                                                                                          className:
+                                                                                              'py-2 pr-3 text-content-primary text-right tabular-nums',
+                                                                                          children:
+                                                                                              a.cohortSize,
+                                                                                      }
+                                                                                  ),
+                                                                                  (0,
+                                                                                  b.jsx)(
+                                                                                      'td',
+                                                                                      {
+                                                                                          className:
+                                                                                              'py-2 pr-3 text-content-primary text-right tabular-nums',
+                                                                                          children:
+                                                                                              a.retainedCount,
+                                                                                      }
+                                                                                  ),
+                                                                                  (0,
+                                                                                  b.jsx)(
+                                                                                      'td',
+                                                                                      {
+                                                                                          className:
+                                                                                              'py-2 pr-3 text-content-primary text-right tabular-nums',
+                                                                                          children:
+                                                                                              a.lostCount,
+                                                                                      }
+                                                                                  ),
+                                                                                  (0,
+                                                                                  b.jsx)(
+                                                                                      'td',
+                                                                                      {
+                                                                                          className:
+                                                                                              'py-2 pr-3 text-content-primary text-right tabular-nums',
+                                                                                          children:
+                                                                                              c,
+                                                                                      }
+                                                                                  ),
+                                                                                  (0,
+                                                                                  b.jsx)(
+                                                                                      'td',
+                                                                                      {
+                                                                                          className:
+                                                                                              'py-2 pr-3 text-content-primary text-right tabular-nums',
+                                                                                          children:
+                                                                                              d,
+                                                                                      }
+                                                                                  ),
+                                                                              ],
+                                                                      },
+                                                                      a.professionalId
+                                                                  );
+                                                              }),
+                                                              (0, b.jsxs)(
+                                                                  'tr',
+                                                                  {
+                                                                      className:
+                                                                          'border-t border-border-primary',
+                                                                      children:
+                                                                          [
+                                                                              (0,
+                                                                              b.jsx)(
+                                                                                  'td',
+                                                                                  {
+                                                                                      className:
+                                                                                          'py-2 pr-3 text-content-primary font-medium',
+                                                                                      children:
+                                                                                          aE.label,
+                                                                                  }
+                                                                              ),
+                                                                              (0,
+                                                                              b.jsx)(
+                                                                                  'td',
+                                                                                  {
+                                                                                      className:
+                                                                                          'py-2 pr-3 text-content-primary text-right tabular-nums',
+                                                                                      children:
+                                                                                          aE.cohortSize,
+                                                                                  }
+                                                                              ),
+                                                                              (0,
+                                                                              b.jsx)(
+                                                                                  'td',
+                                                                                  {
+                                                                                      className:
+                                                                                          'py-2 pr-3 text-content-primary text-right tabular-nums',
+                                                                                      children:
+                                                                                          aE.retainedCount,
+                                                                                  }
+                                                                              ),
+                                                                              (0,
+                                                                              b.jsx)(
+                                                                                  'td',
+                                                                                  {
+                                                                                      className:
+                                                                                          'py-2 pr-3 text-content-primary text-right tabular-nums',
+                                                                                      children:
+                                                                                          aE.lostCount,
+                                                                                  }
+                                                                              ),
+                                                                              (0,
+                                                                              b.jsx)(
+                                                                                  'td',
+                                                                                  {
+                                                                                      className:
+                                                                                          'py-2 pr-3 text-content-primary text-right tabular-nums',
+                                                                                      children:
+                                                                                          E(
+                                                                                              aE.retentionPct
+                                                                                          ),
+                                                                                  }
+                                                                              ),
+                                                                              (0,
+                                                                              b.jsx)(
+                                                                                  'td',
+                                                                                  {
+                                                                                      className:
+                                                                                          'py-2 pr-3 text-content-primary text-right tabular-nums',
+                                                                                      children:
+                                                                                          Number.isFinite(
+                                                                                              aE.avgReturnDays
+                                                                                          )
+                                                                                              ? `${Math.round(aE.avgReturnDays)}d`
+                                                                                              : '—',
+                                                                                  }
+                                                                              ),
+                                                                          ],
+                                                                  }
+                                                              ),
+                                                          ],
+                                                      }),
+                                                  ],
+                                              }),
+                                          }),
+                                ],
+                            }),
+                            (0, b.jsxs)('div', {
+                                className:
+                                    'rounded-xl border border-border-primary bg-background-tertiary p-4',
+                                children: [
+                                    (0, b.jsx)('p', {
+                                        className:
+                                            'text-label-large text-content-primary',
+                                        children: 'Clientes em risco',
+                                    }),
+                                    (0, b.jsxs)('p', {
+                                        className:
+                                            'text-paragraph-small text-content-tertiary',
+                                        children: [
+                                            'Clientes novos do mês que ainda não voltaram em até',
+                                            ' ',
+                                            R,
+                                            ' dias.',
+                                        ],
+                                    }),
+                                    0 === aj.cohortSize
+                                        ? (0, b.jsx)('div', {
+                                              className: (0, m.cn)(
+                                                  'mt-4 h-48 w-full rounded-lg border border-border-primary',
+                                                  'bg-background-secondary',
+                                                  'flex items-center justify-center',
+                                                  'text-content-tertiary text-sm'
+                                              ),
+                                              children:
+                                                  'Sem clientes novos no mês selecionado.',
+                                          })
+                                        : 0 === ax.length
+                                          ? (0, b.jsxs)('div', {
+                                                className: (0, m.cn)(
+                                                    'mt-4 h-48 w-full rounded-lg border border-border-primary',
+                                                    'bg-background-secondary',
+                                                    'flex items-center justify-center',
+                                                    'text-content-tertiary text-sm'
+                                                ),
+                                                children: [
+                                                    '🎉 Ninguém em risco (todos voltaram em até',
+                                                    ' ',
+                                                    R,
+                                                    ' dias).',
+                                                ],
+                                            })
+                                          : (0, b.jsx)('div', {
+                                                className:
+                                                    'mt-4 overflow-x-auto',
+                                                children: (0, b.jsxs)('table', {
+                                                    className:
+                                                        'min-w-full text-left text-[12px]',
+                                                    children: [
+                                                        (0, b.jsx)('thead', {
+                                                            children: (0,
+                                                            b.jsxs)('tr', {
+                                                                className:
+                                                                    'border-b border-border-primary text-content-secondary',
+                                                                children: [
+                                                                    (0, b.jsx)(
+                                                                        'th',
+                                                                        {
+                                                                            className:
+                                                                                'py-2 pr-3',
+                                                                            children:
+                                                                                'Cliente',
+                                                                        }
+                                                                    ),
+                                                                    (0, b.jsx)(
+                                                                        'th',
+                                                                        {
+                                                                            className:
+                                                                                'py-2 pr-3',
+                                                                            children:
+                                                                                'Telefone',
+                                                                        }
+                                                                    ),
+                                                                    (0, b.jsx)(
+                                                                        'th',
+                                                                        {
+                                                                            className:
+                                                                                'py-2 pr-3',
+                                                                            children:
+                                                                                '1ª visita',
+                                                                        }
+                                                                    ),
+                                                                    (0, b.jsx)(
+                                                                        'th',
+                                                                        {
+                                                                            className:
+                                                                                'py-2 pr-3',
+                                                                            children:
+                                                                                'Dias sem voltar',
+                                                                        }
+                                                                    ),
+                                                                    (0, b.jsx)(
+                                                                        'th',
+                                                                        {
+                                                                            className:
+                                                                                'py-2 pr-3',
+                                                                            children:
+                                                                                'Status',
+                                                                        }
+                                                                    ),
+                                                                ],
+                                                            }),
+                                                        }),
+                                                        (0, b.jsx)('tbody', {
+                                                            children: ax.map(
+                                                                (a) =>
+                                                                    (0, b.jsxs)(
+                                                                        'tr',
+                                                                        {
+                                                                            className:
+                                                                                'border-b border-border-primary/60 last:border-0',
+                                                                            children:
+                                                                                [
+                                                                                    (0,
+                                                                                    b.jsx)(
+                                                                                        'td',
+                                                                                        {
+                                                                                            className:
+                                                                                                'py-2 pr-3 text-content-primary font-medium',
+                                                                                            children:
+                                                                                                a.name ??
+                                                                                                'Sem nome',
+                                                                                        }
+                                                                                    ),
+                                                                                    (0,
+                                                                                    b.jsx)(
+                                                                                        'td',
+                                                                                        {
+                                                                                            className:
+                                                                                                'py-2 pr-3 text-content-primary tabular-nums',
+                                                                                            children:
+                                                                                                a.phone ??
+                                                                                                '—',
+                                                                                        }
+                                                                                    ),
+                                                                                    (0,
+                                                                                    b.jsx)(
+                                                                                        'td',
+                                                                                        {
+                                                                                            className:
+                                                                                                'py-2 pr-3 text-content-primary',
+                                                                                            children:
+                                                                                                (0,
+                                                                                                s.format)(
+                                                                                                    a.firstAt,
+                                                                                                    'dd/MM/yyyy',
+                                                                                                    {
+                                                                                                        locale: t.ptBR,
+                                                                                                    }
+                                                                                                ),
+                                                                                        }
+                                                                                    ),
+                                                                                    (0,
+                                                                                    b.jsxs)(
+                                                                                        'td',
+                                                                                        {
+                                                                                            className:
+                                                                                                'py-2 pr-3 text-content-primary tabular-nums',
+                                                                                            children:
+                                                                                                [
+                                                                                                    Math.max(
+                                                                                                        0,
+                                                                                                        a.daysSinceFirst
+                                                                                                    ),
+                                                                                                    'd',
+                                                                                                ],
+                                                                                        }
+                                                                                    ),
+                                                                                    (0,
+                                                                                    b.jsx)(
+                                                                                        'td',
+                                                                                        {
+                                                                                            className:
+                                                                                                'py-2 pr-3',
+                                                                                            children:
+                                                                                                a.isOverdue
+                                                                                                    ? (0,
+                                                                                                      b.jsxs)(
+                                                                                                          'span',
+                                                                                                          {
+                                                                                                              className:
+                                                                                                                  'text-[11px] rounded-full px-2 py-1 border border-rose-500/30 bg-rose-500/10 text-rose-200',
+                                                                                                              children:
+                                                                                                                  [
+                                                                                                                      'Passou de ',
+                                                                                                                      R,
+                                                                                                                      ' ',
+                                                                                                                      'dias',
+                                                                                                                  ],
+                                                                                                          }
+                                                                                                      )
+                                                                                                    : (0,
+                                                                                                      b.jsxs)(
+                                                                                                          'span',
+                                                                                                          {
+                                                                                                              className:
+                                                                                                                  'text-[11px] rounded-full px-2 py-1 border border-amber-500/30 bg-amber-500/10 text-amber-200',
+                                                                                                              children:
+                                                                                                                  [
+                                                                                                                      'Faltam',
+                                                                                                                      ' ',
+                                                                                                                      Math.max(
+                                                                                                                          0,
+                                                                                                                          a.daysLeftToWindow
+                                                                                                                      ),
+                                                                                                                      ' ',
+                                                                                                                      'dias',
+                                                                                                                  ],
+                                                                                                          }
+                                                                                                      ),
+                                                                                        }
+                                                                                    ),
+                                                                                ],
+                                                                        },
+                                                                        a.clientId
+                                                                    )
+                                                            ),
+                                                        }),
+                                                    ],
+                                                }),
+                                            }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            });
+        }
+        a.s(
+            [
+                'default',
+                () => H,
+                'dynamic',
+                0,
+                'force-dynamic',
+                'metadata',
+                0,
+                { title: 'Admin | Relatórios' },
+            ],
+            829837
+        );
+    },
+];
+
+//# sourceMappingURL=src_0c97848f._.js.map

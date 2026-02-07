@@ -1,0 +1,640 @@
+module.exports = [
+    918622,
+    (e, t, r) => {
+        t.exports = e.x(
+            'next/dist/compiled/next-server/app-page-turbo.runtime.prod.js',
+            () =>
+                require('next/dist/compiled/next-server/app-page-turbo.runtime.prod.js')
+        );
+    },
+    556704,
+    (e, t, r) => {
+        t.exports = e.x(
+            'next/dist/server/app-render/work-async-storage.external.js',
+            () =>
+                require('next/dist/server/app-render/work-async-storage.external.js')
+        );
+    },
+    832319,
+    (e, t, r) => {
+        t.exports = e.x(
+            'next/dist/server/app-render/work-unit-async-storage.external.js',
+            () =>
+                require('next/dist/server/app-render/work-unit-async-storage.external.js')
+        );
+    },
+    324725,
+    (e, t, r) => {
+        t.exports = e.x(
+            'next/dist/server/app-render/after-task-async-storage.external.js',
+            () =>
+                require('next/dist/server/app-render/after-task-async-storage.external.js')
+        );
+    },
+    120635,
+    (e, t, r) => {
+        t.exports = e.x(
+            'next/dist/server/app-render/action-async-storage.external.js',
+            () =>
+                require('next/dist/server/app-render/action-async-storage.external.js')
+        );
+    },
+    345982,
+    (e) => {
+        'use strict';
+        var t = e.i(154154),
+            r = e.i(140407),
+            n = e.i(493068),
+            a = e.i(821498),
+            i = e.i(161599),
+            s = e.i(182716),
+            o = e.i(857635),
+            l = e.i(337047),
+            u = e.i(528171),
+            c = e.i(367300),
+            d = e.i(102610),
+            p = e.i(670893),
+            m = e.i(902769),
+            f = e.i(46094),
+            v = e.i(622730),
+            h = e.i(811178),
+            g = e.i(193695);
+        e.i(629399);
+        var x = e.i(377404),
+            y = e.i(738342),
+            R = e.i(29173),
+            w = e.i(698043),
+            E = e.i(212669);
+        function A(e, t) {
+            return y.NextResponse.json({ ok: !0, data: e }, t);
+        }
+        function P(e, t = 400) {
+            return y.NextResponse.json({ ok: !1, error: e }, { status: t });
+        }
+        function C(e) {
+            if (null == e) return null;
+            let t =
+                'string' == typeof e
+                    ? Number(e.replace(',', '.').trim())
+                    : Number(e);
+            return Number.isFinite(t) ? t : null;
+        }
+        async function b() {
+            let e = await (0, E.requireAdminForModule)('SERVICES'),
+                t = e.companyId?.trim();
+            if (!t)
+                return P(
+                    'Sessão sem companyId. Este painel é multi-tenant: vincule o admin a uma empresa.',
+                    401
+                );
+            try {
+                let [e, r, n] = await Promise.all([
+                        w.prisma.service.findMany({
+                            where: { companyId: t },
+                            orderBy: { name: 'asc' },
+                            select: {
+                                id: !0,
+                                companyId: !0,
+                                name: !0,
+                                price: !0,
+                                durationMinutes: !0,
+                                isActive: !0,
+                                professionalPercentage: !0,
+                                cancelLimitHours: !0,
+                                cancelFeePercentage: !0,
+                            },
+                        }),
+                        w.prisma.professional.findMany({
+                            where: { companyId: t },
+                            orderBy: { name: 'asc' },
+                            select: { id: !0, name: !0, isActive: !0 },
+                        }),
+                        w.prisma.unit.findMany({
+                            where: { companyId: t },
+                            orderBy: { name: 'asc' },
+                            select: { id: !0, name: !0, isActive: !0 },
+                        }),
+                    ]),
+                    a = e.map((e) => {
+                        let t = Number(e.price.toString()),
+                            r = Number(e.professionalPercentage.toString()),
+                            n =
+                                null === e.cancelFeePercentage
+                                    ? null
+                                    : Number(e.cancelFeePercentage.toString());
+                        return {
+                            id: e.id,
+                            name: e.name,
+                            description: null,
+                            priceInCents: Number.isFinite(t)
+                                ? Math.round(100 * t)
+                                : null,
+                            durationInMinutes:
+                                'number' == typeof e.durationMinutes
+                                    ? e.durationMinutes
+                                    : null,
+                            barberPercentage: Number.isFinite(r) ? r : null,
+                            cancelLimitHours: e.cancelLimitHours ?? null,
+                            cancelFeePercentage:
+                                null !== n && Number.isFinite(n) ? n : null,
+                            isActive: e.isActive,
+                            companyId: e.companyId ?? null,
+                        };
+                    }),
+                    i = r.map((e) => ({
+                        id: e.id,
+                        name: e.name,
+                        isActive: e.isActive,
+                    })),
+                    s = n.map((e) => ({
+                        id: e.id,
+                        name: e.name,
+                        isActive: e.isActive,
+                    }));
+                return A({ services: a, professionals: i, units: s });
+            } catch {
+                return P('Não foi possível carregar os serviços.', 500);
+            }
+        }
+        async function N(e) {
+            let t = await (0, E.requireAdminForModule)('SERVICES'),
+                r = t.companyId?.trim();
+            if (!r)
+                return P(
+                    'Sessão sem companyId. Este painel é multi-tenant: vincule o admin a uma empresa.',
+                    401
+                );
+            let n = await e.json().catch(() => null);
+            if (!n) return P('Body inválido.');
+            let a = 'string' == typeof n.name ? n.name.trim() : '',
+                i =
+                    ('string' == typeof n.unitId ? n.unitId.trim() : '') ||
+                    null,
+                s = C(n.priceInCents),
+                o = null !== s ? s / 100 : C(n.price),
+                l = C(n.durationMinutes) ?? C(n.durationInMinutes),
+                u = C(n.professionalPercentage) ?? C(n.barberPercentage),
+                c = C(n.cancelLimitHours),
+                d = C(n.cancelFeePercentage),
+                p = (function (e) {
+                    if (!Array.isArray(e)) return [];
+                    let t = [],
+                        r = new Set();
+                    for (let n of e) {
+                        let e = 'string' == typeof n ? n.trim() : '';
+                        e && (r.has(e) || (r.add(e), t.push(e)));
+                    }
+                    return t;
+                })(n.professionalIds);
+            if (!a) return P('Nome do serviço é obrigatório.');
+            if (null === o || o < 0) return P('Preço inválido.');
+            if (null === l || l <= 0) return P('Duração inválida.');
+            if (null === u || u < 0 || u > 100)
+                return P('Porcentagem do profissional inválida (0 a 100).');
+            if (null !== c && c < 0)
+                return P('Limite de cancelamento inválido.');
+            if (null !== d && (d < 0 || d > 100))
+                return P('Taxa de cancelamento inválida (0 a 100).');
+            if (0 === p.length)
+                return P('Selecione pelo menos 1 profissional.');
+            try {
+                if (
+                    i &&
+                    !(await w.prisma.unit.findFirst({
+                        where: { id: i, companyId: r },
+                        select: { id: !0 },
+                    }))
+                )
+                    return P('Unidade inválida para esta empresa.');
+                let e = await w.prisma.professional.findMany({
+                        where: { companyId: r, id: { in: p } },
+                        select: { id: !0 },
+                    }),
+                    t = new Set(e.map((e) => e.id)),
+                    n = p.filter((e) => t.has(e));
+                if (0 === n.length)
+                    return P('Nenhum profissional válido selecionado.');
+                let s = await w.prisma.$transaction(async (e) => {
+                    let t = await e.service.create({
+                        data: {
+                            companyId: r,
+                            ...(i ? { unitId: i } : {}),
+                            name: a,
+                            price: new R.Prisma.Decimal(o),
+                            durationMinutes: Math.trunc(l),
+                            isActive: !0,
+                            professionalPercentage: new R.Prisma.Decimal(u),
+                            cancelLimitHours: null === c ? null : Math.trunc(c),
+                            cancelFeePercentage:
+                                null === d ? null : new R.Prisma.Decimal(d),
+                        },
+                        select: { id: !0 },
+                    });
+                    return (
+                        await e.serviceProfessional.createMany({
+                            data: n.map((e) => ({
+                                companyId: r,
+                                serviceId: t.id,
+                                professionalId: e,
+                            })),
+                            skipDuplicates: !0,
+                        }),
+                        t
+                    );
+                });
+                return A({ id: s.id }, { status: 201 });
+            } catch {
+                return P('Não foi possível criar o serviço.', 500);
+            }
+        }
+        e.s(
+            ['GET', () => b, 'POST', () => N, 'dynamic', 0, 'force-dynamic'],
+            676369
+        );
+        var M = e.i(676369);
+        let S = new t.AppRouteRouteModule({
+                definition: {
+                    kind: r.RouteKind.APP_ROUTE,
+                    page: '/api/admin/services/route',
+                    pathname: '/api/admin/services',
+                    filename: 'route',
+                    bundlePath: '',
+                },
+                distDir: '.next',
+                relativeProjectDir: '',
+                resolvedPagePath:
+                    '[project]/src/app/api/admin/services/route.ts',
+                nextConfigOutput: 'standalone',
+                userland: M,
+            }),
+            {
+                workAsyncStorage: I,
+                workUnitAsyncStorage: T,
+                serverHooks: k,
+            } = S;
+        function H() {
+            return (0, n.patchFetch)({
+                workAsyncStorage: I,
+                workUnitAsyncStorage: T,
+            });
+        }
+        async function O(e, t, n) {
+            S.isDev &&
+                (0, a.addRequestMeta)(
+                    e,
+                    'devRequestTimingInternalsEnd',
+                    process.hrtime.bigint()
+                );
+            let y = '/api/admin/services/route';
+            y = y.replace(/\/index$/, '') || '/';
+            let R = await S.prepare(e, t, {
+                srcPage: y,
+                multiZoneDraftMode: !1,
+            });
+            if (!R)
+                return (
+                    (t.statusCode = 400),
+                    t.end('Bad Request'),
+                    null == n.waitUntil ||
+                        n.waitUntil.call(n, Promise.resolve()),
+                    null
+                );
+            let {
+                    buildId: w,
+                    params: E,
+                    nextConfig: A,
+                    parsedUrl: P,
+                    isDraftMode: C,
+                    prerenderManifest: b,
+                    routerServerContext: N,
+                    isOnDemandRevalidate: M,
+                    revalidateOnlyGenerated: I,
+                    resolvedPathname: T,
+                    clientReferenceManifest: k,
+                    serverActionsManifest: H,
+                } = R,
+                O = (0, l.normalizeAppPath)(y),
+                q = !!(b.dynamicRoutes[O] || b.routes[T]),
+                F = async () => (
+                    (null == N ? void 0 : N.render404)
+                        ? await N.render404(e, t, P, !1)
+                        : t.end('This page could not be found'),
+                    null
+                );
+            if (q && !C) {
+                let e = !!b.routes[T],
+                    t = b.dynamicRoutes[O];
+                if (t && !1 === t.fallback && !e) {
+                    if (A.experimental.adapterPath) return await F();
+                    throw new g.NoFallbackError();
+                }
+            }
+            let j = null;
+            !q || S.isDev || C || (j = '/index' === (j = T) ? '/' : j);
+            let _ = !0 === S.isDev || !q,
+                D = q && !_;
+            H &&
+                k &&
+                (0, s.setReferenceManifestsSingleton)({
+                    page: y,
+                    clientReferenceManifest: k,
+                    serverActionsManifest: H,
+                    serverModuleMap: (0, o.createServerModuleMap)({
+                        serverActionsManifest: H,
+                    }),
+                });
+            let U = e.method || 'GET',
+                L = (0, i.getTracer)(),
+                $ = L.getActiveScopeSpan(),
+                B = {
+                    params: E,
+                    prerenderManifest: b,
+                    renderOpts: {
+                        experimental: {
+                            authInterrupts: !!A.experimental.authInterrupts,
+                        },
+                        cacheComponents: !!A.cacheComponents,
+                        supportsDynamicResponse: _,
+                        incrementalCache: (0, a.getRequestMeta)(
+                            e,
+                            'incrementalCache'
+                        ),
+                        cacheLifeProfiles: A.cacheLife,
+                        waitUntil: n.waitUntil,
+                        onClose: (e) => {
+                            t.on('close', e);
+                        },
+                        onAfterTaskError: void 0,
+                        onInstrumentationRequestError: (t, r, n) =>
+                            S.onRequestError(e, t, n, N),
+                    },
+                    sharedContext: { buildId: w },
+                },
+                K = new u.NodeNextRequest(e),
+                V = new u.NodeNextResponse(t),
+                G = c.NextRequestAdapter.fromNodeNextRequest(
+                    K,
+                    (0, c.signalFromNodeResponse)(t)
+                );
+            try {
+                let s = async (e) =>
+                        S.handle(G, B).finally(() => {
+                            if (!e) return;
+                            e.setAttributes({
+                                'http.status_code': t.statusCode,
+                                'next.rsc': !1,
+                            });
+                            let r = L.getRootSpanAttributes();
+                            if (!r) return;
+                            if (
+                                r.get('next.span_type') !==
+                                d.BaseServerSpan.handleRequest
+                            )
+                                return void console.warn(
+                                    `Unexpected root span type '${r.get('next.span_type')}'. Please report this Next.js issue https://github.com/vercel/next.js`
+                                );
+                            let n = r.get('next.route');
+                            if (n) {
+                                let t = `${U} ${n}`;
+                                (e.setAttributes({
+                                    'next.route': n,
+                                    'http.route': n,
+                                    'next.span_name': t,
+                                }),
+                                    e.updateName(t));
+                            } else e.updateName(`${U} ${y}`);
+                        }),
+                    o = !!(0, a.getRequestMeta)(e, 'minimalMode'),
+                    l = async (a) => {
+                        var i, l;
+                        let u = async ({ previousCacheEntry: r }) => {
+                                try {
+                                    if (!o && M && I && !r)
+                                        return (
+                                            (t.statusCode = 404),
+                                            t.setHeader(
+                                                'x-nextjs-cache',
+                                                'REVALIDATED'
+                                            ),
+                                            t.end(
+                                                'This page could not be found'
+                                            ),
+                                            null
+                                        );
+                                    let i = await s(a);
+                                    e.fetchMetrics = B.renderOpts.fetchMetrics;
+                                    let l = B.renderOpts.pendingWaitUntil;
+                                    l &&
+                                        n.waitUntil &&
+                                        (n.waitUntil(l), (l = void 0));
+                                    let u = B.renderOpts.collectedTags;
+                                    if (!q)
+                                        return (
+                                            await (0, m.sendResponse)(
+                                                K,
+                                                V,
+                                                i,
+                                                B.renderOpts.pendingWaitUntil
+                                            ),
+                                            null
+                                        );
+                                    {
+                                        let e = await i.blob(),
+                                            t = (0,
+                                            f.toNodeOutgoingHttpHeaders)(
+                                                i.headers
+                                            );
+                                        (u && (t[h.NEXT_CACHE_TAGS_HEADER] = u),
+                                            !t['content-type'] &&
+                                                e.type &&
+                                                (t['content-type'] = e.type));
+                                        let r =
+                                                void 0 !==
+                                                    B.renderOpts
+                                                        .collectedRevalidate &&
+                                                !(
+                                                    B.renderOpts
+                                                        .collectedRevalidate >=
+                                                    h.INFINITE_CACHE
+                                                ) &&
+                                                B.renderOpts
+                                                    .collectedRevalidate,
+                                            n =
+                                                void 0 ===
+                                                    B.renderOpts
+                                                        .collectedExpire ||
+                                                B.renderOpts.collectedExpire >=
+                                                    h.INFINITE_CACHE
+                                                    ? void 0
+                                                    : B.renderOpts
+                                                          .collectedExpire;
+                                        return {
+                                            value: {
+                                                kind: x.CachedRouteKind
+                                                    .APP_ROUTE,
+                                                status: i.status,
+                                                body: Buffer.from(
+                                                    await e.arrayBuffer()
+                                                ),
+                                                headers: t,
+                                            },
+                                            cacheControl: {
+                                                revalidate: r,
+                                                expire: n,
+                                            },
+                                        };
+                                    }
+                                } catch (t) {
+                                    throw (
+                                        (null == r ? void 0 : r.isStale) &&
+                                            (await S.onRequestError(
+                                                e,
+                                                t,
+                                                {
+                                                    routerKind: 'App Router',
+                                                    routePath: y,
+                                                    routeType: 'route',
+                                                    revalidateReason: (0,
+                                                    p.getRevalidateReason)({
+                                                        isStaticGeneration: D,
+                                                        isOnDemandRevalidate: M,
+                                                    }),
+                                                },
+                                                N
+                                            )),
+                                        t
+                                    );
+                                }
+                            },
+                            c = await S.handleResponse({
+                                req: e,
+                                nextConfig: A,
+                                cacheKey: j,
+                                routeKind: r.RouteKind.APP_ROUTE,
+                                isFallback: !1,
+                                prerenderManifest: b,
+                                isRoutePPREnabled: !1,
+                                isOnDemandRevalidate: M,
+                                revalidateOnlyGenerated: I,
+                                responseGenerator: u,
+                                waitUntil: n.waitUntil,
+                                isMinimalMode: o,
+                            });
+                        if (!q) return null;
+                        if (
+                            (null == c || null == (i = c.value)
+                                ? void 0
+                                : i.kind) !== x.CachedRouteKind.APP_ROUTE
+                        )
+                            throw Object.defineProperty(
+                                Error(
+                                    `Invariant: app-route received invalid cache entry ${null == c || null == (l = c.value) ? void 0 : l.kind}`
+                                ),
+                                '__NEXT_ERROR_CODE',
+                                {
+                                    value: 'E701',
+                                    enumerable: !1,
+                                    configurable: !0,
+                                }
+                            );
+                        (o ||
+                            t.setHeader(
+                                'x-nextjs-cache',
+                                M
+                                    ? 'REVALIDATED'
+                                    : c.isMiss
+                                      ? 'MISS'
+                                      : c.isStale
+                                        ? 'STALE'
+                                        : 'HIT'
+                            ),
+                            C &&
+                                t.setHeader(
+                                    'Cache-Control',
+                                    'private, no-cache, no-store, max-age=0, must-revalidate'
+                                ));
+                        let d = (0, f.fromNodeOutgoingHttpHeaders)(
+                            c.value.headers
+                        );
+                        return (
+                            (o && q) || d.delete(h.NEXT_CACHE_TAGS_HEADER),
+                            !c.cacheControl ||
+                                t.getHeader('Cache-Control') ||
+                                d.get('Cache-Control') ||
+                                d.set(
+                                    'Cache-Control',
+                                    (0, v.getCacheControlHeader)(c.cacheControl)
+                                ),
+                            await (0, m.sendResponse)(
+                                K,
+                                V,
+                                new Response(c.value.body, {
+                                    headers: d,
+                                    status: c.value.status || 200,
+                                })
+                            ),
+                            null
+                        );
+                    };
+                $
+                    ? await l($)
+                    : await L.withPropagatedContext(e.headers, () =>
+                          L.trace(
+                              d.BaseServerSpan.handleRequest,
+                              {
+                                  spanName: `${U} ${y}`,
+                                  kind: i.SpanKind.SERVER,
+                                  attributes: {
+                                      'http.method': U,
+                                      'http.target': e.url,
+                                  },
+                              },
+                              l
+                          )
+                      );
+            } catch (t) {
+                if (
+                    (t instanceof g.NoFallbackError ||
+                        (await S.onRequestError(e, t, {
+                            routerKind: 'App Router',
+                            routePath: O,
+                            routeType: 'route',
+                            revalidateReason: (0, p.getRevalidateReason)({
+                                isStaticGeneration: D,
+                                isOnDemandRevalidate: M,
+                            }),
+                        })),
+                    q)
+                )
+                    throw t;
+                return (
+                    await (0, m.sendResponse)(
+                        K,
+                        V,
+                        new Response(null, { status: 500 })
+                    ),
+                    null
+                );
+            }
+        }
+        e.s(
+            [
+                'handler',
+                () => O,
+                'patchFetch',
+                () => H,
+                'routeModule',
+                () => S,
+                'serverHooks',
+                () => k,
+                'workAsyncStorage',
+                () => I,
+                'workUnitAsyncStorage',
+                () => T,
+            ],
+            345982
+        );
+    },
+];
+
+//# sourceMappingURL=%5Broot-of-the-server%5D__d336decd._.js.map

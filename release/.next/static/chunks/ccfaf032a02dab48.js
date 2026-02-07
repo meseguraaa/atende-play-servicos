@@ -1,0 +1,2548 @@
+(globalThis.TURBOPACK || (globalThis.TURBOPACK = [])).push([
+    'object' == typeof document ? document.currentScript : void 0,
+    103119,
+    132775,
+    (e) => {
+        'use strict';
+        var a = e.i(383206);
+        let t = (0, a.default)('boxes', [
+            [
+                'path',
+                {
+                    d: 'M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z',
+                    key: 'lc1i9w',
+                },
+            ],
+            ['path', { d: 'm7 16.5-4.74-2.85', key: '1o9zyk' }],
+            ['path', { d: 'm7 16.5 5-3', key: 'va8pkn' }],
+            ['path', { d: 'M7 16.5v5.17', key: 'jnp8gn' }],
+            [
+                'path',
+                {
+                    d: 'M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z',
+                    key: '8zsnat',
+                },
+            ],
+            ['path', { d: 'm17 16.5-5-3', key: '8arw3v' }],
+            ['path', { d: 'm17 16.5 4.74-2.85', key: '8rfmw' }],
+            ['path', { d: 'M17 16.5v5.17', key: 'k6z78m' }],
+            [
+                'path',
+                {
+                    d: 'M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z',
+                    key: '1xygjf',
+                },
+            ],
+            ['path', { d: 'M12 8 7.26 5.15', key: '1vbdud' }],
+            ['path', { d: 'm12 8 4.74-2.85', key: '3rx089' }],
+            ['path', { d: 'M12 13.5V8', key: '1io7kd' }],
+        ]);
+        e.s(['Boxes', () => t], 103119);
+        let s = (0, a.default)('cake', [
+            [
+                'path',
+                {
+                    d: 'M20 21v-8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8',
+                    key: '1w3rig',
+                },
+            ],
+            [
+                'path',
+                {
+                    d: 'M4 16s.5-1 2-1 2.5 2 4 2 2.5-2 4-2 2.5 2 4 2 2-1 2-1',
+                    key: 'n2jgmb',
+                },
+            ],
+            ['path', { d: 'M2 21h20', key: '1nyx9w' }],
+            ['path', { d: 'M7 8v3', key: '1qtyvj' }],
+            ['path', { d: 'M12 8v3', key: 'hwp4zt' }],
+            ['path', { d: 'M17 8v3', key: '1i6e5u' }],
+            ['path', { d: 'M7 4h.01', key: '1bh4kh' }],
+            ['path', { d: 'M12 4h.01', key: '1ujb9j' }],
+            ['path', { d: 'M17 4h.01', key: '1upcoc' }],
+        ]);
+        e.s(['Cake', () => s], 132775);
+    },
+    597021,
+    (e) => {
+        'use strict';
+        var a = e.i(565750),
+            t = e.i(990341),
+            s = e.i(245586),
+            r = e.i(519455),
+            i = e.i(776639),
+            n = e.i(793479),
+            l = e.i(624687),
+            o = e.i(967489),
+            c = e.i(995403),
+            d = e.i(975157),
+            m = e.i(263942),
+            u = e.i(218074),
+            x = e.i(255376),
+            p = e.i(927291),
+            b = e.i(171312),
+            h = e.i(103119),
+            v = e.i(540374),
+            g = e.i(136764),
+            y = e.i(132775),
+            N = e.i(906325),
+            j = e.i(60179),
+            f = e.i(826463),
+            k = e.i(212409);
+        let S = [
+            { value: 'BRONZE', label: 'Bronze' },
+            { value: 'PRATA', label: 'Prata' },
+            { value: 'OURO', label: 'Ouro' },
+            { value: 'DIAMANTE', label: 'Diamante' },
+        ];
+        function D(e) {
+            let { icon: t, className: s, ...r } = e;
+            return (0, a.jsxs)('div', {
+                className: 'relative',
+                children: [
+                    (0, a.jsx)('div', {
+                        className:
+                            'pointer-events-none absolute left-3 top-1/2 -translate-y-1/2',
+                        children: (0, a.jsx)(t, {
+                            className: 'h-4 w-4 text-content-brand',
+                        }),
+                    }),
+                    (0, a.jsx)(n.Input, {
+                        ...r,
+                        className: (0, d.cn)('pl-10', s),
+                    }),
+                ],
+            });
+        }
+        let A =
+            'bg-background-tertiary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0';
+        function w({ product: e }) {
+            let w = (0, s.useRouter)(),
+                [E, P] = t.useState(!1),
+                [C, O] = t.useTransition(),
+                T = e.unitName || '—',
+                [R, M] = t.useState(!!e.isFeatured),
+                [B, U] = t.useState(e.name ?? ''),
+                [I, z] = t.useState(e.imageUrl ?? ''),
+                [F, W] = t.useState(e.description ?? ''),
+                [q, L] = t.useState(String(e.price ?? '')),
+                [Z, V] = t.useState(() => {
+                    let a = e.barberPercentage;
+                    return null == a ? '' : String(a);
+                }),
+                [Q, $] = t.useState(String(e.stockQuantity ?? 0)),
+                [H, J] = t.useState(e.category ?? ''),
+                [K, X] = t.useState(() => {
+                    let a = e.pickupDeadlineDays;
+                    return String(
+                        'number' == typeof a && Number.isFinite(a) && a > 0
+                            ? a
+                            : 2
+                    );
+                }),
+                [_, G] = t.useState(!!e.birthdayBenefitEnabled),
+                [Y, ee] = t.useState(() => e.birthdayPriceLevel || 'DIAMANTE'),
+                [ea, et] = t.useState(() => ({
+                    BRONZE:
+                        e.levelDiscounts?.BRONZE && e.levelDiscounts.BRONZE > 0
+                            ? String(e.levelDiscounts.BRONZE)
+                            : '',
+                    PRATA:
+                        e.levelDiscounts?.PRATA && e.levelDiscounts.PRATA > 0
+                            ? String(e.levelDiscounts.PRATA)
+                            : '',
+                    OURO:
+                        e.levelDiscounts?.OURO && e.levelDiscounts.OURO > 0
+                            ? String(e.levelDiscounts.OURO)
+                            : '',
+                    DIAMANTE:
+                        e.levelDiscounts?.DIAMANTE &&
+                        e.levelDiscounts.DIAMANTE > 0
+                            ? String(e.levelDiscounts.DIAMANTE)
+                            : '',
+                })),
+                es = t.useRef(null),
+                [er, ei] = t.useState(!1),
+                en = t.useRef(null);
+            async function el(e) {
+                if (!e.type?.startsWith('image/'))
+                    return void c.toast.error(
+                        'Selecione um arquivo de imagem.'
+                    );
+                if (e.size > 5242880)
+                    return void c.toast.error(
+                        `Imagem muito grande. M\xe1ximo: 5MB.`
+                    );
+                ei(!0);
+                try {
+                    var a;
+                    let t,
+                        s = new FormData();
+                    (s.append('file', e), s.append('module', 'PRODUCTS'));
+                    let r = await fetch('/api/admin/uploads', {
+                            method: 'POST',
+                            body: s,
+                        }),
+                        i = await r.json().catch(() => null);
+                    if (!r.ok || !i || !0 !== i.ok) {
+                        let e =
+                            (i && !1 === i.ok && i.error) ||
+                            'Não foi possível fazer upload da imagem.';
+                        c.toast.error(e);
+                        return;
+                    }
+                    let n =
+                        ((a = i.data.url),
+                        !(t = String(a ?? '').trim()) ||
+                        t.toLowerCase().startsWith('blob:')
+                            ? ''
+                            : t.startsWith('uploads/')
+                              ? `/${t}`
+                              : t);
+                    if (
+                        !(function (e) {
+                            let a = String(e ?? '').trim();
+                            if (!a) return !1;
+                            let t = a.toLowerCase();
+                            return (
+                                !(
+                                    t.startsWith('javascript:') ||
+                                    t.startsWith('data:') ||
+                                    t.startsWith('blob:')
+                                ) &&
+                                !!(
+                                    a.startsWith('/media/') ||
+                                    a.startsWith('/uploads/') ||
+                                    t.startsWith('http://') ||
+                                    t.startsWith('https://')
+                                )
+                            );
+                        })(n)
+                    )
+                        return void c.toast.error(
+                            'Upload retornou uma URL inválida para o produto. O esperado é /media/... (recomendado), /uploads/... (legado) ou http(s).'
+                        );
+                    (z(n), c.toast.success('Imagem enviada!'));
+                } catch {
+                    c.toast.error('Erro de rede ao fazer upload da imagem.');
+                } finally {
+                    ei(!1);
+                }
+            }
+            t.useEffect(() => {
+                let a, t;
+                if (!E) return;
+                let s = !!e.isFeatured,
+                    r = e.name ?? '',
+                    i = e.imageUrl ?? '',
+                    n = e.description ?? '',
+                    l = e.category ?? '',
+                    o = String(e.price ?? ''),
+                    c = null == (a = e.barberPercentage) ? '' : String(a),
+                    d = String(e.stockQuantity ?? 0),
+                    m = String(
+                        'number' == typeof (t = e.pickupDeadlineDays) &&
+                            Number.isFinite(t) &&
+                            t > 0
+                            ? t
+                            : 2
+                    ),
+                    u = !!e.birthdayBenefitEnabled,
+                    x = e.birthdayPriceLevel || 'DIAMANTE',
+                    p = {
+                        BRONZE:
+                            e.levelDiscounts?.BRONZE &&
+                            e.levelDiscounts.BRONZE > 0
+                                ? String(e.levelDiscounts.BRONZE)
+                                : '',
+                        PRATA:
+                            e.levelDiscounts?.PRATA &&
+                            e.levelDiscounts.PRATA > 0
+                                ? String(e.levelDiscounts.PRATA)
+                                : '',
+                        OURO:
+                            e.levelDiscounts?.OURO && e.levelDiscounts.OURO > 0
+                                ? String(e.levelDiscounts.OURO)
+                                : '',
+                        DIAMANTE:
+                            e.levelDiscounts?.DIAMANTE &&
+                            e.levelDiscounts.DIAMANTE > 0
+                                ? String(e.levelDiscounts.DIAMANTE)
+                                : '',
+                    };
+                (M(s),
+                    U(r),
+                    z(i),
+                    W(n),
+                    L(o),
+                    V(c),
+                    $(d),
+                    J(l),
+                    X(m),
+                    G(u),
+                    ee(x),
+                    et(p),
+                    (en.current = {
+                        name: r,
+                        imageUrl: i,
+                        description: n,
+                        category: l,
+                        price: o,
+                        barberPercentage: c,
+                        stockQuantity: d,
+                        pickupDeadlineDays: m,
+                        isFeatured: s,
+                        birthdayEnabled: u,
+                        birthdayLevel: x,
+                        levelDiscounts: p,
+                    }),
+                    ei(!1),
+                    es.current && (es.current.value = ''));
+            }, [E, e]);
+            let eo = _ && !Y,
+                ec =
+                    !B.trim() ||
+                    !F.trim() ||
+                    !H.trim() ||
+                    !q.trim() ||
+                    !Z.trim() ||
+                    !Q.trim() ||
+                    !K.trim(),
+                ed = eo || ec || er;
+            async function em() {
+                let a, t, s, r, i, n, l, o;
+                if (ed)
+                    return void c.toast.error(
+                        'Preencha os campos obrigatórios antes de salvar.'
+                    );
+                let d =
+                    ((t = en.current),
+                    (s = Number.isFinite(
+                        (a = Number(
+                            String(q ?? '')
+                                .trim()
+                                .replace(/\s/g, '')
+                                .replace(',', '.')
+                        ))
+                    )
+                        ? a
+                        : NaN),
+                    (r = Number(String(Z).replace(',', '.'))),
+                    (i = Number(String(Q).replace(',', '.'))),
+                    (n = Number(String(K).replace(',', '.'))),
+                    (l = {}),
+                    Object.keys(ea).forEach((e) => {
+                        let a = (function (e) {
+                            let a = String(e ?? '').trim();
+                            if (!a) return null;
+                            let t = Number(a.replace(',', '.'));
+                            return Number.isFinite(t)
+                                ? Math.max(0, Math.min(100, Math.floor(t)))
+                                : null;
+                        })(ea[e]);
+                        null !== a && (l[e] = a);
+                    }),
+                    (o = {
+                        name: B.trim(),
+                        description: F.trim(),
+                        category: H.trim(),
+                        price: s,
+                        barberPercentage: r,
+                        stockQuantity: i,
+                        pickupDeadlineDays: n,
+                        isFeatured: R,
+                        birthdayBenefitEnabled: _,
+                        birthdayPriceLevel: _ ? Y : null,
+                        levelDiscounts: l,
+                    }),
+                    t &&
+                        String(I ?? '').trim() !==
+                            String(t.imageUrl ?? '').trim() &&
+                        (o.imageUrl = String(I ?? '').trim()),
+                    o);
+                !Number.isFinite(d.price) || d.price <= 0
+                    ? c.toast.error('Preço inválido.')
+                    : !Number.isFinite(d.barberPercentage) ||
+                        d.barberPercentage < 0 ||
+                        d.barberPercentage > 100
+                      ? c.toast.error(
+                            'Porcentagem do barbeiro inválida (0 a 100).'
+                        )
+                      : !Number.isFinite(d.stockQuantity) || d.stockQuantity < 0
+                        ? c.toast.error('Estoque inválido.')
+                        : !Number.isFinite(d.pickupDeadlineDays) ||
+                            d.pickupDeadlineDays < 1 ||
+                            d.pickupDeadlineDays > 30
+                          ? c.toast.error(
+                                'Prazo para retirada inválido (1 a 30).'
+                            )
+                          : O(async () => {
+                                try {
+                                    let a = await fetch(
+                                            `/api/admin/products/${e.id}`,
+                                            {
+                                                method: 'PATCH',
+                                                headers: {
+                                                    'Content-Type':
+                                                        'application/json',
+                                                },
+                                                body: JSON.stringify({
+                                                    update: d,
+                                                }),
+                                            }
+                                        ),
+                                        t = await a.json().catch(() => null);
+                                    if (!a.ok || !t || !0 !== t.ok) {
+                                        let e =
+                                            t?.error ||
+                                            'Não foi possível salvar o produto. Tente novamente.';
+                                        c.toast.error(e);
+                                        return;
+                                    }
+                                    (c.toast.success('Produto atualizado!'),
+                                        P(!1),
+                                        w.refresh());
+                                } catch {
+                                    c.toast.error(
+                                        'Erro de rede ao salvar produto.'
+                                    );
+                                }
+                            });
+            }
+            let eu = I.trim() ? I.trim() : null;
+            return (0, a.jsxs)(i.Dialog, {
+                open: E,
+                onOpenChange: (e) => !C && !er && P(e),
+                children: [
+                    (0, a.jsx)(i.DialogTrigger, {
+                        asChild: !0,
+                        children: (0, a.jsx)(r.Button, {
+                            variant: 'edit2',
+                            size: 'sm',
+                            className:
+                                'border-border-primary hover:bg-muted/40',
+                            children: 'Editar',
+                        }),
+                    }),
+                    (0, a.jsxs)(i.DialogContent, {
+                        className:
+                            'bg-background-secondary border border-border-primary max-h-[80vh] overflow-y-auto',
+                        children: [
+                            (0, a.jsx)(i.DialogHeader, {
+                                children: (0, a.jsx)(i.DialogTitle, {
+                                    className:
+                                        'text-title text-content-primary',
+                                    children: 'Editar produto',
+                                }),
+                            }),
+                            (0, a.jsxs)('div', {
+                                className: 'space-y-4 pb-2',
+                                children: [
+                                    (0, a.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, a.jsx)('label', {
+                                                className:
+                                                    'text-label-small text-content-secondary',
+                                                children: 'Unidade do estoque',
+                                            }),
+                                            (0, a.jsx)(D, {
+                                                icon: m.Building2,
+                                                value: T,
+                                                disabled: !0,
+                                                className: (0, d.cn)(A),
+                                            }),
+                                        ],
+                                    }),
+                                    (0, a.jsx)('div', {
+                                        className:
+                                            'space-y-2 rounded-xl border border-border-primary bg-background-tertiary p-3',
+                                        children: (0, a.jsxs)('div', {
+                                            className:
+                                                'flex items-start justify-between gap-4',
+                                            children: [
+                                                (0, a.jsxs)('div', {
+                                                    children: [
+                                                        (0, a.jsx)('p', {
+                                                            className:
+                                                                'text-sm font-medium text-content-primary',
+                                                            children:
+                                                                '⭐ Destaque no app',
+                                                        }),
+                                                        (0, a.jsx)('p', {
+                                                            className:
+                                                                'text-xs text-content-secondary',
+                                                            children:
+                                                                'Quando ativo, este produto aparece no carrossel de Destaques no app.',
+                                                        }),
+                                                    ],
+                                                }),
+                                                (0, a.jsxs)('label', {
+                                                    className:
+                                                        'inline-flex items-center gap-2 text-xs text-content-secondary',
+                                                    children: [
+                                                        (0, a.jsx)('input', {
+                                                            type: 'checkbox',
+                                                            checked: R,
+                                                            disabled: C,
+                                                            onChange: (e) =>
+                                                                M(
+                                                                    e.target
+                                                                        .checked
+                                                                ),
+                                                            className:
+                                                                'h-4 w-4 accent-current',
+                                                        }),
+                                                        'Ativar',
+                                                    ],
+                                                }),
+                                            ],
+                                        }),
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, a.jsxs)('label', {
+                                                className:
+                                                    'text-label-small text-content-secondary',
+                                                children: [
+                                                    'Nome do produto',
+                                                    ' ',
+                                                    (0, a.jsx)('span', {
+                                                        className:
+                                                            'text-red-500',
+                                                        children: '*',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, a.jsx)(D, {
+                                                icon: j.Package,
+                                                value: B,
+                                                onChange: (e) =>
+                                                    U(e.target.value),
+                                                disabled: C,
+                                                className: A,
+                                            }),
+                                        ],
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, a.jsxs)('label', {
+                                                className:
+                                                    'text-label-small text-content-secondary',
+                                                children: [
+                                                    'Foto do produto',
+                                                    ' ',
+                                                    (0, a.jsx)('span', {
+                                                        className:
+                                                            'text-content-secondary/70',
+                                                        children: '(opcional)',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, a.jsx)('input', {
+                                                ref: es,
+                                                type: 'file',
+                                                accept: 'image/*',
+                                                className: 'hidden',
+                                                disabled: C || er,
+                                                onChange: (e) => {
+                                                    let a =
+                                                        e.currentTarget
+                                                            .files?.[0];
+                                                    a && el(a);
+                                                },
+                                            }),
+                                            (0, a.jsxs)('div', {
+                                                className:
+                                                    'grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start',
+                                                children: [
+                                                    (0, a.jsx)('div', {
+                                                        className: 'space-y-2',
+                                                        children: (0, a.jsxs)(
+                                                            'div',
+                                                            {
+                                                                className:
+                                                                    'relative',
+                                                                children: [
+                                                                    (0, a.jsx)(
+                                                                        'div',
+                                                                        {
+                                                                            className:
+                                                                                'pointer-events-none absolute left-3 top-1/2 -translate-y-1/2',
+                                                                            children:
+                                                                                (0,
+                                                                                a.jsx)(
+                                                                                    u.Image,
+                                                                                    {
+                                                                                        className:
+                                                                                            'h-4 w-4 text-content-brand',
+                                                                                    }
+                                                                                ),
+                                                                        }
+                                                                    ),
+                                                                    (0, a.jsx)(
+                                                                        n.Input,
+                                                                        {
+                                                                            value:
+                                                                                eu ??
+                                                                                '',
+                                                                            readOnly:
+                                                                                !0,
+                                                                            placeholder:
+                                                                                'Clique em Upload para escolher uma imagem.',
+                                                                            className:
+                                                                                (0,
+                                                                                d.cn)(
+                                                                                    'pl-10 pr-10',
+                                                                                    A
+                                                                                ),
+                                                                        }
+                                                                    ),
+                                                                    eu
+                                                                        ? (0,
+                                                                          a.jsx)(
+                                                                              'button',
+                                                                              {
+                                                                                  type: 'button',
+                                                                                  className:
+                                                                                      'absolute right-3 top-1/2 -translate-y-1/2 text-content-secondary hover:text-content-primary',
+                                                                                  onClick:
+                                                                                      () => {
+                                                                                          (z(
+                                                                                              ''
+                                                                                          ),
+                                                                                              es.current &&
+                                                                                                  (es.current.value =
+                                                                                                      ''));
+                                                                                      },
+                                                                                  disabled:
+                                                                                      C ||
+                                                                                      er,
+                                                                                  title: 'Remover imagem',
+                                                                                  children:
+                                                                                      (0,
+                                                                                      a.jsx)(
+                                                                                          k.X,
+                                                                                          {
+                                                                                              className:
+                                                                                                  'h-4 w-4',
+                                                                                          }
+                                                                                      ),
+                                                                              }
+                                                                          )
+                                                                        : null,
+                                                                ],
+                                                            }
+                                                        ),
+                                                    }),
+                                                    (0, a.jsx)(r.Button, {
+                                                        type: 'button',
+                                                        variant: 'brand',
+                                                        className: 'h-10',
+                                                        onClick: () =>
+                                                            es.current?.click(),
+                                                        disabled: C || er,
+                                                        title: er
+                                                            ? 'Enviando...'
+                                                            : void 0,
+                                                        children: (0, a.jsxs)(
+                                                            'span',
+                                                            {
+                                                                className:
+                                                                    'inline-flex items-center gap-2',
+                                                                children: [
+                                                                    (0, a.jsx)(
+                                                                        f.Upload,
+                                                                        {
+                                                                            className:
+                                                                                'h-4 w-4',
+                                                                        }
+                                                                    ),
+                                                                    er
+                                                                        ? 'Enviando...'
+                                                                        : 'Upload',
+                                                                ],
+                                                            }
+                                                        ),
+                                                    }),
+                                                ],
+                                            }),
+                                            eu
+                                                ? (0, a.jsx)('div', {
+                                                      className:
+                                                          'overflow-hidden rounded-xl border border-border-primary bg-background-tertiary',
+                                                      children: (0, a.jsx)(
+                                                          'img',
+                                                          {
+                                                              src: eu,
+                                                              alt: 'Preview do produto',
+                                                              className:
+                                                                  'h-40 w-full object-cover',
+                                                          }
+                                                      ),
+                                                  })
+                                                : null,
+                                        ],
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, a.jsxs)('label', {
+                                                className:
+                                                    'text-label-small text-content-secondary',
+                                                children: [
+                                                    'Descrição ',
+                                                    (0, a.jsx)('span', {
+                                                        className:
+                                                            'text-red-500',
+                                                        children: '*',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, a.jsxs)('div', {
+                                                className: 'relative',
+                                                children: [
+                                                    (0, a.jsx)('div', {
+                                                        className:
+                                                            'pointer-events-none absolute left-3 top-3',
+                                                        children: (0, a.jsx)(
+                                                            x.AlignLeft,
+                                                            {
+                                                                className:
+                                                                    'h-4 w-4 text-content-brand',
+                                                            }
+                                                        ),
+                                                    }),
+                                                    (0, a.jsx)(l.Textarea, {
+                                                        value: F,
+                                                        onChange: (e) =>
+                                                            W(e.target.value),
+                                                        disabled: C,
+                                                        rows: 3,
+                                                        className: (0, d.cn)(
+                                                            'pl-10',
+                                                            A
+                                                        ),
+                                                    }),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, a.jsxs)('label', {
+                                                className:
+                                                    'text-label-small text-content-secondary',
+                                                children: [
+                                                    'Valor (R$) ',
+                                                    (0, a.jsx)('span', {
+                                                        className:
+                                                            'text-red-500',
+                                                        children: '*',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, a.jsx)(D, {
+                                                icon: p.Wallet,
+                                                value: q,
+                                                onChange: (e) =>
+                                                    L(e.target.value),
+                                                disabled: C,
+                                                placeholder: 'Ex: 79.90',
+                                                className: A,
+                                            }),
+                                            (0, a.jsx)('p', {
+                                                className:
+                                                    'text-[11px] text-content-secondary/70',
+                                                children:
+                                                    'Preço base. Os descontos por nível são opcionais.',
+                                            }),
+                                        ],
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className:
+                                            'space-y-2 rounded-xl border border-border-primary bg-background-tertiary p-3',
+                                        children: [
+                                            (0, a.jsxs)('div', {
+                                                className:
+                                                    'flex items-center justify-between gap-3',
+                                                children: [
+                                                    (0, a.jsxs)('div', {
+                                                        children: [
+                                                            (0, a.jsx)('p', {
+                                                                className:
+                                                                    'text-sm font-medium text-content-primary',
+                                                                children:
+                                                                    'Desconto por nível (%)',
+                                                            }),
+                                                            (0, a.jsx)('p', {
+                                                                className:
+                                                                    'text-xs text-content-secondary',
+                                                                children:
+                                                                    'Deixe vazio para não definir.',
+                                                            }),
+                                                        ],
+                                                    }),
+                                                    (0, a.jsxs)('div', {
+                                                        className:
+                                                            'text-xs text-content-secondary',
+                                                        children: [
+                                                            'Base:',
+                                                            ' ',
+                                                            (0, a.jsxs)(
+                                                                'span',
+                                                                {
+                                                                    className:
+                                                                        'text-content-primary',
+                                                                    children: [
+                                                                        'R$ ',
+                                                                        q ||
+                                                                            '—',
+                                                                    ],
+                                                                }
+                                                            ),
+                                                        ],
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, a.jsx)('div', {
+                                                className:
+                                                    'grid grid-cols-2 gap-3 sm:grid-cols-4',
+                                                children: S.map((e) =>
+                                                    (0, a.jsxs)(
+                                                        'div',
+                                                        {
+                                                            className:
+                                                                'space-y-1',
+                                                            children: [
+                                                                (0, a.jsx)(
+                                                                    'label',
+                                                                    {
+                                                                        className:
+                                                                            'text-xs text-content-secondary',
+                                                                        children:
+                                                                            e.label,
+                                                                    }
+                                                                ),
+                                                                (0, a.jsx)(D, {
+                                                                    icon: N.BadgePercent,
+                                                                    value: ea[
+                                                                        e.value
+                                                                    ],
+                                                                    onChange: (
+                                                                        a
+                                                                    ) =>
+                                                                        et(
+                                                                            (
+                                                                                t
+                                                                            ) => ({
+                                                                                ...t,
+                                                                                [e.value]:
+                                                                                    a
+                                                                                        .target
+                                                                                        .value,
+                                                                            })
+                                                                        ),
+                                                                    disabled: C,
+                                                                    inputMode:
+                                                                        'numeric',
+                                                                    placeholder:
+                                                                        'Ex: 10',
+                                                                    className:
+                                                                        'bg-background-secondary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0',
+                                                                }),
+                                                            ],
+                                                        },
+                                                        e.value
+                                                    )
+                                                ),
+                                            }),
+                                            (0, a.jsx)('p', {
+                                                className:
+                                                    'text-[11px] text-content-secondary/70',
+                                                children:
+                                                    'O servidor normaliza para 0–100 e ignora campos vazios.',
+                                            }),
+                                        ],
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className:
+                                            'space-y-2 rounded-xl border border-border-primary bg-background-tertiary p-3',
+                                        children: [
+                                            (0, a.jsxs)('div', {
+                                                className:
+                                                    'flex items-start justify-between gap-4',
+                                                children: [
+                                                    (0, a.jsxs)('div', {
+                                                        children: [
+                                                            (0, a.jsx)('p', {
+                                                                className:
+                                                                    'text-sm font-medium text-content-primary',
+                                                                children:
+                                                                    'Benefício de aniversário',
+                                                            }),
+                                                            (0, a.jsx)('p', {
+                                                                className:
+                                                                    'text-xs text-content-secondary',
+                                                                children:
+                                                                    'Ativo por 3 dias antes, no dia, e 3 dias depois. Você escolhe qual nível aplicar.',
+                                                            }),
+                                                        ],
+                                                    }),
+                                                    (0, a.jsxs)('label', {
+                                                        className:
+                                                            'inline-flex items-center gap-2 text-xs text-content-secondary',
+                                                        children: [
+                                                            (0, a.jsx)(
+                                                                'input',
+                                                                {
+                                                                    type: 'checkbox',
+                                                                    checked: _,
+                                                                    disabled: C,
+                                                                    onChange: (
+                                                                        e
+                                                                    ) =>
+                                                                        G(
+                                                                            e
+                                                                                .target
+                                                                                .checked
+                                                                        ),
+                                                                    className:
+                                                                        'h-4 w-4 accent-current',
+                                                                }
+                                                            ),
+                                                            'Ativar',
+                                                        ],
+                                                    }),
+                                                ],
+                                            }),
+                                            _
+                                                ? (0, a.jsxs)('div', {
+                                                      className: 'space-y-2',
+                                                      children: [
+                                                          (0, a.jsxs)('label', {
+                                                              className:
+                                                                  'text-xs text-content-secondary',
+                                                              children: [
+                                                                  'Aplicar desconto como',
+                                                                  ' ',
+                                                                  (0, a.jsx)(
+                                                                      'span',
+                                                                      {
+                                                                          className:
+                                                                              'text-red-500',
+                                                                          children:
+                                                                              '*',
+                                                                      }
+                                                                  ),
+                                                              ],
+                                                          }),
+                                                          (0, a.jsxs)(
+                                                              o.Select,
+                                                              {
+                                                                  value: Y,
+                                                                  onValueChange:
+                                                                      (e) =>
+                                                                          ee(e),
+                                                                  disabled: C,
+                                                                  children: [
+                                                                      (0,
+                                                                      a.jsx)(
+                                                                          o.SelectTrigger,
+                                                                          {
+                                                                              className:
+                                                                                  (0,
+                                                                                  d.cn)(
+                                                                                      'h-10 w-full justify-between text-left font-normal bg-background-secondary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0'
+                                                                                  ),
+                                                                              children:
+                                                                                  (0,
+                                                                                  a.jsxs)(
+                                                                                      'div',
+                                                                                      {
+                                                                                          className:
+                                                                                              'flex items-center gap-2',
+                                                                                          children:
+                                                                                              [
+                                                                                                  (0,
+                                                                                                  a.jsx)(
+                                                                                                      y.Cake,
+                                                                                                      {
+                                                                                                          className:
+                                                                                                              'h-4 w-4 text-content-brand',
+                                                                                                      }
+                                                                                                  ),
+                                                                                                  (0,
+                                                                                                  a.jsx)(
+                                                                                                      o.SelectValue,
+                                                                                                      {
+                                                                                                          placeholder:
+                                                                                                              'Selecione o nível',
+                                                                                                      }
+                                                                                                  ),
+                                                                                              ],
+                                                                                      }
+                                                                                  ),
+                                                                          }
+                                                                      ),
+                                                                      (0,
+                                                                      a.jsx)(
+                                                                          o.SelectContent,
+                                                                          {
+                                                                              children:
+                                                                                  S.map(
+                                                                                      (
+                                                                                          e
+                                                                                      ) =>
+                                                                                          (0,
+                                                                                          a.jsx)(
+                                                                                              o.SelectItem,
+                                                                                              {
+                                                                                                  value: e.value,
+                                                                                                  children:
+                                                                                                      e.label,
+                                                                                              },
+                                                                                              e.value
+                                                                                          )
+                                                                                  ),
+                                                                          }
+                                                                      ),
+                                                                  ],
+                                                              }
+                                                          ),
+                                                          eo
+                                                              ? (0, a.jsx)(
+                                                                    'p',
+                                                                    {
+                                                                        className:
+                                                                            'text-xs text-red-500',
+                                                                        children:
+                                                                            'Se o benefício está ativo, selecione o nível.',
+                                                                    }
+                                                                )
+                                                              : (0, a.jsx)(
+                                                                    'p',
+                                                                    {
+                                                                        className:
+                                                                            'text-[11px] text-content-secondary/70',
+                                                                        children:
+                                                                            'Ex.: “Diamante” aplica o desconto Diamante durante a janela do aniversário.',
+                                                                    }
+                                                                ),
+                                                      ],
+                                                  })
+                                                : null,
+                                        ],
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, a.jsxs)('label', {
+                                                className:
+                                                    'text-label-small text-content-secondary',
+                                                children: [
+                                                    'Porcentagem do barbeiro (%)',
+                                                    ' ',
+                                                    (0, a.jsx)('span', {
+                                                        className:
+                                                            'text-red-500',
+                                                        children: '*',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, a.jsx)(D, {
+                                                icon: b.Scissors,
+                                                value: Z,
+                                                onChange: (e) =>
+                                                    V(e.target.value),
+                                                disabled: C,
+                                                type: 'number',
+                                                min: 0,
+                                                max: 100,
+                                                placeholder: 'Ex: 20',
+                                                className: A,
+                                            }),
+                                        ],
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, a.jsxs)('label', {
+                                                className:
+                                                    'text-label-small text-content-secondary',
+                                                children: [
+                                                    'Estoque ',
+                                                    (0, a.jsx)('span', {
+                                                        className:
+                                                            'text-red-500',
+                                                        children: '*',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, a.jsx)(D, {
+                                                icon: h.Boxes,
+                                                value: Q,
+                                                onChange: (e) =>
+                                                    $(e.target.value),
+                                                disabled: C,
+                                                type: 'number',
+                                                min: 0,
+                                                placeholder: 'Ex: 10',
+                                                className: A,
+                                            }),
+                                        ],
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, a.jsxs)('label', {
+                                                className:
+                                                    'text-label-small text-content-secondary',
+                                                children: [
+                                                    'Categoria / Finalidade',
+                                                    ' ',
+                                                    (0, a.jsx)('span', {
+                                                        className:
+                                                            'text-red-500',
+                                                        children: '*',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, a.jsx)(D, {
+                                                icon: v.Tag,
+                                                value: H,
+                                                onChange: (e) =>
+                                                    J(e.target.value),
+                                                disabled: C,
+                                                placeholder:
+                                                    'Ex: Barba, Cabelo, Hidratação...',
+                                                className: A,
+                                            }),
+                                        ],
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, a.jsxs)('label', {
+                                                className:
+                                                    'text-label-small text-content-secondary',
+                                                children: [
+                                                    'Prazo para retirada (dias)',
+                                                    ' ',
+                                                    (0, a.jsx)('span', {
+                                                        className:
+                                                            'text-red-500',
+                                                        children: '*',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, a.jsx)(D, {
+                                                icon: g.Clock,
+                                                value: K,
+                                                onChange: (e) =>
+                                                    X(e.target.value),
+                                                disabled: C,
+                                                type: 'number',
+                                                min: 1,
+                                                max: 30,
+                                                className: A,
+                                            }),
+                                            (0, a.jsx)('p', {
+                                                className:
+                                                    'text-xs text-content-secondary',
+                                                children:
+                                                    'Após esse prazo, a reserva pode expirar e o produto volta ao estoque.',
+                                            }),
+                                        ],
+                                    }),
+                                    (0, a.jsx)('div', {
+                                        className:
+                                            'flex justify-end gap-2 pt-2',
+                                        children: (0, a.jsx)(r.Button, {
+                                            type: 'button',
+                                            variant: 'brand',
+                                            disabled: C || ed,
+                                            onClick: em,
+                                            title: er
+                                                ? 'Aguarde o upload da imagem'
+                                                : eo
+                                                  ? 'Selecione o nível do benefício de aniversário'
+                                                  : ec
+                                                    ? 'Preencha os campos obrigatórios'
+                                                    : void 0,
+                                            children: C
+                                                ? 'Salvando...'
+                                                : 'Salvar alterações',
+                                        }),
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            });
+        }
+        function E({ children: e, title: t }) {
+            return (0, a.jsx)('span', {
+                title: t,
+                className:
+                    'inline-flex items-center rounded-md border px-2 py-0.5 text-xs bg-muted/40 border-border-primary text-content-secondary',
+                children: e,
+            });
+        }
+        function P({ isActive: e, title: t }) {
+            return (0, a.jsx)('span', {
+                title: t,
+                className: [
+                    'inline-flex items-center rounded-md border px-2 py-0.5 text-xs',
+                    e
+                        ? 'bg-green-500/15 text-green-600 border-green-500/30'
+                        : 'bg-red-500/15 text-red-600 border-red-500/30',
+                ].join(' '),
+                children: e ? 'Ativo' : 'Inativo',
+            });
+        }
+        function C({ product: e }) {
+            var i;
+            let n = (0, s.useRouter)(),
+                [l, o] = t.useTransition(),
+                d = (function (e, a = 50) {
+                    return e
+                        ? e.length <= a
+                            ? e
+                            : e.slice(0, a - 1) + '…'
+                        : '';
+                })(e.name),
+                m =
+                    !Number.isFinite((i = e.pickupDeadlineDays)) || i <= 0
+                        ? '—'
+                        : 1 === i
+                          ? '1 dia'
+                          : `${i} dias`,
+                u = !!e.birthdayBenefitEnabled,
+                x = !!e.hasLevelPrices,
+                p = !!e.isFeatured,
+                b = p || u || x,
+                [h, v] = t.useState(!1),
+                g = String(e.imageUrl ?? '').trim(),
+                y = !!g && !h;
+            return (
+                t.useEffect(() => {
+                    v(!1);
+                }, [g]),
+                (0, a.jsxs)('tr', {
+                    className: 'border-t border-border-primary',
+                    children: [
+                        (0, a.jsx)('td', {
+                            className: 'px-4 py-3',
+                            children: (0, a.jsxs)('div', {
+                                className: 'flex items-center gap-4',
+                                children: [
+                                    (0, a.jsx)('div', {
+                                        className:
+                                            'h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-border-primary bg-background-secondary',
+                                        children: y
+                                            ? (0, a.jsx)('img', {
+                                                  src: g,
+                                                  alt: e.name,
+                                                  className:
+                                                      'h-full w-full object-cover',
+                                                  onError: () => v(!0),
+                                              })
+                                            : (0, a.jsx)('div', {
+                                                  className:
+                                                      'flex h-full w-full items-center justify-center text-[10px] text-content-secondary',
+                                                  children: 'Sem foto',
+                                              }),
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className:
+                                            'flex min-w-0 flex-col gap-2',
+                                        children: [
+                                            (0, a.jsx)('span', {
+                                                className:
+                                                    'font-medium text-content-primary leading-tight',
+                                                children: d,
+                                            }),
+                                            b &&
+                                                (0, a.jsxs)('div', {
+                                                    className:
+                                                        'flex flex-wrap items-center gap-2',
+                                                    children: [
+                                                        p &&
+                                                            (0, a.jsx)(E, {
+                                                                title: 'Este produto aparece no carrossel de Destaques do app.',
+                                                                children:
+                                                                    '⭐ Destaque',
+                                                            }),
+                                                        x &&
+                                                            (0, a.jsx)(E, {
+                                                                title: 'Este produto tem descontos por nível.',
+                                                                children:
+                                                                    '💎 Níveis',
+                                                            }),
+                                                        u &&
+                                                            (0, a.jsx)(E, {
+                                                                title: 'Este produto tem benefício de aniversário.',
+                                                                children:
+                                                                    '🎂 Aniversário',
+                                                            }),
+                                                    ],
+                                                }),
+                                        ],
+                                    }),
+                                ],
+                            }),
+                        }),
+                        (0, a.jsx)('td', {
+                            className: 'px-4 py-3',
+                            children: (0, a.jsxs)('div', {
+                                className: 'flex flex-col gap-1',
+                                children: [
+                                    (0, a.jsx)('span', {
+                                        className: 'text-content-primary',
+                                        children: e.unitName || '—',
+                                    }),
+                                    (0, a.jsx)('span', {
+                                        className:
+                                            'text-[11px] text-content-secondary',
+                                        children: 'Estoque da unidade',
+                                    }),
+                                ],
+                            }),
+                        }),
+                        (0, a.jsxs)('td', {
+                            className: 'px-4 py-3 whitespace-nowrap',
+                            children: ['R$ ', Number(e.price).toFixed(2)],
+                        }),
+                        (0, a.jsx)('td', {
+                            className: 'px-4 py-3 whitespace-nowrap',
+                            children:
+                                null !== e.barberPercentage &&
+                                void 0 !== e.barberPercentage
+                                    ? `${Number(e.barberPercentage)}%`
+                                    : '-',
+                        }),
+                        (0, a.jsx)('td', {
+                            className: 'px-4 py-3',
+                            children: e.category || '—',
+                        }),
+                        (0, a.jsxs)('td', {
+                            className: 'px-4 py-3 whitespace-nowrap',
+                            children: [e.stockQuantity, ' un.'],
+                        }),
+                        (0, a.jsxs)('td', {
+                            className: 'px-4 py-3',
+                            children: [
+                                (0, a.jsx)('span', {
+                                    className: 'text-content-primary',
+                                    children: m,
+                                }),
+                                (0, a.jsx)('span', {
+                                    className:
+                                        'block text-[11px] text-content-secondary',
+                                    children: 'Retirada',
+                                }),
+                            ],
+                        }),
+                        (0, a.jsx)('td', {
+                            className: 'px-4 py-3',
+                            children: (0, a.jsx)(P, { isActive: !!e.isActive }),
+                        }),
+                        (0, a.jsx)('td', {
+                            className: 'px-4 py-3',
+                            children: (0, a.jsxs)('div', {
+                                className:
+                                    'flex items-center justify-end gap-3',
+                                children: [
+                                    (0, a.jsx)(w, { product: e }),
+                                    (0, a.jsx)(r.Button, {
+                                        variant: e.isActive
+                                            ? 'destructive'
+                                            : 'active',
+                                        size: 'sm',
+                                        type: 'button',
+                                        className:
+                                            'border-border-primary hover:bg-muted/40',
+                                        onClick: function () {
+                                            o(async () => {
+                                                try {
+                                                    let a = await fetch(
+                                                            `/api/admin/products/${e.id}`,
+                                                            {
+                                                                method: 'PATCH',
+                                                                headers: {
+                                                                    'Content-Type':
+                                                                        'application/json',
+                                                                },
+                                                                body: JSON.stringify(
+                                                                    {
+                                                                        toggleActive:
+                                                                            !0,
+                                                                    }
+                                                                ),
+                                                            }
+                                                        ),
+                                                        t = await a
+                                                            .json()
+                                                            .catch(() => null);
+                                                    if (
+                                                        !a.ok ||
+                                                        !t ||
+                                                        !0 !== t.ok
+                                                    ) {
+                                                        let e =
+                                                            t?.error ||
+                                                            'Não foi possível alterar o status do produto.';
+                                                        c.toast.error(e);
+                                                        return;
+                                                    }
+                                                    (c.toast.success(
+                                                        e.isActive
+                                                            ? 'Produto desativado.'
+                                                            : 'Produto ativado.'
+                                                    ),
+                                                        n.refresh());
+                                                } catch {
+                                                    c.toast.error(
+                                                        'Erro de rede ao alterar status do produto.'
+                                                    );
+                                                }
+                                            });
+                                        },
+                                        disabled: l,
+                                        title: l ? 'Processando...' : void 0,
+                                        children: l
+                                            ? 'Aguarde...'
+                                            : e.isActive
+                                              ? 'Desativar'
+                                              : 'Ativar',
+                                    }),
+                                ],
+                            }),
+                        }),
+                    ],
+                })
+            );
+        }
+        e.s(['ProductRow', () => C], 597021);
+    },
+    303130,
+    (e) => {
+        'use strict';
+        var a = e.i(565750),
+            t = e.i(990341),
+            s = e.i(245586),
+            r = e.i(776639),
+            i = e.i(519455),
+            n = e.i(793479),
+            l = e.i(624687),
+            o = e.i(967489),
+            c = e.i(995403),
+            d = e.i(975157),
+            m = e.i(263942),
+            u = e.i(60179),
+            x = e.i(218074),
+            p = e.i(255376),
+            b = e.i(927291),
+            h = e.i(171312),
+            v = e.i(103119),
+            g = e.i(540374),
+            y = e.i(136764),
+            N = e.i(132775),
+            j = e.i(906325),
+            f = e.i(826463),
+            k = e.i(212409);
+        let S = [
+            { value: 'BRONZE', label: 'Bronze' },
+            { value: 'PRATA', label: 'Prata' },
+            { value: 'OURO', label: 'Ouro' },
+            { value: 'DIAMANTE', label: 'Diamante' },
+        ];
+        function D(e) {
+            let a = String(e ?? '').trim();
+            return !a || a.toLowerCase().startsWith('blob:')
+                ? ''
+                : a.startsWith('media/') || a.startsWith('uploads/')
+                  ? `/${a}`
+                  : a;
+        }
+        function A(e) {
+            let { icon: t, className: s, ...r } = e;
+            return (0, a.jsxs)('div', {
+                className: 'relative',
+                children: [
+                    (0, a.jsx)('div', {
+                        className:
+                            'pointer-events-none absolute left-3 top-1/2 -translate-y-1/2',
+                        children: (0, a.jsx)(t, {
+                            className: 'h-4 w-4 text-content-brand',
+                        }),
+                    }),
+                    (0, a.jsx)(n.Input, {
+                        ...r,
+                        className: (0, d.cn)('pl-10', s),
+                    }),
+                ],
+            });
+        }
+        let w =
+            'bg-background-tertiary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0';
+        function E({ units: e = [] }) {
+            let E = (0, s.useRouter)(),
+                P = e.length > 0,
+                C = t.useMemo(() => e.find((e) => e.isActive)?.id ?? '', [e]),
+                [O, T] = t.useState(!1),
+                [R, M] = t.useTransition(),
+                [B, U] = t.useState(C),
+                [I, z] = t.useState(!1),
+                [F, W] = t.useState(''),
+                [q, L] = t.useState(''),
+                [Z, V] = t.useState(''),
+                [Q, $] = t.useState(''),
+                [H, J] = t.useState(''),
+                [K, X] = t.useState(''),
+                [_, G] = t.useState(''),
+                [Y, ee] = t.useState('2'),
+                [ea, et] = t.useState(!1),
+                [es, er] = t.useState('DIAMANTE'),
+                [ei, en] = t.useState({
+                    BRONZE: '',
+                    PRATA: '',
+                    OURO: '',
+                    DIAMANTE: '',
+                }),
+                el = t.useRef(null),
+                [eo, ec] = t.useState(!1);
+            t.useEffect(() => {
+                O && U((e) => e || C);
+            }, [O, C]);
+            let ed = !P || !B,
+                em = ea && !es,
+                eu =
+                    !F.trim() ||
+                    !Z.trim() ||
+                    !_.trim() ||
+                    !Q.trim() ||
+                    !H.trim() ||
+                    !K.trim() ||
+                    !Y.trim(),
+                ex = ed || em || eu || eo;
+            async function ep(e) {
+                if (!e.type?.startsWith('image/'))
+                    return void c.toast.error(
+                        'Selecione um arquivo de imagem.'
+                    );
+                if (e.size > 5242880)
+                    return void c.toast.error(
+                        `Imagem muito grande. M\xe1ximo: 5MB.`
+                    );
+                ec(!0);
+                try {
+                    let a = new FormData();
+                    (a.append('file', e), a.append('module', 'PRODUCTS'));
+                    let t = await fetch('/api/admin/uploads', {
+                            method: 'POST',
+                            body: a,
+                        }),
+                        s = await t.json().catch(() => null);
+                    if (!t.ok || !s || !0 !== s.ok) {
+                        let e =
+                            (s && !1 === s.ok && s.error) ||
+                            'Não foi possível fazer upload da imagem.';
+                        c.toast.error(e);
+                        return;
+                    }
+                    let r = D(s.data.url);
+                    if (
+                        !(function (e) {
+                            let a = String(e ?? '').trim();
+                            if (!a) return !1;
+                            let t = D(a);
+                            if (!t) return !1;
+                            let s = t.toLowerCase();
+                            return (
+                                !(
+                                    s.startsWith('javascript:') ||
+                                    s.startsWith('data:') ||
+                                    s.startsWith('blob:')
+                                ) &&
+                                !!(
+                                    t.startsWith('/media/') ||
+                                    t.startsWith('/uploads/') ||
+                                    s.startsWith('http://') ||
+                                    s.startsWith('https://')
+                                )
+                            );
+                        })(r)
+                    )
+                        return void c.toast.error(
+                            'Upload retornou uma URL inválida para o produto. O esperado é /media/... (recomendado), /uploads/... (legado) ou http(s).'
+                        );
+                    (L(r), c.toast.success('Imagem enviada!'));
+                } catch {
+                    c.toast.error('Erro de rede ao fazer upload da imagem.');
+                } finally {
+                    ec(!1);
+                }
+            }
+            async function eb() {
+                let e, a, t, s, r, i, n, l;
+                if (ex)
+                    return void c.toast.error(
+                        'Preencha os campos obrigatórios antes de criar.'
+                    );
+                let o =
+                    ((a = Number.isFinite(
+                        (e = Number(
+                            String(Q ?? '')
+                                .trim()
+                                .replace(/\s/g, '')
+                                .replace(',', '.')
+                        ))
+                    )
+                        ? e
+                        : NaN),
+                    (t = Number(String(H).replace(',', '.'))),
+                    (s = Number(String(K).replace(',', '.'))),
+                    (r = Number(String(Y).replace(',', '.'))),
+                    (i = {}),
+                    Object.keys(ei).forEach((e) => {
+                        let a = (function (e) {
+                            let a = String(e ?? '').trim();
+                            if (!a) return null;
+                            let t = Number(a.replace(',', '.'));
+                            return Number.isFinite(t)
+                                ? Math.max(0, Math.min(100, Math.floor(t)))
+                                : null;
+                        })(ei[e]);
+                        null !== a && (i[e] = a);
+                    }),
+                    (n = {
+                        unitId: B,
+                        name: F.trim(),
+                        description: Z.trim(),
+                        category: _.trim(),
+                        price: a,
+                        barberPercentage: t,
+                        stockQuantity: s,
+                        pickupDeadlineDays: r,
+                        isActive: !0,
+                        isFeatured: I,
+                        birthdayBenefitEnabled: ea,
+                        birthdayPriceLevel: ea ? es : null,
+                        levelDiscounts: i,
+                    }),
+                    (l = q.trim()) && (n.imageUrl = l),
+                    n);
+                !Number.isFinite(o.price) || o.price <= 0
+                    ? c.toast.error('Preço inválido.')
+                    : !Number.isFinite(o.barberPercentage) ||
+                        o.barberPercentage < 0 ||
+                        o.barberPercentage > 100
+                      ? c.toast.error(
+                            'Porcentagem do barbeiro inválida (0 a 100).'
+                        )
+                      : !Number.isFinite(o.stockQuantity) || o.stockQuantity < 0
+                        ? c.toast.error('Estoque inválido.')
+                        : !Number.isFinite(o.pickupDeadlineDays) ||
+                            o.pickupDeadlineDays < 1 ||
+                            o.pickupDeadlineDays > 30
+                          ? c.toast.error(
+                                'Prazo para retirada inválido (1 a 30).'
+                            )
+                          : M(async () => {
+                                try {
+                                    let e = await fetch('/api/admin/products', {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type':
+                                                    'application/json',
+                                            },
+                                            body: JSON.stringify(o),
+                                        }),
+                                        a = await e.json().catch(() => null);
+                                    if (!e.ok || !a || !0 !== a.ok) {
+                                        let e =
+                                            a?.error ||
+                                            'Não foi possível criar o produto. Tente novamente.';
+                                        c.toast.error(e);
+                                        return;
+                                    }
+                                    (c.toast.success(
+                                        'Produto criado com sucesso!'
+                                    ),
+                                        T(!1),
+                                        U(C),
+                                        z(!1),
+                                        W(''),
+                                        L(''),
+                                        V(''),
+                                        $(''),
+                                        J(''),
+                                        X(''),
+                                        G(''),
+                                        ee('2'),
+                                        et(!1),
+                                        er('DIAMANTE'),
+                                        en({
+                                            BRONZE: '',
+                                            PRATA: '',
+                                            OURO: '',
+                                            DIAMANTE: '',
+                                        }),
+                                        ec(!1),
+                                        el.current && (el.current.value = ''),
+                                        E.refresh());
+                                } catch {
+                                    c.toast.error(
+                                        'Erro de rede ao criar produto.'
+                                    );
+                                }
+                            });
+            }
+            let eh = q.trim() ? q.trim() : null;
+            return (0, a.jsxs)(r.Dialog, {
+                open: O,
+                onOpenChange: (e) => !R && !eo && T(e),
+                children: [
+                    (0, a.jsx)(r.DialogTrigger, {
+                        asChild: !0,
+                        children: (0, a.jsx)(i.Button, {
+                            variant: 'brand',
+                            children: 'Novo produto',
+                        }),
+                    }),
+                    (0, a.jsxs)(r.DialogContent, {
+                        className:
+                            'bg-background-secondary border border-border-primary max-h-[80vh] overflow-y-auto',
+                        children: [
+                            (0, a.jsx)(r.DialogHeader, {
+                                children: (0, a.jsx)(r.DialogTitle, {
+                                    className:
+                                        'text-title text-content-primary',
+                                    children: 'Novo produto',
+                                }),
+                            }),
+                            (0, a.jsxs)('div', {
+                                className: 'space-y-4 pb-2',
+                                children: [
+                                    (0, a.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, a.jsxs)('label', {
+                                                className:
+                                                    'text-label-small text-content-secondary',
+                                                children: [
+                                                    'Unidade do estoque',
+                                                    ' ',
+                                                    (0, a.jsx)('span', {
+                                                        className:
+                                                            'text-red-500',
+                                                        children: '*',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, a.jsxs)(o.Select, {
+                                                value: B,
+                                                onValueChange: (e) => U(e),
+                                                disabled: !P || R,
+                                                children: [
+                                                    (0, a.jsx)(
+                                                        o.SelectTrigger,
+                                                        {
+                                                            className:
+                                                                'h-10 w-full justify-between text-left font-normal bg-background-tertiary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0 focus-visible:border-border-brand',
+                                                            children: (0,
+                                                            a.jsxs)('div', {
+                                                                className:
+                                                                    'flex items-center gap-2',
+                                                                children: [
+                                                                    (0, a.jsx)(
+                                                                        m.Building2,
+                                                                        {
+                                                                            className:
+                                                                                'h-4 w-4 text-content-brand',
+                                                                        }
+                                                                    ),
+                                                                    (0, a.jsx)(
+                                                                        o.SelectValue,
+                                                                        {
+                                                                            placeholder:
+                                                                                P
+                                                                                    ? 'Selecione a unidade'
+                                                                                    : 'Nenhuma unidade cadastrada',
+                                                                        }
+                                                                    ),
+                                                                ],
+                                                            }),
+                                                        }
+                                                    ),
+                                                    (0, a.jsx)(
+                                                        o.SelectContent,
+                                                        {
+                                                            children: e.map(
+                                                                (e) =>
+                                                                    (0, a.jsxs)(
+                                                                        o.SelectItem,
+                                                                        {
+                                                                            value: e.id,
+                                                                            disabled:
+                                                                                !e.isActive,
+                                                                            children:
+                                                                                [
+                                                                                    e.name,
+                                                                                    ' ',
+                                                                                    e.isActive
+                                                                                        ? ''
+                                                                                        : '(inativa)',
+                                                                                ],
+                                                                        },
+                                                                        e.id
+                                                                    )
+                                                            ),
+                                                        }
+                                                    ),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    (0, a.jsx)('div', {
+                                        className:
+                                            'space-y-2 rounded-xl border border-border-primary bg-background-tertiary p-3',
+                                        children: (0, a.jsxs)('div', {
+                                            className:
+                                                'flex items-start justify-between gap-4',
+                                            children: [
+                                                (0, a.jsxs)('div', {
+                                                    children: [
+                                                        (0, a.jsx)('p', {
+                                                            className:
+                                                                'text-sm font-medium text-content-primary',
+                                                            children:
+                                                                '⭐ Destaque no app',
+                                                        }),
+                                                        (0, a.jsx)('p', {
+                                                            className:
+                                                                'text-xs text-content-secondary',
+                                                            children:
+                                                                'Quando ativo, este produto aparece no carrossel de Destaques no app.',
+                                                        }),
+                                                    ],
+                                                }),
+                                                (0, a.jsxs)('label', {
+                                                    className:
+                                                        'inline-flex items-center gap-2 text-xs text-content-secondary',
+                                                    children: [
+                                                        (0, a.jsx)('input', {
+                                                            type: 'checkbox',
+                                                            checked: I,
+                                                            disabled: R,
+                                                            onChange: (e) =>
+                                                                z(
+                                                                    e.target
+                                                                        .checked
+                                                                ),
+                                                            className:
+                                                                'h-4 w-4 accent-current',
+                                                        }),
+                                                        'Ativar',
+                                                    ],
+                                                }),
+                                            ],
+                                        }),
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, a.jsxs)('label', {
+                                                className:
+                                                    'text-label-small text-content-secondary',
+                                                children: [
+                                                    'Nome do produto',
+                                                    ' ',
+                                                    (0, a.jsx)('span', {
+                                                        className:
+                                                            'text-red-500',
+                                                        children: '*',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, a.jsx)(A, {
+                                                icon: u.Package,
+                                                value: F,
+                                                onChange: (e) =>
+                                                    W(e.target.value),
+                                                disabled: R,
+                                                className: w,
+                                            }),
+                                        ],
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, a.jsxs)('label', {
+                                                className:
+                                                    'text-label-small text-content-secondary',
+                                                children: [
+                                                    'Foto do produto',
+                                                    ' ',
+                                                    (0, a.jsx)('span', {
+                                                        className:
+                                                            'text-content-secondary/70',
+                                                        children: '(opcional)',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, a.jsx)('input', {
+                                                ref: el,
+                                                type: 'file',
+                                                accept: 'image/*',
+                                                className: 'hidden',
+                                                disabled: R || eo,
+                                                onChange: (e) => {
+                                                    let a =
+                                                        e.currentTarget
+                                                            .files?.[0];
+                                                    a && ep(a);
+                                                },
+                                            }),
+                                            (0, a.jsxs)('div', {
+                                                className:
+                                                    'grid gap-3 sm:grid-cols-[1fr_auto] sm:items-start',
+                                                children: [
+                                                    (0, a.jsx)('div', {
+                                                        className: 'space-y-2',
+                                                        children: (0, a.jsxs)(
+                                                            'div',
+                                                            {
+                                                                className:
+                                                                    'relative',
+                                                                children: [
+                                                                    (0, a.jsx)(
+                                                                        'div',
+                                                                        {
+                                                                            className:
+                                                                                'pointer-events-none absolute left-3 top-1/2 -translate-y-1/2',
+                                                                            children:
+                                                                                (0,
+                                                                                a.jsx)(
+                                                                                    x.Image,
+                                                                                    {
+                                                                                        className:
+                                                                                            'h-4 w-4 text-content-brand',
+                                                                                    }
+                                                                                ),
+                                                                        }
+                                                                    ),
+                                                                    (0, a.jsx)(
+                                                                        n.Input,
+                                                                        {
+                                                                            value:
+                                                                                eh ??
+                                                                                '',
+                                                                            readOnly:
+                                                                                !0,
+                                                                            placeholder:
+                                                                                'Clique em Upload para escolher uma imagem.',
+                                                                            className:
+                                                                                (0,
+                                                                                d.cn)(
+                                                                                    'pl-10 pr-10',
+                                                                                    w
+                                                                                ),
+                                                                        }
+                                                                    ),
+                                                                    eh
+                                                                        ? (0,
+                                                                          a.jsx)(
+                                                                              'button',
+                                                                              {
+                                                                                  type: 'button',
+                                                                                  className:
+                                                                                      'absolute right-3 top-1/2 -translate-y-1/2 text-content-secondary hover:text-content-primary',
+                                                                                  onClick:
+                                                                                      () => {
+                                                                                          (L(
+                                                                                              ''
+                                                                                          ),
+                                                                                              el.current &&
+                                                                                                  (el.current.value =
+                                                                                                      ''));
+                                                                                      },
+                                                                                  disabled:
+                                                                                      R ||
+                                                                                      eo,
+                                                                                  title: 'Remover imagem',
+                                                                                  children:
+                                                                                      (0,
+                                                                                      a.jsx)(
+                                                                                          k.X,
+                                                                                          {
+                                                                                              className:
+                                                                                                  'h-4 w-4',
+                                                                                          }
+                                                                                      ),
+                                                                              }
+                                                                          )
+                                                                        : null,
+                                                                ],
+                                                            }
+                                                        ),
+                                                    }),
+                                                    (0, a.jsx)(i.Button, {
+                                                        type: 'button',
+                                                        variant: 'brand',
+                                                        className: 'h-10',
+                                                        onClick: () =>
+                                                            el.current?.click(),
+                                                        disabled: R || eo,
+                                                        title: eo
+                                                            ? 'Enviando...'
+                                                            : void 0,
+                                                        children: (0, a.jsxs)(
+                                                            'span',
+                                                            {
+                                                                className:
+                                                                    'inline-flex items-center gap-2',
+                                                                children: [
+                                                                    (0, a.jsx)(
+                                                                        f.Upload,
+                                                                        {
+                                                                            className:
+                                                                                'h-4 w-4',
+                                                                        }
+                                                                    ),
+                                                                    eo
+                                                                        ? 'Enviando...'
+                                                                        : 'Upload',
+                                                                ],
+                                                            }
+                                                        ),
+                                                    }),
+                                                ],
+                                            }),
+                                            eh
+                                                ? (0, a.jsx)('div', {
+                                                      className:
+                                                          'overflow-hidden rounded-xl border border-border-primary bg-background-tertiary',
+                                                      children: (0, a.jsx)(
+                                                          'img',
+                                                          {
+                                                              src: eh,
+                                                              alt: 'Preview do produto',
+                                                              className:
+                                                                  'h-40 w-full object-cover',
+                                                          }
+                                                      ),
+                                                  })
+                                                : null,
+                                        ],
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, a.jsxs)('label', {
+                                                className:
+                                                    'text-label-small text-content-secondary',
+                                                children: [
+                                                    'Descrição ',
+                                                    (0, a.jsx)('span', {
+                                                        className:
+                                                            'text-red-500',
+                                                        children: '*',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, a.jsxs)('div', {
+                                                className: 'relative',
+                                                children: [
+                                                    (0, a.jsx)('div', {
+                                                        className:
+                                                            'pointer-events-none absolute left-3 top-3',
+                                                        children: (0, a.jsx)(
+                                                            p.AlignLeft,
+                                                            {
+                                                                className:
+                                                                    'h-4 w-4 text-content-brand',
+                                                            }
+                                                        ),
+                                                    }),
+                                                    (0, a.jsx)(l.Textarea, {
+                                                        value: Z,
+                                                        onChange: (e) =>
+                                                            V(e.target.value),
+                                                        disabled: R,
+                                                        rows: 3,
+                                                        className: (0, d.cn)(
+                                                            'pl-10',
+                                                            w
+                                                        ),
+                                                    }),
+                                                ],
+                                            }),
+                                        ],
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, a.jsxs)('label', {
+                                                className:
+                                                    'text-label-small text-content-secondary',
+                                                children: [
+                                                    'Valor (R$) ',
+                                                    (0, a.jsx)('span', {
+                                                        className:
+                                                            'text-red-500',
+                                                        children: '*',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, a.jsx)(A, {
+                                                icon: b.Wallet,
+                                                value: Q,
+                                                onChange: (e) =>
+                                                    $(e.target.value),
+                                                disabled: R,
+                                                placeholder: 'Ex: 79.90',
+                                                className: w,
+                                            }),
+                                            (0, a.jsx)('p', {
+                                                className:
+                                                    'text-[11px] text-content-secondary/70',
+                                                children:
+                                                    'Preço base. Os descontos por nível são opcionais.',
+                                            }),
+                                        ],
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className:
+                                            'space-y-2 rounded-xl border border-border-primary bg-background-tertiary p-3',
+                                        children: [
+                                            (0, a.jsxs)('div', {
+                                                className:
+                                                    'flex items-center justify-between gap-3',
+                                                children: [
+                                                    (0, a.jsxs)('div', {
+                                                        children: [
+                                                            (0, a.jsx)('p', {
+                                                                className:
+                                                                    'text-sm font-medium text-content-primary',
+                                                                children:
+                                                                    'Desconto por nível (%)',
+                                                            }),
+                                                            (0, a.jsx)('p', {
+                                                                className:
+                                                                    'text-xs text-content-secondary',
+                                                                children:
+                                                                    'Deixe vazio para não definir.',
+                                                            }),
+                                                        ],
+                                                    }),
+                                                    (0, a.jsxs)('div', {
+                                                        className:
+                                                            'text-xs text-content-secondary',
+                                                        children: [
+                                                            'Base:',
+                                                            ' ',
+                                                            (0, a.jsxs)(
+                                                                'span',
+                                                                {
+                                                                    className:
+                                                                        'text-content-primary',
+                                                                    children: [
+                                                                        'R$ ',
+                                                                        Q ||
+                                                                            '—',
+                                                                    ],
+                                                                }
+                                                            ),
+                                                        ],
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, a.jsx)('div', {
+                                                className:
+                                                    'grid grid-cols-2 gap-3 sm:grid-cols-4',
+                                                children: S.map((e) =>
+                                                    (0, a.jsxs)(
+                                                        'div',
+                                                        {
+                                                            className:
+                                                                'space-y-1',
+                                                            children: [
+                                                                (0, a.jsx)(
+                                                                    'label',
+                                                                    {
+                                                                        className:
+                                                                            'text-xs text-content-secondary',
+                                                                        children:
+                                                                            e.label,
+                                                                    }
+                                                                ),
+                                                                (0, a.jsx)(A, {
+                                                                    icon: j.BadgePercent,
+                                                                    value: ei[
+                                                                        e.value
+                                                                    ],
+                                                                    onChange: (
+                                                                        a
+                                                                    ) =>
+                                                                        en(
+                                                                            (
+                                                                                t
+                                                                            ) => ({
+                                                                                ...t,
+                                                                                [e.value]:
+                                                                                    a
+                                                                                        .target
+                                                                                        .value,
+                                                                            })
+                                                                        ),
+                                                                    disabled: R,
+                                                                    inputMode:
+                                                                        'numeric',
+                                                                    placeholder:
+                                                                        'Ex: 10',
+                                                                    className:
+                                                                        'bg-background-secondary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0',
+                                                                }),
+                                                            ],
+                                                        },
+                                                        e.value
+                                                    )
+                                                ),
+                                            }),
+                                            (0, a.jsx)('p', {
+                                                className:
+                                                    'text-[11px] text-content-secondary/70',
+                                                children:
+                                                    'O servidor normaliza para 0–100 e ignora campos vazios.',
+                                            }),
+                                        ],
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className:
+                                            'space-y-2 rounded-xl border border-border-primary bg-background-tertiary p-3',
+                                        children: [
+                                            (0, a.jsxs)('div', {
+                                                className:
+                                                    'flex items-start justify-between gap-4',
+                                                children: [
+                                                    (0, a.jsxs)('div', {
+                                                        children: [
+                                                            (0, a.jsx)('p', {
+                                                                className:
+                                                                    'text-sm font-medium text-content-primary',
+                                                                children:
+                                                                    'Benefício de aniversário',
+                                                            }),
+                                                            (0, a.jsx)('p', {
+                                                                className:
+                                                                    'text-xs text-content-secondary',
+                                                                children:
+                                                                    'Ativo por 3 dias antes, no dia, e 3 dias depois. Você escolhe qual “nível” aplicar.',
+                                                            }),
+                                                        ],
+                                                    }),
+                                                    (0, a.jsxs)('label', {
+                                                        className:
+                                                            'inline-flex items-center gap-2 text-xs text-content-secondary',
+                                                        children: [
+                                                            (0, a.jsx)(
+                                                                'input',
+                                                                {
+                                                                    type: 'checkbox',
+                                                                    checked: ea,
+                                                                    disabled: R,
+                                                                    onChange: (
+                                                                        e
+                                                                    ) =>
+                                                                        et(
+                                                                            e
+                                                                                .target
+                                                                                .checked
+                                                                        ),
+                                                                    className:
+                                                                        'h-4 w-4 accent-current',
+                                                                }
+                                                            ),
+                                                            'Ativar',
+                                                        ],
+                                                    }),
+                                                ],
+                                            }),
+                                            ea
+                                                ? (0, a.jsxs)('div', {
+                                                      className: 'space-y-2',
+                                                      children: [
+                                                          (0, a.jsxs)('label', {
+                                                              className:
+                                                                  'text-xs text-content-secondary',
+                                                              children: [
+                                                                  'Aplicar desconto como',
+                                                                  ' ',
+                                                                  (0, a.jsx)(
+                                                                      'span',
+                                                                      {
+                                                                          className:
+                                                                              'text-red-500',
+                                                                          children:
+                                                                              '*',
+                                                                      }
+                                                                  ),
+                                                              ],
+                                                          }),
+                                                          (0, a.jsxs)(
+                                                              o.Select,
+                                                              {
+                                                                  value: es,
+                                                                  onValueChange:
+                                                                      (e) =>
+                                                                          er(e),
+                                                                  disabled: R,
+                                                                  children: [
+                                                                      (0,
+                                                                      a.jsx)(
+                                                                          o.SelectTrigger,
+                                                                          {
+                                                                              className:
+                                                                                  (0,
+                                                                                  d.cn)(
+                                                                                      'h-10 w-full justify-between text-left font-normal bg-background-secondary border-border-primary text-content-primary hover:border-border-secondary focus:border-border-brand focus-visible:ring-1 focus-visible:ring-border-brand focus-visible:ring-offset-0'
+                                                                                  ),
+                                                                              children:
+                                                                                  (0,
+                                                                                  a.jsxs)(
+                                                                                      'div',
+                                                                                      {
+                                                                                          className:
+                                                                                              'flex items-center gap-2',
+                                                                                          children:
+                                                                                              [
+                                                                                                  (0,
+                                                                                                  a.jsx)(
+                                                                                                      N.Cake,
+                                                                                                      {
+                                                                                                          className:
+                                                                                                              'h-4 w-4 text-content-brand',
+                                                                                                      }
+                                                                                                  ),
+                                                                                                  (0,
+                                                                                                  a.jsx)(
+                                                                                                      o.SelectValue,
+                                                                                                      {
+                                                                                                          placeholder:
+                                                                                                              'Selecione o nível',
+                                                                                                      }
+                                                                                                  ),
+                                                                                              ],
+                                                                                      }
+                                                                                  ),
+                                                                          }
+                                                                      ),
+                                                                      (0,
+                                                                      a.jsx)(
+                                                                          o.SelectContent,
+                                                                          {
+                                                                              children:
+                                                                                  S.map(
+                                                                                      (
+                                                                                          e
+                                                                                      ) =>
+                                                                                          (0,
+                                                                                          a.jsx)(
+                                                                                              o.SelectItem,
+                                                                                              {
+                                                                                                  value: e.value,
+                                                                                                  children:
+                                                                                                      e.label,
+                                                                                              },
+                                                                                              e.value
+                                                                                          )
+                                                                                  ),
+                                                                          }
+                                                                      ),
+                                                                  ],
+                                                              }
+                                                          ),
+                                                          em
+                                                              ? (0, a.jsx)(
+                                                                    'p',
+                                                                    {
+                                                                        className:
+                                                                            'text-xs text-red-500',
+                                                                        children:
+                                                                            'Se o benefício está ativo, selecione o nível.',
+                                                                    }
+                                                                )
+                                                              : (0, a.jsx)(
+                                                                    'p',
+                                                                    {
+                                                                        className:
+                                                                            'text-[11px] text-content-secondary/70',
+                                                                        children:
+                                                                            'Ex.: “Diamante” aplica o desconto Diamante durante a janela do aniversário.',
+                                                                    }
+                                                                ),
+                                                      ],
+                                                  })
+                                                : null,
+                                        ],
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, a.jsxs)('label', {
+                                                className:
+                                                    'text-label-small text-content-secondary',
+                                                children: [
+                                                    'Porcentagem do profissional (%)',
+                                                    ' ',
+                                                    (0, a.jsx)('span', {
+                                                        className:
+                                                            'text-red-500',
+                                                        children: '*',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, a.jsx)(A, {
+                                                icon: h.Scissors,
+                                                value: H,
+                                                onChange: (e) =>
+                                                    J(e.target.value),
+                                                disabled: R,
+                                                type: 'number',
+                                                min: 0,
+                                                max: 100,
+                                                placeholder: 'Ex: 20',
+                                                className: w,
+                                            }),
+                                        ],
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, a.jsxs)('label', {
+                                                className:
+                                                    'text-label-small text-content-secondary',
+                                                children: [
+                                                    'Estoque ',
+                                                    (0, a.jsx)('span', {
+                                                        className:
+                                                            'text-red-500',
+                                                        children: '*',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, a.jsx)(A, {
+                                                icon: v.Boxes,
+                                                value: K,
+                                                onChange: (e) =>
+                                                    X(e.target.value),
+                                                disabled: R,
+                                                type: 'number',
+                                                min: 0,
+                                                placeholder: 'Ex: 10',
+                                                className: w,
+                                            }),
+                                        ],
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, a.jsxs)('label', {
+                                                className:
+                                                    'text-label-small text-content-secondary',
+                                                children: [
+                                                    'Categoria / Finalidade',
+                                                    ' ',
+                                                    (0, a.jsx)('span', {
+                                                        className:
+                                                            'text-red-500',
+                                                        children: '*',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, a.jsx)(A, {
+                                                icon: g.Tag,
+                                                value: _,
+                                                onChange: (e) =>
+                                                    G(e.target.value),
+                                                disabled: R,
+                                                placeholder:
+                                                    'Ex: Barba, Cabelo, Hidratação...',
+                                                className: w,
+                                            }),
+                                        ],
+                                    }),
+                                    (0, a.jsxs)('div', {
+                                        className: 'space-y-2',
+                                        children: [
+                                            (0, a.jsxs)('label', {
+                                                className:
+                                                    'text-label-small text-content-secondary',
+                                                children: [
+                                                    'Prazo para retirada (dias)',
+                                                    ' ',
+                                                    (0, a.jsx)('span', {
+                                                        className:
+                                                            'text-red-500',
+                                                        children: '*',
+                                                    }),
+                                                ],
+                                            }),
+                                            (0, a.jsx)(A, {
+                                                icon: y.Clock,
+                                                value: Y,
+                                                onChange: (e) =>
+                                                    ee(e.target.value),
+                                                disabled: R,
+                                                type: 'number',
+                                                min: 1,
+                                                max: 30,
+                                                className: w,
+                                            }),
+                                            (0, a.jsx)('p', {
+                                                className:
+                                                    'text-xs text-content-secondary',
+                                                children:
+                                                    'Após esse prazo, a reserva pode expirar e o produto volta ao estoque.',
+                                            }),
+                                        ],
+                                    }),
+                                    (0, a.jsx)('div', {
+                                        className:
+                                            'flex justify-end gap-2 pt-2',
+                                        children: (0, a.jsx)(i.Button, {
+                                            type: 'button',
+                                            variant: 'brand',
+                                            disabled: R || ex,
+                                            onClick: eb,
+                                            title: ed
+                                                ? 'Selecione uma unidade'
+                                                : eo
+                                                  ? 'Aguarde o upload da imagem'
+                                                  : em
+                                                    ? 'Selecione o nível do benefício de aniversário'
+                                                    : eu
+                                                      ? 'Preencha os campos obrigatórios'
+                                                      : void 0,
+                                            children: R
+                                                ? 'Criando...'
+                                                : 'Criar produto',
+                                        }),
+                                    }),
+                                ],
+                            }),
+                        ],
+                    }),
+                ],
+            });
+        }
+        e.s(['ProductNewDialog', () => E]);
+    },
+]);
