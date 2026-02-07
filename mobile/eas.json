@@ -13,6 +13,9 @@
         },
         "production": {
             "autoIncrement": true,
+            "hooks": {
+                "pre-install": "bash ./eas-build-pre-install.sh"
+            },
             "env": {
                 "EXPO_PUBLIC_API_URL": "https://atendeplay.atendeplay.com.br",
                 "EXPO_PUBLIC_COMPANY_ID": "cml2qwrmc0000i6co15bzl6jn",
