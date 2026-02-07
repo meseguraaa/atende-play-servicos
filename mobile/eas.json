@@ -13,6 +13,11 @@
         },
         "production": {
             "autoIncrement": true,
+            "env": {
+                "EXPO_PUBLIC_API_URL": "COLE_AQUI_A_URL_DA_API",
+                "EXPO_PUBLIC_COMPANY_ID": "COLE_AQUI_O_COMPANY_ID",
+                "EXPO_PUBLIC_SENTRY_DSN": ""
+            },
             "ios": {
                 "distribution": "store"
             }
