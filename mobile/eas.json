@@ -4,6 +4,9 @@
         "appVersionSource": "remote"
     },
     "build": {
+        "npm": {
+            "installCommand": "pnpm install"
+        },
         "development": {
             "developmentClient": true,
             "distribution": "internal"
