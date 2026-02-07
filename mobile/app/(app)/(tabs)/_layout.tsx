@@ -103,14 +103,6 @@ export default function TabsLayout() {
                 }}
             />
 
-            {/* ✅ esconde detalhe de produto */}
-            <Tabs.Screen
-                name="products/[id]"
-                options={{
-                    href: null,
-                }}
-            />
-
             {/* ✅ 3) Parceiros (ABA APONTA PARA partners/index) */}
             <Tabs.Screen
                 name="partners/index"
@@ -140,14 +132,6 @@ export default function TabsLayout() {
                             });
                         } catch {}
                     },
-                }}
-            />
-
-            {/* ✅ esconde rota "partners" se existir */}
-            <Tabs.Screen
-                name="partners"
-                options={{
-                    href: null,
                 }}
             />
 

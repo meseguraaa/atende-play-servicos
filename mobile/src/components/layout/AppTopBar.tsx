@@ -293,7 +293,7 @@ const S = StyleSheet.create({
         height: 18,
         paddingHorizontal: 5,
         borderRadius: UI.radius.pill,
-        backgroundColor: UI.home.birthdayDotBg,
+        backgroundColor: UI.brand.primary,
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 2,

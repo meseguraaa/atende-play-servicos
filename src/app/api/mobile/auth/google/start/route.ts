@@ -81,7 +81,11 @@ function safeUrl(raw: string): URL | null {
  */
 function isAllowedAppRedirectUri(u: URL) {
     const s = u.toString();
-    return s.startsWith('agendaplay://') || s.startsWith('exp://');
+    return (
+        s.startsWith('atendeplay://') || // ✅ seu deep link atual
+        s.startsWith('agendaplay://') || // (opcional) compat legado
+        s.startsWith('exp://') // dev Expo
+    );
 }
 
 /**
