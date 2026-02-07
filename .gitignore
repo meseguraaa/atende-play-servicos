@@ -87,3 +87,7 @@ pgdata/
 # accidental Expo/EAS files generated at repo root
 /app.json
 /eas.json
+
+# accidental Expo/EAS files generated at repo root
+/app.json
+/eas.json
