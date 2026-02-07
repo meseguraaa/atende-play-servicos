@@ -83,3 +83,7 @@ pgdata/
 
 # Expo local state
 .expo/
+
+# accidental Expo/EAS files generated at repo root
+/app.json
+/eas.json
