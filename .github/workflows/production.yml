@@ -101,6 +101,6 @@ jobs:
 
           pm2 restart "atendeplay-web"
 
-          curl -fsS "http://127.0.0.1:3000/health" >/dev/null
+          curl -fsS "http://127.0.0.1/health" >/dev/null
           echo "✅ Deployed: ${TS}"
           EOF
