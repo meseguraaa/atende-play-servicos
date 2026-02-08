@@ -99,11 +99,7 @@ jobs:
 
           ln -sfn "${NEW_RELEASE}" "${CURRENT_LINK}"
 
-          if [ -f "${SHARED_DIR}/ecosystem.config.js" ]; then
-            pm2 startOrRestart "${SHARED_DIR}/ecosystem.config.js" --only "${APP_NAME}" || pm2 restart "${APP_NAME}"
-          else
-            pm2 restart "${APP_NAME}"
-          fi
+          pm2 restart "atendeplay-web"
 
           curl -fsS "http://127.0.0.1:3000/health" >/dev/null
           echo "✅ Deployed: ${TS}"
