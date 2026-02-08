@@ -8,12 +8,6 @@ concurrency:
   group: "production"
   cancel-in-progress: true
 
-env:
-  APP_NAME: "atendeplay"
-  SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
-  SSH_USER: ${{ secrets.PROD_SSH_USER }}
-  SSH_PORT: ${{ secrets.PROD_SSH_PORT }}
-
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -51,17 +45,13 @@ jobs:
       - name: Build (Next.js)
         run: pnpm build
 
-      # Empacota o build no formato que seu start.sh espera:
-      # - server.js (standalone)
-      # - .next/static
-      # - public (se existir)
       - name: Package release artifact
         run: |
           set -euo pipefail
           rm -rf .release
           mkdir -p .release
 
-          # Next standalone
+          # Next standalone must exist
           test -f .next/standalone/server.js
 
           cp -R .next/standalone/* .release/
@@ -70,24 +60,15 @@ jobs:
           mkdir -p .release/.next
           cp -R .next/static .release/.next/static
 
-          # Public (opcional)
+          # Public (optional)
           if [ -d "public" ]; then
             cp -R public .release/public
           fi
 
-          # Marca a versão
+          # Mark release SHA
           echo "${GITHUB_SHA}" > .release/RELEASE_SHA
 
-          # Compacta
           tar -czf release.tgz -C .release .
-
-      - name: Upload artifact (for debugging)
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-tgz
-          path: release.tgz
-          if-no-files-found: error
-          retention-days: 3
 
       - name: Write SSH key
         run: |
@@ -95,17 +76,17 @@ jobs:
           mkdir -p ~/.ssh
           echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -p "${SSH_PORT}" -H "${SSH_HOST}" >> ~/.ssh/known_hosts
+          ssh-keyscan -p "${{ secrets.PROD_SSH_PORT }}" -H "${{ secrets.PROD_SSH_HOST }}" >> ~/.ssh/known_hosts
 
       - name: Upload release to server
         run: |
           set -euo pipefail
-          scp -P "${SSH_PORT}" release.tgz "${SSH_USER}@${SSH_HOST}:/tmp/${APP_NAME}-release.tgz"
+          scp -P "${{ secrets.PROD_SSH_PORT }}" release.tgz "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}:/tmp/atendeplay-release.tgz"
 
       - name: Deploy on server (atomic symlink switch)
         run: |
           set -euo pipefail
-          ssh -p "${SSH_PORT}" "${SSH_USER}@${SSH_HOST}" << 'EOF'
+          ssh -p "${{ secrets.PROD_SSH_PORT }}" "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}" << 'EOF'
           set -euo pipefail
 
           APP_NAME="atendeplay"
@@ -123,32 +104,21 @@ jobs:
           tar -xzf "/tmp/${APP_NAME}-release.tgz" -C "${NEW_RELEASE}"
           rm -f "/tmp/${APP_NAME}-release.tgz"
 
-          # Guardrails (não troca symlink se estiver ruim)
+          # Guardrails
           test -f "${NEW_RELEASE}/server.js"
           test -f "${SHARED_DIR}/.env.production"
 
-          # (Opcional) Prisma migrate deploy no servidor, usando o código novo
-          # Se seu prisma/schema.prisma estiver dentro do standalone, ok.
-          # Caso não esteja, a gente ajusta no próximo passo.
-          if [ -f "${NEW_RELEASE}/node_modules/.bin/prisma" ] || command -v prisma >/dev/null 2>&1; then
-            echo "Running prisma migrate deploy..."
-            cd "${NEW_RELEASE}"
-            if [ -f "node_modules/.bin/prisma" ]; then
-              ./node_modules/.bin/prisma migrate deploy
-            else
-              prisma migrate deploy
-            fi
-          else
-            echo "Skipping prisma migrate deploy (prisma not found)."
-          fi
-
-          # Switch atômico
+          # Switch atomic
           ln -sfn "${NEW_RELEASE}" "${CURRENT_LINK}"
 
-          # Restart
-          pm2 startOrRestart "${BASE_DIR}/shared/ecosystem.config.js" --only "${APP_NAME}" || pm2 restart "${APP_NAME}"
+          # Restart via PM2 ecosystem (preferred)
+          if [ -f "${SHARED_DIR}/ecosystem.config.js" ]; then
+            pm2 startOrRestart "${SHARED_DIR}/ecosystem.config.js" --only "${APP_NAME}" || pm2 restart "${APP_NAME}"
+          else
+            pm2 restart "${APP_NAME}"
+          fi
 
-          # Smoke test local (Nginx continua sendo a borda)
+          # Smoke test local
           curl -fsS "http://127.0.0.1:3000/health" >/dev/null
 
           echo "✅ Deployed: ${TS}"
