@@ -37,7 +37,7 @@ jobs:
       - name: Guardrail: fail if Prisma engines include darwin
         run: |
           set -euo pipefail
-          if find node_modules -path "*@prisma*" -o -path "*\.prisma*" | grep -i darwin; then
+          if find node_modules \( -path "*@prisma*" -o -path "*.prisma*" \) | grep -qi darwin; then
             echo "❌ Prisma contains darwin artifacts. Aborting."
             exit 1
           fi
