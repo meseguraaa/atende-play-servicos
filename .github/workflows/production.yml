@@ -33,6 +33,8 @@ jobs:
 
       - name: Prisma generate (Linux)
         run: pnpm prisma generate
+        env:
+          DATABASE_URL: "postgresql://user:pass@127.0.0.1:5432/db?schema=public"
 
       - name: Build (Next.js)
         run: pnpm build
