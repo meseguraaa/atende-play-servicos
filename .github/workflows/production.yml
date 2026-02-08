@@ -60,13 +60,27 @@ jobs:
           echo "${GITHUB_SHA}" > .release/RELEASE_SHA
           tar -czf release.tgz -C .release .
 
-      - name: Write SSH key
+            - name: Write SSH key
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
-          echo "${{ secrets.PROD_SSH_KEY }}" > ~/.ssh/id_rsa
+
+          # remove CRLF do secret (isso quebra ssh e dá "Connection closed" direto)
+          echo "${{ secrets.PROD_SSH_KEY }}" | tr -d '\r' > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
+
           ssh-keyscan -p "${{ secrets.PROD_SSH_PORT }}" -H "${{ secrets.PROD_SSH_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Test SSH connection (verbose)
+        run: |
+          set -euo pipefail
+          ssh -vvv \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -p "${{ secrets.PROD_SSH_PORT }}" \
+            "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}" \
+            "echo 'SSH_OK' && whoami && hostname"
+
 
       - name: Upload release to server
         run: |
