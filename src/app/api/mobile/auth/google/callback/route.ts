@@ -56,9 +56,52 @@ function getStateSecretKey() {
     return new TextEncoder().encode(secret);
 }
 
+/**
+ * ✅ Schemes permitidos para deep links (white-label friendly)
+ * Configure por ENV:
+ * MOBILE_ALLOWED_REDIRECT_SCHEMES=atendeplay,agendaplay,exp,clienteX
+ */
+function getAllowedSchemes(): Set<string> {
+    const raw = String(
+        process.env.MOBILE_ALLOWED_REDIRECT_SCHEMES || ''
+    ).trim();
+
+    const list = raw
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
+
+    // ✅ defaults seguros (mantém compat + dev)
+    if (!list.length) {
+        return new Set(['agendaplay', 'atendeplay', 'exp']);
+    }
+
+    return new Set(list);
+}
+
 function isAllowedAppRedirectUri(uri: string) {
     const u = String(uri || '').trim();
-    return u.startsWith('agendaplay://') || u.startsWith('exp://');
+    if (!u) return false;
+
+    // tenta parsear (preferível). Se falhar, faz fallback simples.
+    try {
+        const parsed = new URL(u);
+        const scheme = String(parsed.protocol || '')
+            .toLowerCase()
+            .replace(':', '');
+
+        if (!scheme || scheme === 'http' || scheme === 'https') return false;
+
+        const allowed = getAllowedSchemes();
+        return allowed.has(scheme);
+    } catch {
+        // fallback por prefix
+        const allowed = getAllowedSchemes();
+        for (const scheme of allowed) {
+            if (u.toLowerCase().startsWith(`${scheme}://`)) return true;
+        }
+        return false;
+    }
 }
 
 /**

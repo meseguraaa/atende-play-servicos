@@ -76,12 +76,42 @@ function safeUrl(raw: string): URL | null {
 }
 
 /**
+ * ✅ Schemes permitidos para deep links (white-label friendly)
+ * Configure por ENV:
+ * MOBILE_ALLOWED_REDIRECT_SCHEMES=atendeplay,agendaplay,exp,clienteX
+ */
+function getAllowedSchemes(): Set<string> {
+    const raw = String(
+        process.env.MOBILE_ALLOWED_REDIRECT_SCHEMES || ''
+    ).trim();
+
+    const list = raw
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
+
+    // ✅ defaults seguros (mantém compat + dev)
+    if (!list.length) {
+        return new Set(['agendaplay', 'atendeplay', 'exp']);
+    }
+
+    return new Set(list);
+}
+
+/**
  * Segurança básica: no start a gente só aceita redirect_uri que seja deep link do app.
  * Isso evita alguém passar um https://qualquer-coisa e você virar open-redirect.
  */
 function isAllowedAppRedirectUri(u: URL) {
-    const s = u.toString();
-    return s.startsWith('agendaplay://') || s.startsWith('exp://');
+    const scheme = String(u.protocol || '')
+        .toLowerCase()
+        .replace(':', '');
+
+    // bloqueia explícito http(s) e afins
+    if (!scheme || scheme === 'http' || scheme === 'https') return false;
+
+    const allowed = getAllowedSchemes();
+    return allowed.has(scheme);
 }
 
 /**
@@ -103,7 +133,7 @@ function readCompanyKey(searchParams: URLSearchParams): string {
 
 /**
  * Lê redirect_uri aceitando:
- * - cru (agendaplay://auth?x=1)
+ * - cru (atendeplay://auth?x=1)
  * - encoded 1x
  * - encoded 2x
  */
@@ -116,10 +146,9 @@ function readRedirectUri(searchParams: URLSearchParams): URL | null {
     if (direct) return direct;
 
     // 2) só tenta decode se parece ter encoding
-    // (evita mexer em strings que não precisam)
     if (!raw.includes('%')) return null;
 
-    // 3) tenta decode 1x/2x (caso venha encoded)
+    // 3) tenta decode 1x/2x
     const decoded = safeDecodeURIComponentTwice(raw);
     if (!decoded) return null;
 
