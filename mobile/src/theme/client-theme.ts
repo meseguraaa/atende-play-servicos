@@ -30,6 +30,26 @@ export const UI = {
         black10: 'rgba(0,0,0,0.10)',
         black45: 'rgba(0,0,0,0.45)',
     },
+
+    // ✅ Overlay tokens
+    overlay: {
+        // fundo escuro translúcido para telas/modais
+        dim: 'rgba(0,0,0,0.65)',
+    },
+
+    // ✅ Auth tokens (inputs/links)
+    auth: {
+        inputBorder: 'rgba(255,255,255,0.18)',
+        inputBg: 'rgba(255,255,255,0.08)',
+        inputText: '#F8FAFC',
+        link: '#FFFFFF',
+    },
+
+    // ✅ Home tokens (evita crash: UI.home.birthdayDotBg)
+    home: {
+        birthdayDotBg: '#F97373',
+    },
+
     radius: {
         card: 18,
         input: 12,
