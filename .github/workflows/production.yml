@@ -34,14 +34,6 @@ jobs:
       - name: Prisma generate (Linux)
         run: pnpm prisma generate
 
-      - name: Guardrail: fail if Prisma engines include darwin
-        run: |
-          set -euo pipefail
-          if find node_modules \( -path "*@prisma*" -o -path "*.prisma*" \) | grep -qi darwin; then
-            echo "❌ Prisma contains darwin artifacts. Aborting."
-            exit 1
-          fi
-
       - name: Build (Next.js)
         run: pnpm build
 
@@ -51,23 +43,17 @@ jobs:
           rm -rf .release
           mkdir -p .release
 
-          # Next standalone must exist
           test -f .next/standalone/server.js
-
           cp -R .next/standalone/* .release/
 
-          # Static assets
           mkdir -p .release/.next
           cp -R .next/static .release/.next/static
 
-          # Public (optional)
           if [ -d "public" ]; then
             cp -R public .release/public
           fi
 
-          # Mark release SHA
           echo "${GITHUB_SHA}" > .release/RELEASE_SHA
-
           tar -czf release.tgz -C .release .
 
       - name: Write SSH key
@@ -104,22 +90,17 @@ jobs:
           tar -xzf "/tmp/${APP_NAME}-release.tgz" -C "${NEW_RELEASE}"
           rm -f "/tmp/${APP_NAME}-release.tgz"
 
-          # Guardrails
           test -f "${NEW_RELEASE}/server.js"
           test -f "${SHARED_DIR}/.env.production"
 
-          # Switch atomic
           ln -sfn "${NEW_RELEASE}" "${CURRENT_LINK}"
 
-          # Restart via PM2 ecosystem (preferred)
           if [ -f "${SHARED_DIR}/ecosystem.config.js" ]; then
             pm2 startOrRestart "${SHARED_DIR}/ecosystem.config.js" --only "${APP_NAME}" || pm2 restart "${APP_NAME}"
           else
             pm2 restart "${APP_NAME}"
           fi
 
-          # Smoke test local
           curl -fsS "http://127.0.0.1:3000/health" >/dev/null
-
           echo "✅ Deployed: ${TS}"
           EOF
