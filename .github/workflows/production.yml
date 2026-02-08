@@ -78,17 +78,18 @@ jobs:
             "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}" \
             "echo 'SSH_OK' && whoami && hostname"
 
-      - name: Upload release to server
+      - name: Upload release to server (ssh stream)
         run: |
           set -euo pipefail
-          scp -O \
+          cat release.tgz | ssh \
             -o BatchMode=yes \
             -o StrictHostKeyChecking=yes \
             -o IdentitiesOnly=yes \
             -i ~/.ssh/id_rsa \
-            -P "${{ secrets.PROD_SSH_PORT }}" \
-            release.tgz \
-            "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}:/tmp/atendeplay-release.tgz"
+            -p "${{ secrets.PROD_SSH_PORT }}" \
+            "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}" \
+            "cat > /tmp/atendeplay-release.tgz"
+
 
 
       - name: Deploy on server (atomic symlink switch)
