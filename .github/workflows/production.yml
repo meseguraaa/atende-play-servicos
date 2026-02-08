@@ -20,7 +20,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-           run_install: false
+          run_install: false
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -60,7 +60,7 @@ jobs:
           echo "${GITHUB_SHA}" > .release/RELEASE_SHA
           tar -czf release.tgz -C .release .
 
-            - name: Write SSH key
+      - name: Write SSH key
         run: |
           set -euo pipefail
           mkdir -p ~/.ssh
@@ -80,7 +80,6 @@ jobs:
             -p "${{ secrets.PROD_SSH_PORT }}" \
             "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}" \
             "echo 'SSH_OK' && whoami && hostname"
-
 
       - name: Upload release to server
         run: |
