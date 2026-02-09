@@ -124,12 +124,55 @@ function redirect302(target: string) {
 }
 
 /**
+ * ✅ Schemes permitidos para deep links (white-label friendly)
+ * Configure por ENV:
+ * MOBILE_ALLOWED_REDIRECT_SCHEMES=atendeplay,agendaplay,exp,clienteX
+ */
+function getAllowedSchemes(): Set<string> {
+    const raw = String(
+        process.env.MOBILE_ALLOWED_REDIRECT_SCHEMES || ''
+    ).trim();
+
+    const list = raw
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
+
+    // defaults compatíveis
+    if (!list.length) return new Set(['atendeplay', 'agendaplay', 'exp']);
+    return new Set(list);
+}
+
+/**
  * Segurança básica contra open-redirect:
- * Aceita apenas deep links do app (agendaplay://) ou exp:// (Expo)
+ * Aceita apenas deep links do app (schemes permitidos) ou exp:// (Expo)
+ *
+ * Fonte:
+ * - MOBILE_ALLOWED_REDIRECT_SCHEMES="atendeplay,agendaplay,exp"
  */
 function isAllowedRedirectUri(uri: string) {
     const u = String(uri || '').trim();
-    return u.startsWith('agendaplay://') || u.startsWith('exp://');
+    if (!u) return false;
+
+    // pega lista do env (fallback seguro)
+    const raw = String(
+        process.env.MOBILE_ALLOWED_REDIRECT_SCHEMES || ''
+    ).trim();
+    const allowed = raw
+        ? raw
+              .split(',')
+              .map((s) => s.trim().toLowerCase())
+              .filter(Boolean)
+        : ['agendaplay', 'exp']; // fallback conservador
+
+    // pega scheme: "atendeplay://xxx" -> "atendeplay"
+    const scheme = u.split(':', 1)[0]?.toLowerCase() || '';
+    if (!scheme) return false;
+
+    // permite apenas deep links ("://")
+    if (!u.includes('://')) return false;
+
+    return allowed.includes(scheme);
 }
 
 /**
