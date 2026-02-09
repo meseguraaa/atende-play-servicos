@@ -10,11 +10,27 @@ function normalizeBaseUrl(raw: string) {
     return s.endsWith('/') ? s.slice(0, -1) : s;
 }
 
+function firstHeaderValue(v: string | null): string {
+    // alguns proxies mandam "https,http" etc
+    return String(v || '')
+        .split(',')[0]
+        .trim();
+}
+
 function getBaseUrlFromHeaders(req: NextRequest) {
     // funciona bem atrás de proxy também
-    const proto = req.headers.get('x-forwarded-proto') || 'http';
-    const host =
+    const protoRaw =
+        req.headers.get('x-forwarded-proto') ||
+        req.headers.get('x-forwarded-scheme') ||
+        (req.headers.get('x-forwarded-ssl') === 'on' ? 'https' : '') ||
+        '';
+
+    const proto = firstHeaderValue(protoRaw) || 'http';
+
+    const hostRaw =
         req.headers.get('x-forwarded-host') || req.headers.get('host') || '';
+    const host = firstHeaderValue(hostRaw);
+
     return normalizeBaseUrl(`${proto}://${host}`);
 }
 
@@ -29,7 +45,6 @@ function getPublicBaseUrl(req: NextRequest) {
         process.env.PUBLIC_BASE_URL || process.env.NEXTAUTH_URL || ''
     );
     if (envBase) return envBase;
-
     return getBaseUrlFromHeaders(req);
 }
 
@@ -39,13 +54,11 @@ function getStateSecretKey() {
         process.env.APP_JWT_SECRET ||
         ''
     ).trim();
-
     if (!secret) {
         throw new Error(
             'PAINEL_JWT_SECRET (ou APP_JWT_SECRET) não definido no .env'
         );
     }
-
     return new TextEncoder().encode(secret);
 }
 
@@ -73,6 +86,29 @@ function safeUrl(raw: string): URL | null {
     } catch {
         return null;
     }
+}
+
+/**
+ * Normaliza deep link esquisito:
+ * - atendeplay:/auth  -> atendeplay://auth
+ * Mantém querystring.
+ */
+function normalizeMobileRedirectUri(raw: string): string {
+    const s = String(raw || '').trim();
+    if (!s) return s;
+
+    // se já tem "://", deixa quieto
+    if (s.includes('://')) return s;
+
+    // se vier "scheme:/path", tenta converter para "scheme://path" (sem duplicar slashes)
+    const m = s.match(/^([a-zA-Z][a-zA-Z0-9+\-.]*):\/(.*)$/);
+    if (!m) return s;
+
+    const scheme = m[1];
+    const rest = m[2] || '';
+    // rest pode começar com "/" se vier "scheme:///" (raro). Normaliza para não virar triple slash.
+    const rest2 = rest.replace(/^\/+/, '');
+    return `${scheme}://${rest2}`;
 }
 
 /**
@@ -106,12 +142,16 @@ function isAllowedAppRedirectUri(u: URL) {
     const scheme = String(u.protocol || '')
         .toLowerCase()
         .replace(':', '');
-
-    // bloqueia explícito http(s) e afins
     if (!scheme || scheme === 'http' || scheme === 'https') return false;
 
     const allowed = getAllowedSchemes();
-    return allowed.has(scheme);
+    if (!allowed.has(scheme)) return false;
+
+    // ✅ regra extra: exp:// só em dev (evita abrir porta pra open-redirect em produção)
+    const isProd = process.env.NODE_ENV === 'production';
+    if (isProd && scheme === 'exp') return false;
+
+    return true;
 }
 
 /**
@@ -134,25 +174,28 @@ function readCompanyKey(searchParams: URLSearchParams): string {
 /**
  * Lê redirect_uri aceitando:
  * - cru (atendeplay://auth?x=1)
+ * - cru esquisito (atendeplay:/auth)
  * - encoded 1x
  * - encoded 2x
  */
 function readRedirectUri(searchParams: URLSearchParams): URL | null {
-    const raw = String(searchParams.get('redirect_uri') || '').trim();
-    if (!raw) return null;
+    const raw0 = String(searchParams.get('redirect_uri') || '').trim();
+    if (!raw0) return null;
 
     // 1) tenta direto (caso venha cru)
-    const direct = safeUrl(raw);
+    const raw1 = normalizeMobileRedirectUri(raw0);
+    const direct = safeUrl(raw1);
     if (direct) return direct;
 
     // 2) só tenta decode se parece ter encoding
-    if (!raw.includes('%')) return null;
+    if (!raw0.includes('%')) return null;
 
     // 3) tenta decode 1x/2x
-    const decoded = safeDecodeURIComponentTwice(raw);
+    const decoded = safeDecodeURIComponentTwice(raw0);
     if (!decoded) return null;
 
-    return safeUrl(decoded);
+    const decoded2 = normalizeMobileRedirectUri(decoded);
+    return safeUrl(decoded2);
 }
 
 /** Redirect 302 + no-store (mobile friendly) */
@@ -167,11 +210,29 @@ function redirect302(target: string) {
     return res;
 }
 
+function isDebugEnabled() {
+    const v = String(process.env.AUTH_DEBUG || '')
+        .trim()
+        .toLowerCase();
+    return v === '1' || v === 'true' || v === 'yes';
+}
+
+function debugLog(...args: any[]) {
+    if (!isDebugEnabled()) return;
+    // eslint-disable-next-line no-console
+    console.log('[AUTH][GOOGLE][START]', ...args);
+}
+
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
 
     const companyId = readCompanyKey(searchParams);
     const redirectUri = readRedirectUri(searchParams);
+
+    debugLog('req.url:', req.url);
+    debugLog('companyId:', companyId || '(missing)');
+    debugLog('redirect_uri (parsed):', redirectUri?.toString() || '(missing)');
+    debugLog('allowed_schemes:', Array.from(getAllowedSchemes()));
 
     if (!companyId || !redirectUri) {
         return NextResponse.json(
@@ -186,10 +247,19 @@ export async function GET(req: NextRequest) {
     }
 
     if (!isAllowedAppRedirectUri(redirectUri)) {
+        // ⚠️ Mantém o código "invalid_redirect_uri" pq o app já exibiu isso
         return NextResponse.json(
             {
                 ok: false,
-                error: 'redirect_uri inválido (precisa ser deep link do app)',
+                error: 'invalid_redirect_uri',
+                message:
+                    'redirect_uri inválido (precisa ser deep link do app e ter scheme permitido).',
+                allowed_schemes: Array.from(getAllowedSchemes()),
+                received: redirectUri.toString(),
+                hint_prod:
+                    process.env.NODE_ENV === 'production'
+                        ? 'Em produção, exp:// é bloqueado de propósito.'
+                        : undefined,
             },
             { status: 400 }
         );
@@ -214,8 +284,11 @@ export async function GET(req: NextRequest) {
         );
     }
 
-    // ✅ ESTE callback precisa bater com o Google Console
+    // ✅ ESTE callback precisa bater com o Google Console (Authorized redirect URIs)
     const callbackUrl = new URL('/api/mobile/auth/google/callback', baseUrl);
+
+    debugLog('PUBLIC_BASE_URL resolved:', baseUrl);
+    debugLog('GOOGLE callback redirect_uri:', callbackUrl.toString());
 
     // state assinado (curto) para transportar dados do app com segurança
     const stateToken = await new SignJWT({
@@ -246,5 +319,8 @@ export async function GET(req: NextRequest) {
     // mantém seu comportamento atual (selecionar conta)
     googleAuth.searchParams.set('prompt', 'select_account');
 
-    return redirect302(googleAuth.toString());
+    const finalUrl = googleAuth.toString();
+    debugLog('redirecting to google:', finalUrl);
+
+    return redirect302(finalUrl);
 }
