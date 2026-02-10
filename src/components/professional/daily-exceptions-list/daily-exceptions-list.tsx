@@ -246,8 +246,7 @@ export function DailyExceptionsList({
                                     ) : (
                                         <div className="space-y-1 text-paragraph-small-size text-content-secondary">
                                             <p className="font-medium text-content-primary">
-                                                Horários indisponíveis neste
-                                                dia:
+                                                Horários disponíveis neste dia:
                                             </p>
                                             <ul className="flex flex-wrap gap-2 text-[12px]">
                                                 {ex.intervals.map(
