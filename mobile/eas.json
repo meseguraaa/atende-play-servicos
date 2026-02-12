@@ -15,7 +15,7 @@
             "autoIncrement": true,
             "env": {
                 "EXPO_PUBLIC_API_URL": "https://atendeplay.atendeplay.com.br",
-                "EXPO_PUBLIC_COMPANY_ID": "cml2qwrmc0000i6co15bzl6jn",
+                "EXPO_PUBLIC_COMPANY_ID": "cmldmob8s0000i63zm74hckk8",
                 "EXPO_PUBLIC_SENTRY_DSN": "https://d794a3bbfabe1979d3a455f3c0a939d5@o4510845140140032.ingest.us.sentry.io/4510845149118464"
             },
             "ios": {

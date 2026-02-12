@@ -15,6 +15,8 @@ function FloatingIcon({
     name: any;
     bottomLift?: number;
 }) {
+    const isAndroid = Platform.OS === 'android';
+
     return (
         <View
             style={{
@@ -25,8 +27,9 @@ function FloatingIcon({
                 alignItems: 'center',
                 justifyContent: 'center',
 
-                // ✅ sobe o botão flutuante
-                marginBottom: 40 + bottomLift,
+                // ✅ Android: sobe um pouco mais pra ficar "perfeito" quando ativo
+                // iOS mantém como estava.
+                marginBottom: isAndroid ? 35 : 40 + bottomLift,
 
                 shadowOffset: { width: 0, height: 6 },
                 elevation: 10,

@@ -9,7 +9,7 @@
         "newArchEnabled": false,
         "scheme": "atendeplay",
         "splash": {
-            "image": "./assets/splash-icon.png",
+            "image": "./assets/icon.png",
             "resizeMode": "contain",
             "backgroundColor": "#ffffff"
         },
@@ -25,12 +25,33 @@
         "android": {
             "softwareKeyboardLayoutMode": "resize",
             "adaptiveIcon": {
-                "foregroundImage": "./assets/adaptive-icon.png",
+                "foregroundImage": "./assets/icon.png",
                 "backgroundColor": "#ffffff"
             },
             "edgeToEdgeEnabled": true,
             "predictiveBackGestureEnabled": false,
-            "package": "com.brunoleal2005.mobile"
+            "package": "com.atendeplay.app",
+            "intentFilters": [
+                {
+                    "action": "VIEW",
+                    "category": ["BROWSABLE", "DEFAULT"],
+                    "data": [
+                        {
+                            "scheme": "atendeplay"
+                        }
+                    ]
+                },
+                {
+                    "action": "VIEW",
+                    "category": ["BROWSABLE", "DEFAULT"],
+                    "data": [
+                        {
+                            "scheme": "atendeplay",
+                            "host": "auth"
+                        }
+                    ]
+                }
+            ]
         },
         "web": {
             "favicon": "./assets/favicon.png"

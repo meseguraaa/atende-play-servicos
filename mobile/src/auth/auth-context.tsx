@@ -564,7 +564,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const storedCompanyId = await readStoredCompanyId();
                 const envCompanyId = readEnvCompanyId(); // ✅ NEW
 
-                const initialCompanyId = storedCompanyId ?? envCompanyId; // ✅ NEW
+                // ✅ LOCK ENV COMPANY:
+                // Se o app tem EXPO_PUBLIC_COMPANY_ID e ele difere do que estava salvo no Keychain,
+                // o env vence (evita “vazar” companyId de instalações antigas).
+                let initialCompanyId = storedCompanyId ?? envCompanyId;
+                if (
+                    envCompanyId &&
+                    storedCompanyId &&
+                    storedCompanyId !== envCompanyId
+                ) {
+                    initialCompanyId = envCompanyId;
+                    try {
+                        await SecureStore.setItemAsync(
+                            COMPANY_ID_STORAGE_KEY,
+                            envCompanyId
+                        );
+                    } catch {}
+                }
 
                 // ✅ NEW: se não tinha no SecureStore, persiste o env pra evitar “null” em boots futuros
                 if (!storedCompanyId && envCompanyId) {
@@ -644,12 +660,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const fromUser = s.user ? pickCompanyId(s.user) : null;
 
                 // ✅ NEW: env como fallback final
+                // ✅ LOCK ENV COMPANY: se envCompanyId existir, ele vence no final
                 const resolvedCompanyId =
+                    envCompanyId ||
                     s.companyId ||
                     fromSessionObj ||
                     fromUser ||
-                    storedCompanyId ||
-                    envCompanyId;
+                    initialCompanyId ||
+                    null;
 
                 setCompanyIdState(resolvedCompanyId);
                 companyIdRef.current = resolvedCompanyId;
@@ -661,7 +679,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                 if (
                     resolvedCompanyId &&
-                    resolvedCompanyId !== storedCompanyId
+                    resolvedCompanyId !== (await readStoredCompanyId())
                 ) {
                     try {
                         await SecureStore.setItemAsync(
@@ -683,7 +701,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                 const storedCompanyId = await readStoredCompanyId();
                 const envCompanyId = readEnvCompanyId(); // ✅ NEW
-                const fallbackCompanyId = storedCompanyId ?? envCompanyId; // ✅ NEW
+
+                // ✅ LOCK ENV COMPANY também no fallback
+                const fallbackCompanyId =
+                    envCompanyId || storedCompanyId || null;
 
                 lastCompanyIdPersistedRef.current = fallbackCompanyId;
 
@@ -943,10 +964,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
                 // ✅ NEW: env como fallback final no signIn
                 const resolvedCompanyId =
+                    readEnvCompanyId() ||
                     s.companyId ||
                     fromLoginObj ||
                     fromUser ||
-                    readEnvCompanyId() ||
                     null;
 
                 if (resolvedCompanyId) {
@@ -954,7 +975,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 } else {
                     const storedCompanyId = await readStoredCompanyId();
                     const envCompanyId = readEnvCompanyId(); // ✅ NEW
-                    const fallbackCompanyId = storedCompanyId ?? envCompanyId; // ✅ NEW
+                    const fallbackCompanyId = envCompanyId || storedCompanyId;
 
                     lastCompanyIdPersistedRef.current = fallbackCompanyId;
 

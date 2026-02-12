@@ -30,11 +30,17 @@ const API_BASE_URL =
 
 const COMPANY_ID = process.env.EXPO_PUBLIC_COMPANY_ID?.trim() || '';
 
+// ✅ Deep link scheme do app (precisa existir no app config: scheme)
+const APP_SCHEME = (process.env.EXPO_PUBLIC_APP_SCHEME || 'atendeplay').trim();
+
+// ✅ redirectUri NATIVO (deep link) para o backend redirecionar de volta pro app
 const redirectUri = (() => {
+    const native = `${APP_SCHEME}://auth-callback`;
+
     try {
-        return AuthSession.makeRedirectUri({ path: 'auth' });
+        return AuthSession.makeRedirectUri({ path: 'auth-callback', native });
     } catch {
-        return 'exp://localhost:8081/--/auth';
+        return native;
     }
 })();
 
@@ -126,7 +132,7 @@ export default function Login() {
         if (loading) return;
 
         try {
-            if (!apiOk) return; // ✅ NEW: não bloqueia só por companyId (fallback existe)
+            if (!apiOk) return;
 
             setLoading(true);
 
@@ -134,10 +140,17 @@ export default function Login() {
                 `${API_BASE_URL}/api/mobile/auth/google/start`
             );
 
-            // ✅ NEW: só manda companyId se existir (mas com env setado, vai existir)
+            // ✅ manda companyId pro backend (tenant fixo do app)
             if (COMPANY_ID) start.searchParams.set('companyId', COMPANY_ID);
 
+            // ✅ CRÍTICO: redirect_uri precisa ser deep link do app
             start.searchParams.set('redirect_uri', String(redirectUri));
+
+            // ✅ DEBUG: descobrir qual redirect_uri o app está enviando (e a URL final)
+            console.log('[GOOGLE] APP_SCHEME:', APP_SCHEME);
+            console.log('[GOOGLE] COMPANY_ID:', COMPANY_ID);
+            console.log('[GOOGLE] redirect_uri:', String(redirectUri));
+            console.log('[GOOGLE] startUrl:', start.toString());
 
             const result = await WebBrowser.openAuthSessionAsync(
                 start.toString(),
@@ -153,7 +166,7 @@ export default function Login() {
             // ✅ auth-redirect devolve token JWT e params extras
             const token = String(url.searchParams.get('token') || '').trim();
 
-            // ✅ NEW: companyId resolve com prioridade do redirect; cai no env se faltar
+            // ✅ companyId resolve com prioridade do redirect; cai no env se faltar
             const resolvedCompanyId =
                 String(url.searchParams.get('companyId') || '').trim() ||
                 COMPANY_ID;
@@ -205,9 +218,8 @@ export default function Login() {
         const e = normalizeEmail(email);
         const p = String(password ?? '');
 
-        if (!apiOk) return; // ✅ NEW
+        if (!apiOk) return;
 
-        // ✅ NEW: company pode vir do env, se não vier, alerta claro
         if (!COMPANY_ID) {
             Alert.alert(
                 'Login',
@@ -250,7 +262,6 @@ export default function Login() {
                 json = null;
             }
 
-            // ✅ backend pode responder 200 com ok:false
             const ok = Boolean(res.ok) && Boolean(json?.ok !== false);
             if (!ok) {
                 const raw =
@@ -283,7 +294,6 @@ export default function Login() {
     const keyboardOffset =
         UI.spacing.headerH + insets.top + (Platform.OS === 'ios' ? 8 : 0);
 
-    // ✅ NEW: signup não precisa travar por companyOk aqui, mas mantém UX no DEV
     const canSignup = apiOk && !loading;
     const canLogin = apiOk && companyOk && emailOk && passOk && !loading;
 
@@ -291,7 +301,6 @@ export default function Login() {
         <View style={styles.screen}>
             <StatusBar style="light" backgroundColor={UI.brand.primary} />
 
-            {/* Safe-area */}
             <View
                 pointerEvents="none"
                 style={{
@@ -304,7 +313,6 @@ export default function Login() {
                 }}
             />
 
-            {/* Header */}
             <View
                 style={[
                     styles.header,
@@ -352,7 +360,6 @@ export default function Login() {
                                 Platform.OS === 'ios' ? 'never' : undefined
                             }
                         >
-                            {/* ✅ deixa o padding horizontal no body, pra não duplicar */}
                             <View
                                 style={[
                                     styles.body,
@@ -421,7 +428,6 @@ export default function Login() {
                                             </Pressable>
                                         </View>
 
-                                        {/* ✅ BOTÃO ENTRAR */}
                                         <Pressable
                                             onPress={handleEmailLogin}
                                             style={({ pressed }) => [
@@ -500,7 +506,6 @@ export default function Login() {
                                         </Pressable>
                                     </View>
 
-                                    {/* ✅ BOTÃO ROXO BRAND */}
                                     <Pressable
                                         onPress={handleGoSignup}
                                         style={({ pressed }) => [
