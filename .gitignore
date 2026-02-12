@@ -49,3 +49,13 @@ src/generated/
 
 release.tgz
 *.tgz
+
+# build artifacts / local data
+release/
+pgdata/
+**/.next/
+
+# build artifacts / local data
+release/
+pgdata/
+.next/
