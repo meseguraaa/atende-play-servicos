@@ -74,9 +74,12 @@ jobs:
           ssh -vvv \
             -o BatchMode=yes \
             -o StrictHostKeyChecking=yes \
+            -o IdentitiesOnly=yes \
+            -i ~/.ssh/id_rsa \
             -p "${{ secrets.PROD_SSH_PORT }}" \
             "${{ secrets.PROD_SSH_USER }}@${{ secrets.PROD_SSH_HOST }}" \
             "echo 'SSH_OK' && whoami && hostname"
+
 
       - name: Upload release to server (ssh stream)
         run: |
